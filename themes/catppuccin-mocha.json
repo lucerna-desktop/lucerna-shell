@@ -1,6 +1,6 @@
 {
     "name": "Catppuccin Mocha",
-    "description": "Pastel escuro e aconchegante: malva, azul e rosa sobre grafite azulado.",
+    "description": "Pastel escuro e aconchegante: azul, malva e rosa sobre grafite azulado.",
     "dark": true,
     "colors": {
         "base": "#1e1e2e",
@@ -10,7 +10,7 @@
         "text": "#cdd6f4",
         "textMuted": "#bac2de",
         "textFaint": "#7f849c",
-        "accent": "#cba6f7",
+        "accent": "#89b4fa",
         "accentText": "#11111b",
         "danger": "#f38ba8",
         "success": "#a6e3a1",
@@ -50,7 +50,7 @@
         "shader": "shaders/aurora.qsb"
     },
     "hyprland": {
-        "activeBorder": "#cba6f7",
+        "activeBorder": "#89b4fa",
         "inactiveBorder": "#585b70",
         "borderSize": 2,
         "rounding": 12,

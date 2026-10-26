@@ -6,7 +6,7 @@ function run(t) {
 
     t.test("theme: tokens do tema padrão", () => {
         t.eq(T.current, "catppuccin-mocha");
-        t.eq(String(T.token("accent")), "#cba6f7");
+        t.eq(String(T.token("accent")), "#89b4fa");
         t.eq(String(T.token("nada")), "#ff00ff", "token que falta vira magenta");
         t.eq(String(T.colors.base), "#1e1e2e");
         t.eq([T.font.sans, T.font.normal, T.radius.large, T.spacing.large, T.barHeight], ["Rubik", 13, 22, 20, 44]);

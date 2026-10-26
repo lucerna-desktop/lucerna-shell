@@ -26,7 +26,7 @@ W, H = 2560, 1440
 THEMES = {
     "catppuccin-mocha": {
         "name": "Catppuccin Mocha",
-        "description": "Pastel escuro e aconchegante: malva, azul e rosa sobre grafite azulado.",
+        "description": "Pastel escuro e aconchegante: azul, malva e rosa sobre grafite azulado.",
         "colors": {
             "base": "#1e1e2e",
             "surface": "#313244",
@@ -35,7 +35,7 @@ THEMES = {
             "text": "#cdd6f4",
             "textMuted": "#bac2de",
             "textFaint": "#7f849c",
-            "accent": "#cba6f7",
+            "accent": "#89b4fa",
             "accentText": "#11111b",
             "danger": "#f38ba8",
             "success": "#a6e3a1",
@@ -269,7 +269,7 @@ THEMES = {
     },
     "catppuccin-latte": {
         "name": "Catppuccin Latte",
-        "description": "A versão clara do Catppuccin: malva e azul vivos sobre um branco-acinzentado suave.",
+        "description": "A versão clara do Catppuccin: azul e malva vivos sobre um branco-acinzentado suave.",
         "dark": False,
         "colors": {
             "base": "#eff1f5",
@@ -279,7 +279,7 @@ THEMES = {
             "text": "#4c4f69",
             "textMuted": "#5c5f77",
             "textFaint": "#8c8fa1",
-            "accent": "#8839ef",
+            "accent": "#1e66f5",
             "accentText": "#eff1f5",
             "danger": "#d20f39",
             "success": "#40a02b",
