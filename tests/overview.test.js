@@ -117,14 +117,20 @@ function run(t) {
 
     t.test("overview: chaves acesas e apagadas", () => {
         const C = t.Config;
-        const saved = [C.doNotDisturb, C.offline, C.idleInhibit];
+        const saved = [C.doNotDisturb, C.offline, C.idleInhibit, C.idleEnabled];
         const toggle = id => O.togglesFor({ nightlight: true, awake: true }).find(x => x.id === id);
         try {
             C.doNotDisturb = false;
             C.offline = false;
             C.idleInhibit = false;
+            C.idleEnabled = true;
             t.eq(O.togglesFor({ nightlight: true, awake: true }).map(x => x.id), ["nightlight", "dnd", "offline", "awake"]);
-            t.eq(O.togglesFor({ nightlight: false, awake: false }).map(x => x.id), ["dnd", "offline"], "sem o hyprsunset e sem a ociosidade do shell");
+            const bare = O.togglesFor({ nightlight: false, awake: false });
+            t.eq(bare.map(x => x.id), ["dnd", "offline", "awake"], "sem o hyprsunset a luz noturna some; a cafeína fica");
+            const off = bare.find(x => x.id === "awake");
+            t.eq([off.enabled, off.on], [false, false], "sem a ociosidade do shell, a cafeína apagada");
+            t.check(off.label.includes("ligue a ociosidade nas configurações"), "e a dica diz como ligar");
+            t.check(O.togglesFor({ nightlight: true, awake: true }).every(x => x.enabled), "com tudo, todas acionáveis");
             t.eq(["dnd", "offline", "awake"].map(id => toggle(id).on), [false, false, false]);
             for (const id of ["dnd", "offline", "awake"])
                 O.toggle(id);
@@ -133,8 +139,13 @@ function run(t) {
             t.eq(O.quickToggles.find(x => x.id === "dnd")?.on, true, "a lista viva acompanha");
             O.toggle("dnd");
             t.eq(C.doNotDisturb, false, "e desliga de novo");
+            C.idleEnabled = false;
+            C.idleInhibit = false;
+            O.toggle("awake");
+            t.eq(C.idleInhibit, false, "sem a ociosidade do shell, a cafeína não liga");
+            t.eq(O.quickToggles.find(x => x.id === "awake")?.enabled, false, "a lista viva: apagada");
         } finally {
-            [C.doNotDisturb, C.offline, C.idleInhibit] = saved;
+            [C.doNotDisturb, C.offline, C.idleInhibit, C.idleEnabled] = saved;
         }
     });
 

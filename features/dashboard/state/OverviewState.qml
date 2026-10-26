@@ -186,14 +186,16 @@ Singleton {
         }
     }
 
-    // À direita, chaves: { id, label, icon, on (acesa) }. `has`: nightlight
-    // (o hyprsunset) e awake (a ociosidade do shell, que a cafeína segura).
+    // À direita, chaves: { id, label, icon, on (acesa), enabled }. `has`:
+    // nightlight (o hyprsunset; sem ele, a chave some) e awake (a ociosidade
+    // do shell, que a cafeína segura; desligada, a cafeína fica apagada, sem
+    // clique, e a dica diz como ligar).
     function togglesFor(has: var): var {
         return [
-            ...(has.nightlight ? [{ id: "nightlight", label: "Luz noturna", icon: "nightlight", on: NightSchedule.on }] : []),
-            { id: "dnd", label: "Não perturbe", icon: Icons.bellSleep, on: Config.doNotDisturb },
-            { id: "offline", label: "Modo offline", icon: "cloud_off", on: Config.offline },
-            ...(has.awake ? [{ id: "awake", label: "Cafeína: não apagar nem bloquear a tela", icon: "coffee", on: Config.idleInhibit }] : [])
+            ...(has.nightlight ? [{ id: "nightlight", label: "Luz noturna", icon: "nightlight", on: NightSchedule.on, enabled: true }] : []),
+            { id: "dnd", label: "Não perturbe", icon: Icons.bellSleep, on: Config.doNotDisturb, enabled: true },
+            { id: "offline", label: "Modo offline", icon: "cloud_off", on: Config.offline, enabled: true },
+            has.awake ? { id: "awake", label: "Cafeína: não apagar nem bloquear a tela", icon: "coffee", on: Config.idleInhibit, enabled: true } : { id: "awake", label: "Cafeína: ligue a ociosidade nas configurações para usar", icon: "coffee", on: false, enabled: false }
         ];
     }
 
@@ -206,7 +208,7 @@ Singleton {
             Config.doNotDisturb = !Config.doNotDisturb;
         else if (id === "offline")
             Config.offline = !Config.offline;
-        else if (id === "awake")
+        else if (id === "awake" && Config.idleEnabled)
             Config.idleInhibit = !Config.idleInhibit;
     }
 }

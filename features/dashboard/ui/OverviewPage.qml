@@ -512,27 +512,37 @@ Item {
                     icon: modelData.icon
                     hint: modelData.label
                     checkable: true
+                    usable: modelData.enabled
                     active: modelData.on
-                    onClicked: OverviewState.toggle(modelData.id)
+                    onClicked: {
+                        if (usable)
+                            OverviewState.toggle(modelData.id);
+                    }
                 }
             }
         }
     }
 
     // Um botão da barra: ícone de 18 px, com nome acessível, dica ao passar o
-    // mouse e acionável pelo teclado (Tab, Enter ou Espaço).
+    // mouse e acionável pelo teclado (Tab, Enter ou Espaço). Um fundo leve, no
+    // raio do tema, no hover e no foco do teclado. `usable` falso: apagado e
+    // sem clique, mas ainda com a dica (que diz por quê).
     component QuickButton: IconButton {
         id: quick
 
         required property string hint
         property bool checkable: false
+        property bool usable: true
 
         iconSize: 18
+        iconWeight: 500
         height: 26
         width: 30
+        radius: ThemeManager.radius.small
         activeFocusOnTab: true
-        border.width: activeFocus ? 1 : 0
-        border.color: ThemeManager.colors.accent
+        hoverVeil: false
+        opacity: usable ? 1 : 0.4
+        color: active ? activeColor : usable && (hovered || activeFocus) ? ThemeManager.alpha(ThemeManager.colors.text, 0.12) : "transparent"
         Accessible.role: checkable ? Accessible.CheckBox : Accessible.Button
         Accessible.name: hint
         Accessible.checkable: checkable
