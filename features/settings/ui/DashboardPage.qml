@@ -187,18 +187,33 @@ Column {
                         font.pixelSize: ThemeManager.font.normal
                         clip: true
                         text: SettingsState.vagalumeKey
-                        // Grava a cada mudança válida (a chave colada não se perde); ao
-                        // perder o foco com texto inválido, mostra o erro e repõe o salvo.
-                        onTextEdited: {
-                            if (SettingsState.setVagalumeKey(text) === "")
-                                keyError.text = "";
+                        // Grava depois de parar de digitar, no Enter, ao perder o foco ou
+                        // ao esconder a página (a chave colada não se perde); com texto
+                        // inválido, mostra o erro e repõe o valor salvo.
+                        function save(): void {
+                            saveTimer.stop();
+                            keyError.text = SettingsState.setVagalumeKey(text);
                         }
+
+                        onTextEdited: saveTimer.restart()
+                        onEditingFinished: save()
                         onActiveFocusChanged: {
                             if (activeFocus)
                                 return;
-                            keyError.text = SettingsState.setVagalumeKey(text);
+                            save();
                             if (keyError.text !== "")
                                 text = SettingsState.vagalumeKey;
+                        }
+                        onVisibleChanged: {
+                            if (!visible && saveTimer.running)
+                                save();
+                        }
+
+                        Timer {
+                            id: saveTimer
+
+                            interval: 600
+                            onTriggered: vagalume.save()
                         }
 
                         Txt {
