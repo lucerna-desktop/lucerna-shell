@@ -75,6 +75,8 @@ Singleton {
     readonly property string musicOff: "music_off"
     readonly property string humidity: "humidity_percentage"
     readonly property string wind: "air"
+    readonly property string sunrise: "wb_twilight"
+    readonly property string sunset: "bedtime"
     readonly property string rain: "water_drop"
 
     // Central

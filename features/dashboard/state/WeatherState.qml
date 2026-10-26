@@ -4,16 +4,73 @@ import QtQuick
 import Quickshell
 import qs.core.config
 import qs.core.format
+import qs.core.panels
 import qs.core.widgets
 import qs.services
 
-// View model da aba Clima.
+// View model da aba Clima: o que o Weather recebe do lucernad, em texto para a
+// tela (a cidade, a data de hoje, os cards, os sete dias e o aviso do rodapé).
+// As datas AAAA-MM-DD viram datas locais pelo localDate; os dias se chamam
+// pela data, nunca pela posição: a previsão de ontem guardada não vira "Hoje".
 Singleton {
     id: root
 
     readonly property var locale: Qt.locale("pt_BR")
-    readonly property bool offline: Config.offline
     readonly property bool fahrenheit: Config.temperatureUnit === "f"
+
+    readonly property bool available: Web.available
+    readonly property bool hasLocation: Config.weatherLocation !== null
+    readonly property string city: String(Config.weatherLocation?.name ?? "").split(",")[0].trim()
+
+    // A data local de hoje (AAAA-MM-DD); o relógio a mantém certa depois da
+    // meia-noite. Não é readonly: os testes a põem à mão.
+    property string todayKey: dateKey(new Date())
+    // Agora, em ms, a cada minuto: refaz o updatedNote (a previsão envelhece).
+    property real now: Date.now()
+
+    readonly property string today: Format.capitalize(localDate(todayKey).toLocaleDateString(locale, "dddd, d 'de' MMMM"))
+    readonly property string sunrise: Weather.sunrise || "--:--"
+    readonly property string sunset: Weather.sunset || "--:--"
+
+    readonly property var c: Weather.current
+    readonly property bool hasData: c !== null
+    readonly property string icon: hasData ? Icons.forWeather(c.code, c.isDay) : Icons.weather
+    readonly property string temp: hasData ? temperature(c.temp) : "—"
+    readonly property string condition: hasData ? describe(c.code) : ""
+    readonly property string humidity: hasData ? `${c.humidity}%` : "—"
+    readonly property string feels: hasData ? temperature(c.feels) : "—"
+    readonly property string wind: hasData ? speed(c.wind) : "—"
+
+    readonly property var days: Array.from(Weather.daily).map(d => ({
+        label: dayLabel(d.date, todayKey),
+        date: shortDate(d.date),
+        icon: Icons.forWeather(d.code, true),
+        range: `${temperature(d.min)} / ${temperature(d.max)}`
+    }))
+
+    // O aviso do rodapé: por que o que se vê pode estar velho (ou faltar).
+    readonly property string notice: {
+        if (!Web.available)
+            return Web.unavailableNote;
+        if (Config.offline)
+            return "Modo offline: sem atualização";
+        if (!Web.online)
+            return "Sem internet: mostrando a última previsão";
+        if (Weather.state === "error")
+            return Weather.error;
+        return "";
+    }
+
+    // A hora da previsão, só quando ela está velha ou a última busca falhou.
+    readonly property string updatedNote: {
+        const at = Weather.updatedAt;
+        // Lê o `now`: refaz a cada minuto, quando a previsão envelhece.
+        if (!at || now <= 0)
+            return "";
+        if (!Weather.isStale() && Weather.state !== "error")
+            return "";
+        return `Atualizado às ${Qt.formatTime(at, "HH:mm")}`;
+    }
 
     // A Open-Meteo responde em °C e km/h; a conversão é feita aqui.
     function temperature(celsius: real): string {
@@ -23,44 +80,35 @@ Singleton {
     function speed(kmh: real): string {
         return Config.windUnit === "ms" ? `${Format.number(kmh / 3.6, 1)} m/s` : `${Math.round(kmh)} km/h`;
     }
-    readonly property bool hasLocation: Weather.location !== null
-    readonly property string place: Weather.location?.name ?? ""
-    readonly property bool loading: Weather.loading
-    readonly property string error: Weather.error
-    readonly property var c: Weather.current
-    readonly property bool hasData: c !== null
 
-    readonly property string icon: hasData ? Icons.forWeather(c.code, c.isDay) : Icons.weather
-    readonly property string temp: hasData ? temperature(c.temp) : "—"
-    readonly property string condition: hasData ? describe(c.code) : ""
-    readonly property string feels: hasData ? `Sensação de ${temperature(c.feels)}` : ""
-    readonly property string humidity: hasData ? `${c.humidity}%` : "—"
-    readonly property string wind: hasData ? speed(c.wind) : "—"
-    readonly property string rainChance: "—"
-    readonly property string updated: Weather.updatedAt ? `Atualizado às ${Qt.formatTime(Weather.updatedAt, "HH:mm")}` : ""
-
-    // Sem previsão por hora até a aba Clima nova.
-    readonly property var hourly: []
-
-    // Faixa de temperatura da semana, para desenhar as barras min–max na mesma escala.
-    readonly property real weekMin: Math.min(...Weather.daily.map(d => d.min))
-    readonly property real weekMax: Math.max(...Weather.daily.map(d => d.max))
-    readonly property var daily: Weather.daily.map((d, i) => ({
-        day: i === 0 ? "Hoje" : Format.capitalize(new Date(`${d.date}T12:00:00`).toLocaleDateString(locale, "ddd").replace(".", "")),
-        icon: Icons.forWeather(d.code, true),
-        min: temperature(d.min),
-        max: temperature(d.max),
-        rain: d.rainChance >= 20 ? `${d.rainChance}%` : "",
-        from: (d.min - weekMin) / Math.max(1, weekMax - weekMin),
-        to: (d.max - weekMin) / Math.max(1, weekMax - weekMin)
-    }))
-
-    function search(name: string): void {
-        Weather.search(name);
+    // Date → "AAAA-MM-DD" pela hora local.
+    function dateKey(date: var): string {
+        const pad = n => String(n).padStart(2, "0");
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
     }
 
-    function refresh(): void {
-        Weather.refresh();
+    // "AAAA-MM-DD" → a meia-noite local desse dia. Nunca new Date("AAAA-MM-DD"):
+    // é meia-noite UTC, que a oeste de Greenwich cai no dia anterior.
+    function localDate(date: string): var {
+        const [y, m, d] = String(date).split("-").map(Number);
+        return new Date(y, m - 1, d);
+    }
+
+    // "Hoje" pela data; senão o dia da semana abreviado: "Dom".
+    function dayLabel(date: string, today: string): string {
+        if (date === today)
+            return "Hoje";
+        return Format.capitalize(localDate(date).toLocaleDateString(locale, "ddd").replace(".", ""));
+    }
+
+    // "2026-10-25" → "25 out".
+    function shortDate(date: string): string {
+        return localDate(date).toLocaleDateString(locale, "d MMM").replace(".", "");
+    }
+
+    function openSettings(): void {
+        Config.settingsTopic = "dashboard";
+        Panels.open("settings");
     }
 
     // Código de tempo WMO → descrição.
@@ -76,5 +124,15 @@ Singleton {
             95: "Trovoadas", 96: "Trovoadas com granizo", 99: "Trovoadas com granizo forte"
         };
         return table[code] ?? "—";
+    }
+
+    Timer {
+        interval: 60000
+        running: true
+        repeat: true
+        onTriggered: {
+            root.todayKey = root.dateKey(new Date());
+            root.now = Date.now();
+        }
     }
 }

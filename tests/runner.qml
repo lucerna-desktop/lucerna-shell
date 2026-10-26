@@ -64,6 +64,7 @@ import "themeswitcher.test.js" as ThemeSwitcherTest
 import "videowallpapers.test.js" as VideoWallpapersTest
 import "web.test.js" as WebTest
 import "weather.test.js" as WeatherTest
+import "weatherstate.test.js" as WeatherStateTest
 
 ShellRoot {
     id: root
@@ -109,6 +110,7 @@ ShellRoot {
         ["media", MediaTest],
         ["session", SessionTest],
         ["weather", WeatherTest],
+        ["weatherstate", WeatherStateTest],
         ["web", WebTest],
         ["themeswitcher", ThemeSwitcherTest],
         ["lucernaclient", LucernaClientTest]
