@@ -37,6 +37,8 @@ Singleton {
     property bool searching: false
     property string searchError: ""
     property string lastQuery: ""
+    // Conta as buscas: só a resposta da última vale (repetir o texto também).
+    property int searchSeq: 0
 
     signal located(var location)
 
@@ -118,13 +120,15 @@ Singleton {
         if (query === "")
             return;
         lastQuery = query;
+        searchSeq++;
+        const seq = searchSeq;
         searching = true;
         searchError = "";
-        Web.searchCity(query, reply => searchDone(query, reply));
+        Web.searchCity(query, reply => searchDone(query, seq, reply));
     }
 
-    function searchDone(query: string, reply: var): void {
-        if (query !== lastQuery)
+    function searchDone(query: string, seq: int, reply: var): void {
+        if (seq !== searchSeq)
             return;
         searching = false;
         if (reply?.error) {

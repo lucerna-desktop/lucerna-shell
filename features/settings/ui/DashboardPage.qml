@@ -187,7 +187,19 @@ Column {
                         font.pixelSize: ThemeManager.font.normal
                         clip: true
                         text: SettingsState.vagalumeKey
-                        onEditingFinished: keyError.text = SettingsState.setVagalumeKey(text)
+                        // Grava a cada mudança válida (a chave colada não se perde); ao
+                        // perder o foco com texto inválido, mostra o erro e repõe o salvo.
+                        onTextEdited: {
+                            if (SettingsState.setVagalumeKey(text) === "")
+                                keyError.text = "";
+                        }
+                        onActiveFocusChanged: {
+                            if (activeFocus)
+                                return;
+                            keyError.text = SettingsState.setVagalumeKey(text);
+                            if (keyError.text !== "")
+                                text = SettingsState.vagalumeKey;
+                        }
 
                         Txt {
                             anchors.verticalCenter: parent.verticalCenter
@@ -355,7 +367,7 @@ Column {
                 TonalButton {
                     icon: Icons.refresh
                     text: "Atualizar agora"
-                    enabled: !SettingsState.offline
+                    enabled: !SettingsState.offline && SettingsState.webNote === ""
                     onClicked: SettingsState.refreshWeather()
                 }
             }

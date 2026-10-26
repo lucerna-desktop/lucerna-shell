@@ -21,6 +21,14 @@ Singleton {
     // Disponível é conectado e sem `error`.
     readonly property bool available: client.connected && error === ""
     readonly property bool online: available && moduleOnline
+    // O aviso de indisponível (vazio com `available`), um só para quem mostra.
+    readonly property string unavailableNote: {
+        if (available)
+            return "";
+        if (!client.connected)
+            return "Indisponível: sem conexão com o lucernad.";
+        return `Indisponível: ${error}`;
+    }
 
     // A configuração; quem usa decide (as Bindings do DashboardState).
     property bool offline: true

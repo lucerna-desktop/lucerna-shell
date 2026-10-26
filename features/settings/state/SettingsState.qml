@@ -256,13 +256,7 @@ Singleton {
     }
 
     // Vazio com o módulo de rede funcionando; senão, o porquê.
-    readonly property string webNote: {
-        if (Web.available)
-            return "";
-        if (!Web.client.connected)
-            return "Indisponível: sem conexão com o lucernad.";
-        return `Indisponível: ${Web.error}`;
-    }
+    readonly property string webNote: Web.unavailableNote
 
     function setTemperatureUnit(unit: string): void {
         Config.temperatureUnit = unit;

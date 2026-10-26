@@ -8,7 +8,7 @@ function run(t) {
     const B = t.Web;
     const C = t.Config;
 
-    const fields = ["active", "current", "daily", "sunrise", "sunset", "updatedAt", "state", "error", "location", "results", "searching", "searchError", "lastQuery"];
+    const fields = ["active", "current", "daily", "sunrise", "sunset", "updatedAt", "state", "error", "location", "results", "searching", "searchError", "lastQuery", "searchSeq"];
     const original = {
         client: W.client,
         webClient: B.client,
@@ -16,6 +16,7 @@ function run(t) {
         webOnline: B.moduleOnline,
         webRefresh: B.refreshMinutes,
         offline: C.offline,
+        weatherLocation: C.weatherLocation,
         vagalumeKey: C.vagalumeKey
     };
     for (const f of fields)
@@ -28,6 +29,7 @@ function run(t) {
             if (f !== "active")
                 W[f] = original[f];
         C.offline = original.offline;
+        C.weatherLocation = original.weatherLocation;
         C.vagalumeKey = original.vagalumeKey;
         B.error = original.webError;
         B.moduleOnline = original.webOnline;
@@ -37,7 +39,7 @@ function run(t) {
     }
 
     function restored() {
-        return W.client === original.client && B.client === original.webClient && B.error === original.webError && B.moduleOnline === original.webOnline && B.refreshMinutes === original.webRefresh && C.offline === original.offline && C.vagalumeKey === original.vagalumeKey && fields.every(f => JSON.stringify(W[f]) === JSON.stringify(original[f]));
+        return W.client === original.client && B.client === original.webClient && B.error === original.webError && B.moduleOnline === original.webOnline && B.refreshMinutes === original.webRefresh && C.offline === original.offline && JSON.stringify(C.weatherLocation) === JSON.stringify(original.weatherLocation) && C.vagalumeKey === original.vagalumeKey && fields.every(f => JSON.stringify(W[f]) === JSON.stringify(original[f]));
     }
 
     function ok(id, result) {
@@ -160,13 +162,23 @@ function run(t) {
         c.receive(ok(second, json({ results: [{ name: "Recife", countryCode: "BR", country: "Brasil", latitude: -8, longitude: -34.9 }] })));
         t.eq(W.results.map(r => r.name), ["Lisboa, PT"]);
 
+        // A mesma busca repetida: só a resposta da última vale.
         W.search("Cacau");
-        const empty = idsOf(c, "web.searchCity").filter(id => ![first[0], second, third].includes(id))[0];
+        const again1 = idsOf(c, "web.searchCity").filter(id => ![first[0], second, third].includes(id))[0];
+        W.search("Cacau");
+        const again2 = idsOf(c, "web.searchCity").filter(id => ![first[0], second, third, again1].includes(id))[0];
+        c.receive(ok(again1, json(cities)));
+        t.eq([W.results.map(r => r.name), W.searching], [["Lisboa, PT"], true], "a resposta velha da mesma busca é ignorada");
+        c.receive(ok(again2, json({ results: [] })));
+        t.eq(W.searchError, 'Não encontrei "Cacau"');
+
+        W.search("Cacau");
+        const empty = idsOf(c, "web.searchCity").filter(id => ![first[0], second, third, again1, again2].includes(id))[0];
         c.receive(ok(empty, json({ results: [] })));
         t.eq([W.results, W.searchError], [[], 'Não encontrei "Cacau"']);
 
         W.search("Cacau");
-        const bad = idsOf(c, "web.searchCity").filter(id => ![first[0], second, third, empty].includes(id))[0];
+        const bad = idsOf(c, "web.searchCity").filter(id => ![first[0], second, third, again1, again2, empty].includes(id))[0];
         c.receive(fail(bad, 1001, "Modo offline ligado: a busca de cidade usa a internet."));
         t.eq([W.results, W.searchError, W.searching], [[], "Modo offline ligado: a busca de cidade usa a internet.", false]);
     });

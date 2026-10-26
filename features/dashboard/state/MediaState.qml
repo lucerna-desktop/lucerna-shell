@@ -46,7 +46,7 @@ Singleton {
         if (Config.offline)
             return "Modo offline: a letra não é buscada";
         if (!Web.available)
-            return Web.error === "" ? "Indisponível: sem conexão com o lucernad." : `Indisponível: ${Web.error}`;
+            return Web.unavailableNote;
         // Logo depois de conectar, antes da primeira publicação: sem piscar "Sem letra".
         if (Lyrics.loading || Lyrics.state === "")
             return "Procurando a letra…";
