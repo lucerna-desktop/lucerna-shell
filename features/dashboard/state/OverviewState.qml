@@ -5,6 +5,8 @@ import Quickshell
 import Quickshell.Io
 import qs.core.config
 import qs.core.format
+import qs.core.input
+import qs.core.nightlight
 import qs.core.panels
 import qs.core.widgets
 import qs.services
@@ -137,5 +139,74 @@ Singleton {
 
     function openPower(): void {
         Panels.open("power");
+    }
+
+    // Barra de ações rápidas, embaixo da aba. Os apps integrados ao Lucerna
+    // entram nela (à esquerda, depois destas ações) quando existirem.
+    //
+    // À esquerda, ações de um clique: { id, label (a dica e o nome acessível),
+    // icon, active (aceso) }. `has`: shot e record (o grim e o wf-recorder) e
+    // recording (gravando agora: o botão vira "parar"). O que não existe some.
+    function actionsFor(has: var): var {
+        const icon = id => InputActions.find(id)?.icon ?? "";
+        return [
+            ...(has.shot ? [{ id: "capture", label: "Captura de tela", icon: icon("capture"), active: false }] : []),
+            ...(has.record ? [{ id: "record", label: has.recording ? "Parar a gravação" : "Gravar a tela", icon: icon("record"), active: has.recording }] : []),
+            { id: "clipboard", label: "Área de transferência", icon: icon("clipboard"), active: false },
+            { id: "themes", label: "Papéis de parede e temas", icon: icon("themes"), active: false },
+            { id: "overview", label: "Visão geral dos workspaces", icon: icon("overview"), active: false }
+        ];
+    }
+
+    readonly property var quickActions: actionsFor({ shot: Capture.canShoot, record: Capture.canRecord, recording: Capture.recording })
+
+    // Cada ação abre o painel dela, que é modal: o painel superior fecha
+    // junto, como pelos atalhos. A captura abre na seleção de área; a
+    // gravação, no modo vídeo (gravando, para).
+    function runAction(id: string): void {
+        switch (id) {
+        case "capture":
+            Config.captureMode = "shot";
+            Config.captureTarget = "area";
+            Panels.open("capture");
+            break;
+        case "record":
+            if (Capture.recording) {
+                Capture.stopRecording();
+            } else {
+                Config.captureMode = "record";
+                Panels.open("capture");
+            }
+            break;
+        case "clipboard":
+        case "themes":
+        case "overview":
+            Panels.open(id);
+            break;
+        }
+    }
+
+    // À direita, chaves: { id, label, icon, on (acesa) }. `has`: nightlight
+    // (o hyprsunset) e awake (a ociosidade do shell, que a cafeína segura).
+    function togglesFor(has: var): var {
+        return [
+            ...(has.nightlight ? [{ id: "nightlight", label: "Luz noturna", icon: "nightlight", on: NightSchedule.on }] : []),
+            { id: "dnd", label: "Não perturbe", icon: Icons.bellSleep, on: Config.doNotDisturb },
+            { id: "offline", label: "Modo offline", icon: "cloud_off", on: Config.offline },
+            ...(has.awake ? [{ id: "awake", label: "Cafeína: não apagar nem bloquear a tela", icon: "coffee", on: Config.idleInhibit }] : [])
+        ];
+    }
+
+    readonly property var quickToggles: togglesFor({ nightlight: NightLight.available, awake: Config.idleEnabled })
+
+    function toggle(id: string): void {
+        if (id === "nightlight")
+            NightSchedule.setOn(!NightSchedule.on);
+        else if (id === "dnd")
+            Config.doNotDisturb = !Config.doNotDisturb;
+        else if (id === "offline")
+            Config.offline = !Config.offline;
+        else if (id === "awake")
+            Config.idleInhibit = !Config.idleInhibit;
     }
 }
