@@ -224,15 +224,44 @@ Singleton {
     }
 
     readonly property string weatherPlace: Config.weatherLocation?.name ?? ""
-    readonly property bool weatherLoading: Weather.loading
-    readonly property string weatherError: Weather.error
+    readonly property var cityResults: Weather.results
+    readonly property bool citySearching: Weather.searching
+    readonly property string citySearchError: Weather.searchError
     readonly property string temperatureUnit: Config.temperatureUnit
     readonly property string windUnit: Config.windUnit
     readonly property int weatherRefresh: Config.weatherRefresh
 
-    // A busca emite `located`, que o painel superior salva na config.
     function searchCity(name: string): void {
         Weather.search(name);
+    }
+
+    // A escolha emite `located`, que o DashboardState salva na config.
+    function chooseCity(index: int): void {
+        Weather.choose(index);
+    }
+
+    function refreshWeather(): void {
+        Weather.refresh();
+    }
+
+    readonly property string vagalumeKey: Config.vagalumeKey
+
+    // Grava a chave do Vagalume (aparada; vazia apaga) e devolve o erro, ou "".
+    function setVagalumeKey(key: string): string {
+        const value = key.trim();
+        if (value !== "" && !/^[A-Za-z0-9_-]{1,128}$/.test(value))
+            return "A chave só tem letras, números, - e _ (até 128).";
+        Config.vagalumeKey = value;
+        return "";
+    }
+
+    // Vazio com o módulo de rede funcionando; senão, o porquê.
+    readonly property string webNote: {
+        if (Web.available)
+            return "";
+        if (!Web.client.connected)
+            return "Indisponível: sem conexão com o lucernad.";
+        return `Indisponível: ${Web.error}`;
     }
 
     function setTemperatureUnit(unit: string): void {

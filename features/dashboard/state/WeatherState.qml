@@ -36,20 +36,17 @@ Singleton {
     readonly property string feels: hasData ? `Sensação de ${temperature(c.feels)}` : ""
     readonly property string humidity: hasData ? `${c.humidity}%` : "—"
     readonly property string wind: hasData ? speed(c.wind) : "—"
-    readonly property string rainChance: hasData ? `${c.rainChance}%` : "—"
+    readonly property string rainChance: "—"
     readonly property string updated: Weather.updatedAt ? `Atualizado às ${Qt.formatTime(Weather.updatedAt, "HH:mm")}` : ""
 
-    readonly property var hourly: Weather.hourly.map(h => ({
-        time: Qt.formatTime(h.time, "HH'h'"),
-        icon: Icons.forWeather(h.code, h.isDay),
-        temp: temperature(h.temp)
-    }))
+    // Sem previsão por hora até a aba Clima nova.
+    readonly property var hourly: []
 
     // Faixa de temperatura da semana, para desenhar as barras min–max na mesma escala.
     readonly property real weekMin: Math.min(...Weather.daily.map(d => d.min))
     readonly property real weekMax: Math.max(...Weather.daily.map(d => d.max))
     readonly property var daily: Weather.daily.map((d, i) => ({
-        day: i === 0 ? "Hoje" : Format.capitalize(d.date.toLocaleDateString(locale, "ddd").replace(".", "")),
+        day: i === 0 ? "Hoje" : Format.capitalize(new Date(`${d.date}T12:00:00`).toLocaleDateString(locale, "ddd").replace(".", "")),
         icon: Icons.forWeather(d.code, true),
         min: temperature(d.min),
         max: temperature(d.max),

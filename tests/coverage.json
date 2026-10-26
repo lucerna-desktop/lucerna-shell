@@ -24,7 +24,7 @@
         "services/Spectrum.qml": ["pairMax", "wantedTopics", "sync", "playerParam", "configure", "apply", "applyBands", "applyStatus", "connectionChanged"],
         "services/SystemStats.qml": ["wantedTopics", "sync", "configure", "apply", "applyInfo", "applyStats", "applyDisks", "applyGpus", "applyStatus", "connectionChanged", "machineText"],
         "services/VideoWallpapers.qml": ["isVideo", "targetFor", "keyOf", "parseKey", "isQueued", "isPreparing", "forget"],
-        "services/Weather.qml": ["isStale"],
+        "services/Weather.qml": ["wantedTopics", "sync", "apply", "applyWeather", "toCurrent", "toDay", "clock", "clear", "connectionChanged", "search", "searchDone", "toResult", "choose", "refresh", "isStale"],
         "services/Web.qml": ["wantedTopics", "sync", "configureParams", "configure", "apply", "applyStatus", "connectionChanged", "refresh", "searchCity"]
     },
     "exceções": {

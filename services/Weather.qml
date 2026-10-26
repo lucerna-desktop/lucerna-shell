@@ -2,144 +2,204 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
+import qs.services
 
-// Previsão do tempo pela Open-Meteo (open-meteo.com): gratuita, sem chave, via
-// XMLHttpRequest. A localização vem de quem usa o serviço (`location`), que
-// também guarda o resultado de `search()`. Atualiza a cada 30 min enquanto `active`.
+// O clima, vindo do módulo web do lucernad (o tópico web.weather): o daemon
+// busca (Open-Meteo), guarda e publica; aqui só o que chega, a busca de cidade
+// (pelo Web) e a escolha, que o DashboardState salva na config pelo `located`.
+// A cidade e o intervalo quem manda é o Web, no web.configure.
 Singleton {
     id: root
 
-    // { name, latitude, longitude } ou null
-    property var location: null
+    // Não é readonly: os testes trocam por um cliente próprio.
+    property var client: Lucernad.client
+    // Quem usa decide (o DashboardState): a aba Painel ou Clima à mostra.
     property bool active: false
-    // Falso no modo offline: nenhuma requisição sai.
-    property bool online: true
 
-    property var current: null      // { temp, feels, humidity, wind, code, isDay, rainChance }
-    property var hourly: []         // [{ time: Date, temp, code, isDay }] próximas 12 h
-    property var daily: []          // [{ date: Date, max, min, code, rainChance }] 5 dias
-    property bool loading: false
-    property string error: ""
+    // { temp, feels, humidity, wind, code, isDay } ou null
+    property var current: null
+    // [{ date: "AAAA-MM-DD", max, min, code, rainChance }], até 7 dias
+    property var daily: []
+    // "HH:MM" do dia de hoje na cidade; "" sem dado.
+    property string sunrise: ""
+    property string sunset: ""
     property var updatedAt: null
+    // "none", "loading", "ready" ou "error" ("" sem nada recebido).
+    property string state: ""
+    property string error: ""
+    // { name, latitude, longitude } ou null: a do tópico.
+    property var location: null
+    readonly property bool loading: state === "loading"
 
-    property int refreshInterval: 30 * 60 * 1000
+    // A busca de cidade: [{ name, label, latitude, longitude }].
+    property var results: []
+    property bool searching: false
+    property string searchError: ""
+    property string lastQuery: ""
 
     signal located(var location)
 
-    function get(url: string, done: var): void {
-        const xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = () => {
-            if (xhr.readyState !== XMLHttpRequest.DONE)
-                return;
-            try {
-                done(xhr.status === 200 ? JSON.parse(xhr.responseText) : null);
-            } catch (e) {
-                done(null);
-            }
-        };
-        xhr.open("GET", url);
-        xhr.send();
+    function wantedTopics(active: bool): var {
+        return active ? ["web.weather"] : [];
     }
 
-    // Procura a cidade pelo nome e, se achar, emite `located` e atualiza.
-    function search(name: string): void {
-        if (!name.trim())
+    function sync(): void {
+        client.want("weather", wantedTopics(active));
+    }
+
+    function toCurrent(c: var): var {
+        return {
+            temp: c.temperature,
+            feels: c.apparent,
+            humidity: c.humidity,
+            wind: c.wind,
+            code: c.code,
+            isDay: c.isDay === true
+        };
+    }
+
+    function toDay(d: var): var {
+        return {
+            date: String(d.date ?? ""),
+            max: d.max,
+            min: d.min,
+            code: d.code,
+            rainChance: d.precipitation ?? 0
+        };
+    }
+
+    // "2026-10-24T05:41" → "05:41"; qualquer outra coisa → "".
+    function clock(iso: string): string {
+        const m = /T(\d{2}:\d{2})/.exec(String(iso ?? ""));
+        return m ? m[1] : "";
+    }
+
+    // Um estado recebido do daemon; `null` e tópico desconhecido não mudam nada.
+    function apply(topic: string, data: var): void {
+        if (data === null || data === undefined)
             return;
-        if (!online) {
-            error = "Modo offline ligado";
+        if (topic === "web.weather")
+            applyWeather(data);
+    }
+
+    function applyWeather(data: var): void {
+        current = data.current ? toCurrent(data.current) : null;
+        daily = Array.from(data.daily ?? []).map(d => toDay(d));
+        sunrise = clock(data.sunrise);
+        sunset = clock(data.sunset);
+        updatedAt = typeof data.updatedAt === "number" ? new Date(data.updatedAt * 1000) : null;
+        state = String(data.state ?? "");
+        error = data.error ? String(data.error) : "";
+        location = data.location ?? null;
+    }
+
+    function clear(): void {
+        current = null;
+        daily = [];
+        sunrise = "";
+        sunset = "";
+        updatedAt = null;
+        state = "";
+        error = "";
+        location = null;
+    }
+
+    // A conexão mudou: ao cair, o clima some; nos dois casos a assinatura vai de novo.
+    function connectionChanged(connected: bool): void {
+        if (!connected)
+            clear();
+        sync();
+    }
+
+    // Procura a cidade pelo nome; a resposta de uma busca que não é a última se perde.
+    function search(name: string): void {
+        const query = name.trim();
+        if (query === "")
+            return;
+        lastQuery = query;
+        searching = true;
+        searchError = "";
+        Web.searchCity(query, reply => searchDone(query, reply));
+    }
+
+    function searchDone(query: string, reply: var): void {
+        if (query !== lastQuery)
+            return;
+        searching = false;
+        if (reply?.error) {
+            results = [];
+            searchError = String(reply.error.message ?? "");
             return;
         }
-        loading = true;
-        error = "";
-        get(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name.trim())}&count=1&language=pt&format=json`, data => {
-            const r = data?.results?.[0];
-            if (!r) {
-                loading = false;
-                error = data ? `Não encontrei "${name}"` : "Sem conexão com a Open-Meteo";
-                return;
-            }
-            const place = [r.name, r.admin1, r.country_code].filter(x => x).join(", ");
-            located({ name: place, latitude: r.latitude, longitude: r.longitude });
+        results = Array.from(reply?.result?.results ?? []).map(r => toResult(r));
+        searchError = results.length === 0 ? `Não encontrei "${query}"` : "";
+    }
+
+    function toResult(r: var): var {
+        return {
+            name: [r.name, r.state, r.countryCode].filter(x => x).join(", "),
+            label: [r.name, r.state, r.country].filter(x => x).join(" · "),
+            latitude: Number(r.latitude),
+            longitude: Number(r.longitude)
+        };
+    }
+
+    // Escolhe um resultado: emite `located` e devolve o nome ("" fora da lista).
+    function choose(index: int): string {
+        const r = results[index];
+        if (!r)
+            return "";
+        located({
+            name: r.name,
+            latitude: r.latitude,
+            longitude: r.longitude
         });
+        results = [];
+        return r.name;
     }
 
     function refresh(): void {
-        if (!location || !online)
-            return;
-        loading = true;
-        error = "";
-        const params = [
-            `latitude=${location.latitude}`, `longitude=${location.longitude}`,
-            "current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day",
-            "hourly=temperature_2m,weather_code,is_day,precipitation_probability",
-            "daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
-            "timezone=auto", "forecast_days=5"
-        ].join("&");
-        get(`https://api.open-meteo.com/v1/forecast?${params}`, data => {
-            loading = false;
-            if (!data?.current) {
-                error = "Sem conexão com a Open-Meteo";
-                return;
-            }
-            const c = data.current;
-            const h = data.hourly;
-            const nowIndex = Math.max(0, h.time.findIndex(t => new Date(t) > new Date(c.time)));
-            current = {
-                temp: c.temperature_2m,
-                feels: c.apparent_temperature,
-                humidity: c.relative_humidity_2m,
-                wind: c.wind_speed_10m,
-                code: c.weather_code,
-                isDay: c.is_day === 1,
-                rainChance: h.precipitation_probability?.[nowIndex] ?? 0
-            };
-            // A partir da próxima hora cheia.
-            hourly = h.time.slice(nowIndex, nowIndex + 12).map((t, i) => ({
-                time: new Date(t),
-                temp: h.temperature_2m[nowIndex + i],
-                code: h.weather_code[nowIndex + i],
-                isDay: h.is_day[nowIndex + i] === 1
-            }));
-            const d = data.daily;
-            daily = d.time.map((t, i) => ({
-                date: new Date(`${t}T12:00:00`),
-                max: d.temperature_2m_max[i],
-                min: d.temperature_2m_min[i],
-                code: d.weather_code[i],
-                rainChance: d.precipitation_probability_max?.[i] ?? 0
-            }));
-            updatedAt = new Date();
-        });
+        Web.refresh();
     }
 
+    // Velha: sem previsão ou mais antiga que o intervalo de atualização.
     function isStale(): bool {
-        return !updatedAt || Date.now() - updatedAt.getTime() > refreshInterval;
+        return !updatedAt || Date.now() - updatedAt.getTime() > Web.refreshMinutes * 60 * 1000;
     }
 
-    onLocationChanged: {
-        current = null;
-        hourly = [];
-        daily = [];
-        updatedAt = null;
-        if (active)
-            refresh();
+    onActiveChanged: sync()
+
+    Connections {
+        target: root.client
+
+        function onReceived(topic: string, data: var): void {
+            root.apply(topic, data);
+        }
+
+        function onConnectedChanged(): void {
+            root.connectionChanged(root.client.connected);
+        }
     }
 
-    onActiveChanged: {
-        if (active && isStale())
-            refresh();
+    IpcHandler {
+        target: "weather"
+
+        // Busca cidades pelo nome (o resultado fica nas configurações).
+        function search(query: string): void {
+            root.search(query);
+        }
+
+        // Escolhe a cidade da última busca; devolve o nome ("" sem resultado).
+        function choose(index: int): string {
+            return root.choose(index);
+        }
+
+        // Atualiza o clima agora.
+        function refresh(): void {
+            root.refresh();
+        }
     }
 
-    onOnlineChanged: {
-        error = "";
-        if (online && active && isStale())
-            refresh();
-    }
-
-    Timer {
-        running: root.active && root.online && root.location !== null
-        repeat: true
-        interval: root.refreshInterval
-        onTriggered: root.refresh()
-    }
+    Component.onCompleted: sync()
 }

@@ -106,18 +106,6 @@ Singleton {
         value: Config.showGpu
     }
 
-    Binding {
-        target: Weather
-        property: "online"
-        value: !Config.offline
-    }
-
-    Binding {
-        target: Weather
-        property: "refreshInterval"
-        value: Config.weatherRefresh * 60 * 1000
-    }
-
     // Offline, a letra guardada continua aparecendo: o daemon é que não vai à rede.
     Binding {
         target: Lyrics
@@ -182,13 +170,7 @@ Singleton {
         value: root.isShowing("overview") || root.isShowing("weather")
     }
 
-    // A cidade do clima é salva na config e repassada ao serviço.
-    Binding {
-        target: Weather
-        property: "location"
-        value: Config.weatherLocation
-    }
-
+    // A cidade escolhida é salva na config; o Web a manda ao lucernad.
     Connections {
         target: Weather
 

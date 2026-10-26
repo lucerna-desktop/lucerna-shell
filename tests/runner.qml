@@ -24,6 +24,7 @@ import qs.features.central.state
 import qs.features.clipboard.state
 import qs.features.dashboard.state
 import qs.features.notifications.state
+import qs.features.settings.state
 import qs.features.themeSwitcher.state
 import qs.services
 import qs.services.lucerna
@@ -171,6 +172,26 @@ ShellRoot {
         return lucernaClientComponent.createObject(root);
     }
 
+    // O web.weather do Formato, com 7 dias; um objeto novo a cada chamada.
+    function weatherSample(): var {
+        const codes = [95, 3, 2, 1, 0, 61, 80];
+        return {
+            location: { name: "Cacaulândia, Rondônia, BR", latitude: -10.3375, longitude: -62.8986 },
+            state: "ready",
+            updatedAt: 1792847400,
+            current: { temperature: 31.2, apparent: 35.0, humidity: 58, wind: 7.6, code: 2, isDay: true },
+            daily: codes.map((code, i) => ({
+                date: `2026-10-${24 + i}`,
+                code: code,
+                min: i === 0 ? 22.1 : 21 + i,
+                max: i === 0 ? 33.4 : 30 + i,
+                precipitation: i === 0 ? 80 : 10 * i
+            })),
+            sunrise: "2026-10-24T05:41",
+            sunset: "2026-10-24T18:03"
+        };
+    }
+
     function enums(): var {
         return {
             wifiOpen: QsNet.WifiSecurityType.Open,
@@ -234,6 +255,9 @@ ShellRoot {
             get Weather() { return Weather; },
             get Web() { return Web; },
             get MediaState() { return MediaState; },
+            get SettingsState() { return SettingsState; },
+            get WeatherState() { return WeatherState; },
+            weatherSample: root.weatherSample,
             get ThemeSwitcherState() { return ThemeSwitcherState; }
         };
     }

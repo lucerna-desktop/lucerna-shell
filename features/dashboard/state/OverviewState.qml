@@ -103,7 +103,7 @@ Singleton {
     readonly property bool hasWeather: Weather.current !== null
     readonly property string weatherIcon: hasWeather ? Icons.forWeather(Weather.current.code, Weather.current.isDay) : Icons.weather
     readonly property string weatherTemp: hasWeather ? WeatherState.temperature(Weather.current.temp) : "—"
-    readonly property string weatherText: Config.offline ? "Modo offline" : hasWeather ? WeatherState.describe(Weather.current.code) : (Weather.location ? "Carregando…" : "Escolha a cidade na aba Clima")
+    readonly property string weatherText: Config.offline ? "Modo offline" : !Web.available ? "Indisponível" : hasWeather ? WeatherState.describe(Weather.current.code) : (Config.weatherLocation ? "Carregando…" : "Escolha a cidade nas configurações")
     readonly property string weatherPlace: Weather.location?.name.split(",")[0] ?? ""
 
     readonly property bool hasMedia: Media.available
