@@ -123,11 +123,11 @@ Item {
         // (2) O agora: o ícone grande, a temperatura e a condição.
         Surface {
             Layout.fillWidth: true
-            implicitHeight: now.implicitHeight + ThemeManager.spacing.large * 2
+            implicitHeight: nowRow.implicitHeight + ThemeManager.spacing.large * 2
             radius: ThemeManager.radius.large * 2
 
             RowLayout {
-                id: now
+                id: nowRow
 
                 anchors.centerIn: parent
                 spacing: ThemeManager.spacing.large + ThemeManager.spacing.small

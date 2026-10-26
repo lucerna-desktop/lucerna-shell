@@ -58,6 +58,8 @@ Singleton {
             return "Sem internet: mostrando a última previsão";
         if (Weather.state === "error")
             return Weather.error;
+        if (Weather.state === "loading" && !hasData)
+            return "Buscando a previsão…";
         return "";
     }
 
