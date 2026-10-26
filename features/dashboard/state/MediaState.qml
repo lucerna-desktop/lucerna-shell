@@ -34,7 +34,6 @@ Singleton {
 
     // Letra
     readonly property bool lyricsEnabled: Config.lyricsEnabled
-    readonly property bool offline: Config.offline
     readonly property var lyrics: Lyrics.lines
     readonly property bool lyricsLoading: Lyrics.loading
     readonly property bool lyricsSynced: Lyrics.synced
@@ -48,7 +47,8 @@ Singleton {
             return "Modo offline: a letra não é buscada";
         if (!Web.available)
             return Web.error === "" ? "Indisponível: sem conexão com o lucernad." : `Indisponível: ${Web.error}`;
-        if (Lyrics.loading)
+        // Logo depois de conectar, antes da primeira publicação: sem piscar "Sem letra".
+        if (Lyrics.loading || Lyrics.state === "")
             return "Procurando a letra…";
         if (Lyrics.error !== "")
             return Lyrics.error;

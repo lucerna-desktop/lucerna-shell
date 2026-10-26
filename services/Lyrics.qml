@@ -55,8 +55,8 @@ Singleton {
 
     function toLine(l: var): var {
         return {
-            time: typeof l.time === "number" ? l.time : -1,
-            text: String(l.text ?? "")
+            time: typeof l?.time === "number" ? l?.time : -1,
+            text: String(l?.text ?? "")
         };
     }
 

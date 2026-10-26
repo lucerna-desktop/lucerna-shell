@@ -58,8 +58,9 @@ Singleton {
         };
     }
 
-    // Só com a conexão feita; vem antes do sync(), para o daemon ter o
-    // configure antes do assinante.
+    // Só com a conexão feita. O connectionChanged chama o sync() antes; o que
+    // importa é o configure chegar ao daemon antes do web.track (o Lyrics só o
+    // manda depois do `configured`).
     function configure(): void {
         if (client.connected)
             client.call("web.configure", configureParams(), null);

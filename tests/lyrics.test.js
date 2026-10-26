@@ -16,10 +16,14 @@ function run(t) {
         offline: C.offline,
         webError: W.error
     };
+    const fields = ["lines", "synced", "state", "source", "url", "error", "key"];
+    for (const f of fields)
+        original[f] = L[f];
 
     function restore() {
         L.active = original.active;
-        L.clear();
+        for (const f of fields)
+            L[f] = original[f];
         C.offline = original.offline;
         W.error = original.webError;
         L.client = original.client;
@@ -27,7 +31,7 @@ function run(t) {
     }
 
     function restored() {
-        return L.client === original.client && W.client === original.webClient && L.active === original.active && C.offline === original.offline && W.error === original.webError && L.lines.length === 0 && L.state === "";
+        return L.client === original.client && W.client === original.webClient && L.active === original.active && C.offline === original.offline && W.error === original.webError && fields.every(f => JSON.stringify(L[f]) === JSON.stringify(original[f]));
     }
 
     function ok(id, result) {
@@ -44,11 +48,6 @@ function run(t) {
 
     function idsOf(c, method) {
         return ids(c).filter(id => c.pending[id].method === method);
-    }
-
-    function last(c, method) {
-        const list = idsOf(c, method);
-        return list.length ? Object.assign({ id: list[list.length - 1] }, c.pending[list[list.length - 1]]) : null;
     }
 
     function hello(topics) {
@@ -146,6 +145,8 @@ function run(t) {
         t.eq(M.lyricsNote, "Modo offline: a letra não é buscada");
         C.offline = false;
         W.error = "";
+        L.clear();
+        t.eq(M.lyricsNote, "Procurando a letra…", "conectado e antes da primeira publicação, sem piscar \"Sem letra\"");
         c.received("web.lyrics", lyrics({ key: "k", state: "searching", synced: false, lines: [], source: "" }));
         t.eq(M.lyricsNote, "Procurando a letra…");
         c.received("web.lyrics", lyrics({ key: "k", state: "none", synced: false, lines: [], source: "" }));
@@ -159,6 +160,12 @@ function run(t) {
         t.eq(M.lyricsNote, "");
         c.lost();
         t.eq(M.lyricsNote, "Indisponível: sem conexão com o lucernad.");
+    });
+
+    withClient("lyrics: uma linha nula não quebra", c => {
+        t.eq(L.toLine(null), { time: -1, text: "" });
+        c.received("web.lyrics", lyrics({ key: "k", state: "found", synced: true, lines: [null, { time: 1, text: "a" }], source: "lrclib" }));
+        t.eq(L.lines, [{ time: -1, text: "" }, { time: 1, text: "a" }]);
     });
 
     withClient("lyrics: null e tópico desconhecido não mudam nada", c => {
