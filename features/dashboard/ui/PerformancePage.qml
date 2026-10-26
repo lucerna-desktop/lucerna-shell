@@ -135,7 +135,7 @@ Item {
             Surface {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.preferredHeight: 190
+                Layout.preferredHeight: 179
                 clip: true
 
                 // O título no padrão dos outros cards (o do GaugeCard e do StatCard).

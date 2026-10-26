@@ -16,7 +16,7 @@ Surface {
     property string label: ""
     // O mesmo tamanho na memória e no disco: o título, o anel e o rótulo
     // alinhados entre os dois cards.
-    property real gaugeSize: 124
+    property real gaugeSize: 109
     property real thickness: 9
     property real numberSize: ThemeManager.font.large + 6
     property bool clickable: false
