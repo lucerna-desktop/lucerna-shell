@@ -6,18 +6,19 @@ import qs.core.theme
 import qs.core.widgets
 import qs.features.dashboard.state
 
-// Aba Clima, no desenho do Caelestia: a cidade e o dia com o nascer e o pôr do
-// sol, o card grande do agora, umidade, sensação e vento, e os sete dias. A
-// cidade se escolhe nas configurações; sem o lucernad, só o motivo.
+// Aba Clima, compacta, na altura da Mídia: um card do agora (o tempo e a
+// temperatura; a cidade, o dia, o aviso e o sol; umidade, sensação e vento) e
+// os sete dias embaixo. A cidade se escolhe nas configurações; sem o
+// lucernad, só o motivo.
 Item {
     id: root
 
     readonly property int mode: !WeatherState.available ? 0 : !WeatherState.hasLocation ? 1 : 2
 
-    // O ícone grande da linha do topo e dos dias; o do agora é o triplo.
-    readonly property int bigIcon: ThemeManager.font.large * 2
+    // A altura da aba com dados: a mesma da Mídia.
+    readonly property int pageHeight: 300
 
-    implicitHeight: mode === 0 ? unavailable.implicitHeight : mode === 1 ? noCity.implicitHeight : layout.implicitHeight
+    implicitHeight: mode === 0 ? unavailable.implicitHeight : mode === 1 ? noCity.implicitHeight : pageHeight
 
     // Sem o lucernad (ou com o módulo de rede fora): a forma com o motivo.
     EmptyState {
@@ -79,120 +80,130 @@ Item {
 
         visible: root.mode === 2
         width: parent.width
+        // A altura da Mídia: o card do agora em cima, os dias no resto.
+        height: root.pageHeight
         spacing: ThemeManager.spacing.normal
 
-        // (1) A cidade e o dia; o nascer e o pôr do sol à direita.
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.leftMargin: ThemeManager.spacing.large
-            Layout.rightMargin: ThemeManager.spacing.large
-            spacing: ThemeManager.spacing.large
-
-            Column {
-                Layout.fillWidth: true
-                spacing: 2
-
-                Txt {
-                    width: parent.width
-                    text: WeatherState.city
-                    font.pixelSize: ThemeManager.font.large + 8
-                    font.weight: Font.DemiBold
-                }
-
-                Txt {
-                    width: parent.width
-                    text: WeatherState.today
-                    muted: true
-                    font.pixelSize: ThemeManager.font.small
-                }
-            }
-
-            SunStat {
-                icon: Icons.sunrise
-                label: "Nascer do sol"
-                value: WeatherState.sunrise
-            }
-
-            SunStat {
-                icon: Icons.sunset
-                label: "Pôr do sol"
-                value: WeatherState.sunset
-            }
-        }
-
-        // (2) O agora: o ícone grande, a temperatura e a condição.
+        // (1) O agora: o tempo e a temperatura; a cidade, o dia, o aviso e o
+        // sol; umidade, sensação e vento.
         Surface {
             Layout.fillWidth: true
-            implicitHeight: nowRow.implicitHeight + ThemeManager.spacing.large * 2
-            radius: ThemeManager.radius.large * 2
+            Layout.preferredHeight: 140
+            radius: ThemeManager.radius.large
 
             RowLayout {
-                id: nowRow
-
-                anchors.centerIn: parent
+                anchors.fill: parent
+                anchors.leftMargin: ThemeManager.spacing.large + ThemeManager.spacing.tiny
+                anchors.rightMargin: ThemeManager.spacing.large + ThemeManager.spacing.tiny
                 spacing: ThemeManager.spacing.large + ThemeManager.spacing.small
 
-                Icon {
+                Row {
                     Layout.alignment: Qt.AlignVCenter
-                    icon: WeatherState.icon
-                    filled: true
-                    size: root.bigIcon * 3
-                    color: ThemeManager.colors.accent
+                    spacing: ThemeManager.spacing.large - ThemeManager.spacing.tiny
+
+                    Icon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        icon: WeatherState.icon
+                        filled: true
+                        size: 76
+                        color: ThemeManager.colors.accent
+                    }
+
+                    Column {
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        Txt {
+                            text: WeatherState.temp
+                            font.pixelSize: ThemeManager.font.huge + 4
+                            font.weight: Font.Medium
+                        }
+
+                        Txt {
+                            leftPadding: 2
+                            text: WeatherState.condition
+                            muted: true
+                        }
+                    }
+                }
+
+                Column {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: ThemeManager.spacing.small + 2
+
+                    Column {
+                        width: parent.width
+                        spacing: 2
+
+                        Txt {
+                            width: parent.width
+                            text: WeatherState.city
+                            font.pixelSize: ThemeManager.font.large + 4
+                            font.weight: Font.DemiBold
+                        }
+
+                        Txt {
+                            width: parent.width
+                            text: WeatherState.today
+                            muted: true
+                            font.pixelSize: ThemeManager.font.small
+                        }
+
+                        // O aviso (ou a hora da previsão velha), quando há.
+                        Txt {
+                            width: parent.width
+                            visible: text !== ""
+                            text: WeatherState.notice || WeatherState.updatedNote
+                            faint: true
+                            font.pixelSize: ThemeManager.font.small
+                        }
+                    }
+
+                    Row {
+                        spacing: ThemeManager.spacing.large - 2
+
+                        SunStat {
+                            icon: Icons.sunrise
+                            value: WeatherState.sunrise
+                        }
+
+                        SunStat {
+                            icon: Icons.sunset
+                            value: WeatherState.sunset
+                        }
+                    }
                 }
 
                 Column {
                     Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredWidth: 170
+                    spacing: ThemeManager.spacing.small
 
-                    Txt {
-                        text: WeatherState.temp
-                        font.pixelSize: ThemeManager.font.huge + 12
-                        font.weight: Font.Medium
+                    DetailRow {
+                        icon: Icons.humidity
+                        label: "Umidade"
+                        value: WeatherState.humidity
                     }
 
-                    Txt {
-                        leftPadding: 2
-                        text: WeatherState.condition
-                        muted: true
+                    DetailRow {
+                        icon: Icons.temperature
+                        label: "Sensação"
+                        value: WeatherState.feels
+                    }
+
+                    DetailRow {
+                        icon: Icons.wind
+                        label: "Vento"
+                        value: WeatherState.wind
                     }
                 }
             }
         }
 
-        // (3) Umidade, sensação e vento.
+        // (2) Os sete dias, no resto da altura.
         RowLayout {
             Layout.fillWidth: true
-            spacing: ThemeManager.spacing.normal
-
-            DetailCard {
-                icon: Icons.humidity
-                label: "Umidade"
-                value: WeatherState.humidity
-            }
-
-            DetailCard {
-                icon: Icons.temperature
-                label: "Sensação"
-                value: WeatherState.feels
-            }
-
-            DetailCard {
-                icon: Icons.wind
-                label: "Vento"
-                value: WeatherState.wind
-            }
-        }
-
-        // (4) Os sete dias.
-        Txt {
-            Layout.topMargin: ThemeManager.spacing.tiny
-            Layout.leftMargin: ThemeManager.spacing.tiny
-            visible: WeatherState.days.length > 0
-            text: "Previsão de 7 dias"
-            font.weight: Font.DemiBold
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
+            Layout.fillHeight: true
             visible: WeatherState.days.length > 0
             spacing: ThemeManager.spacing.small
 
@@ -205,16 +216,14 @@ Item {
                     required property var modelData
 
                     Layout.fillWidth: true
+                    Layout.fillHeight: true
                     Layout.preferredWidth: 1
-                    implicitHeight: dayColumn.implicitHeight + ThemeManager.spacing.normal * 2
                     radius: ThemeManager.radius.large + ThemeManager.radius.small
 
                     Column {
-                        id: dayColumn
-
                         anchors.centerIn: parent
                         width: parent.width - ThemeManager.spacing.small
-                        spacing: ThemeManager.spacing.tiny + 2
+                        spacing: ThemeManager.spacing.tiny + 1
 
                         Txt {
                             width: parent.width
@@ -236,7 +245,7 @@ Item {
                             anchors.horizontalCenter: parent.horizontalCenter
                             icon: day.modelData.icon
                             filled: true
-                            size: root.bigIcon
+                            size: 28
                         }
 
                         Txt {
@@ -251,14 +260,10 @@ Item {
             }
         }
 
-        // (5) O rodapé: só o aviso, quando há o que dizer.
-        Txt {
-            Layout.fillWidth: true
-            Layout.leftMargin: ThemeManager.spacing.tiny
-            visible: text !== ""
-            text: WeatherState.notice || WeatherState.updatedNote
-            faint: true
-            font.pixelSize: ThemeManager.font.small
+        // Sem os dias ainda: o espaço fica, para a altura não pular.
+        Item {
+            Layout.fillHeight: true
+            visible: WeatherState.days.length === 0
         }
     }
 
@@ -266,72 +271,50 @@ Item {
         id: sun
 
         property string icon
-        property string label
         property string value
 
-        spacing: ThemeManager.spacing.small + 2
+        spacing: ThemeManager.spacing.small - 2
 
         Icon {
             anchors.verticalCenter: parent.verticalCenter
             icon: sun.icon
-            size: root.bigIcon
+            size: 18
             color: ThemeManager.colors.accent
         }
 
-        Column {
+        Txt {
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
-
-            Txt {
-                text: sun.label
-                muted: true
-                font.pixelSize: ThemeManager.font.small
-            }
-
-            Txt {
-                text: sun.value
-                font.weight: Font.DemiBold
-            }
+            text: sun.value
+            font.pixelSize: ThemeManager.font.small + 1
         }
     }
 
-    component DetailCard: Surface {
+    component DetailRow: RowLayout {
         id: detail
 
         property string icon
         property string label
         property string value
 
-        Layout.fillWidth: true
-        Layout.preferredWidth: 1
-        Layout.preferredHeight: 60
+        width: parent?.width ?? 0
+        spacing: ThemeManager.spacing.small + 2
 
-        Row {
-            anchors.centerIn: parent
-            spacing: ThemeManager.spacing.normal
+        Icon {
+            icon: detail.icon
+            size: 20
+            color: ThemeManager.colors.accent
+        }
 
-            Icon {
-                anchors.verticalCenter: parent.verticalCenter
-                icon: detail.icon
-                size: 24
-                color: ThemeManager.colors.accent
-            }
+        Txt {
+            Layout.fillWidth: true
+            text: detail.label
+            muted: true
+            font.pixelSize: ThemeManager.font.small + 1
+        }
 
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
-
-                Txt {
-                    text: detail.label
-                    opacity: 0.7
-                    font.pixelSize: ThemeManager.font.small
-                }
-
-                Txt {
-                    text: detail.value
-                    font.weight: Font.DemiBold
-                }
-            }
+        Txt {
+            text: detail.value
+            font.weight: Font.DemiBold
         }
     }
 }
