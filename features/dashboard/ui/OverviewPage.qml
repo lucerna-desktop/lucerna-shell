@@ -523,10 +523,11 @@ Item {
         }
     }
 
-    // Um botão da barra: ícone de 18 px, com nome acessível, dica ao passar o
-    // mouse e acionável pelo teclado (Tab, Enter ou Espaço). Um fundo leve, no
-    // raio do tema, no hover e no foco do teclado. `usable` falso: apagado e
-    // sem clique, mas ainda com a dica (que diz por quê).
+    // Um botão da barra: ícone de 18 px, com nome e papel acessíveis e dica ao
+    // passar o mouse. Sem foco de teclado: o painel usa o Tab para trocar de
+    // aba, então o teclado não chega aqui (as ações têm atalho próprio). Um
+    // fundo leve, no raio do tema, no hover. `usable` falso: apagado e sem
+    // clique, mas ainda com a dica (que diz por quê).
     component QuickButton: IconButton {
         id: quick
 
@@ -539,18 +540,15 @@ Item {
         height: 26
         width: 30
         radius: ThemeManager.radius.small
-        activeFocusOnTab: true
         hoverVeil: false
         opacity: usable ? 1 : 0.4
-        color: active ? activeColor : usable && (hovered || activeFocus) ? ThemeManager.alpha(ThemeManager.colors.text, 0.12) : "transparent"
+        color: active ? activeColor : usable && hovered ? ThemeManager.alpha(ThemeManager.colors.text, 0.12) : "transparent"
         Accessible.role: checkable ? Accessible.CheckBox : Accessible.Button
         Accessible.name: hint
         Accessible.checkable: checkable
         Accessible.checked: checkable && active
         Accessible.onPressAction: clicked(null)
         Accessible.onToggleAction: clicked(null)
-        Keys.onReturnPressed: clicked(null)
-        Keys.onSpacePressed: clicked(null)
         onHoveredChanged: tip.target = hovered ? quick : (tip.target === quick ? null : tip.target)
     }
 

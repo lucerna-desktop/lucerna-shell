@@ -69,8 +69,8 @@ Singleton {
         {
             title: "Base",
             items: [
-                { name: "Quickshell", detail: "", url: "https://quickshell.org/" },
-                { name: "Hyprland", detail: "", url: "https://hyprland.org/" },
+                { name: "Quickshell", detail: "O toolkit em QML em que o shell é feito", url: "https://quickshell.org/" },
+                { name: "Hyprland", detail: "O compositor Wayland", url: "https://hyprland.org/" },
                 { name: "Material Symbols", detail: "A fonte dos ícones, do Google; Apache 2.0", url: "https://fonts.google.com/icons" }
             ]
         }

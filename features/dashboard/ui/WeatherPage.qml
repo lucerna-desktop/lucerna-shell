@@ -150,7 +150,7 @@ Item {
                         Txt {
                             width: parent.width
                             visible: text !== ""
-                            text: WeatherState.notice || WeatherState.updatedNote
+                            text: WeatherState.footnote
                             faint: true
                             font.pixelSize: ThemeManager.font.small
                         }

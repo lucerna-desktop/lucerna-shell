@@ -124,6 +124,13 @@ function run(t) {
         c.received("web.weather", json(Object.assign(t.weatherSample(), { updatedAt: fresh, state: "error", error: "x" })));
         t.eq(S.updatedNote, `Atualizado às ${Qt.formatTime(new Date(fresh * 1000), "HH:mm")}`);
 
+        // Offline com previsão velha: o aviso e a hora juntos.
+        c.received("web.weather", json(Object.assign(t.weatherSample(), { updatedAt: old })));
+        C.offline = true;
+        t.eq(S.footnote, `Modo offline: sem atualização · Atualizado às ${Qt.formatTime(new Date(old * 1000), "HH:mm")}`);
+        C.offline = false;
+        t.eq(S.footnote, `Atualizado às ${Qt.formatTime(new Date(old * 1000), "HH:mm")}`);
+
         // A primeira busca depois de escolher a cidade: nada guardado ainda.
         W.clear();
         c.received("web.weather", json({ location: t.weatherSample().location, state: "loading", updatedAt: null, current: null, daily: [] }));

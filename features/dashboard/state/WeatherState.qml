@@ -63,6 +63,13 @@ Singleton {
         return "";
     }
 
+    // O aviso com a hora da previsão: no modo offline os dois aparecem juntos.
+    readonly property string footnote: {
+        if (Config.offline && notice !== "" && updatedNote !== "")
+            return `${notice} · ${updatedNote}`;
+        return notice || updatedNote;
+    }
+
     // A hora da previsão, só quando ela está velha ou a última busca falhou.
     readonly property string updatedNote: {
         const at = Weather.updatedAt;
