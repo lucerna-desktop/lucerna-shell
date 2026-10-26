@@ -14,7 +14,8 @@ Item {
     // todas as abas, e o `visible` delas não muda.
     readonly property bool onScreen: DashboardState.isShowing("performance")
 
-    implicitHeight: PerformanceState.available ? layout.implicitHeight : unavailable.implicitHeight
+    // Pelo menos a altura comum das abas; a sobra vai para a linha de baixo.
+    implicitHeight: PerformanceState.available ? Math.max(layout.implicitHeight, DashboardState.pageHeight) : unavailable.implicitHeight
 
     // Um relógio só para as bolhas da CPU e da GPU: mudam para a mesma figura
     // e giram juntas. Roda com a aba na tela; a bolha parada (GPU sem dados)
@@ -54,6 +55,7 @@ Item {
 
         visible: PerformanceState.available
         width: parent.width
+        height: root.implicitHeight
         spacing: ThemeManager.spacing.normal
 
         // CPU e GPU lado a lado, metade cada; sem a GPU, a CPU ocupa a linha.
@@ -111,6 +113,7 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
+            Layout.fillHeight: true
             spacing: ThemeManager.spacing.normal
 
             // Um disco físico por vez (o da raiz primeiro); o clique passa

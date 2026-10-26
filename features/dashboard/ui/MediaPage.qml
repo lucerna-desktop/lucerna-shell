@@ -12,7 +12,7 @@ import qs.features.dashboard.state
 Item {
     id: root
 
-    implicitHeight: 300
+    implicitHeight: DashboardState.pageHeight
 
     // A máscara das bordas da letra (duas texturas refeitas a cada linha) só
     // com a aba à mostra e com letra; desligada, o ListView fica como está.

@@ -21,7 +21,8 @@ Item {
     // O clima só entra com dados (ou o aviso do modo offline); senão o relógio fica sozinho.
     readonly property bool weatherOn: OverviewState.shows("weather") && (OverviewState.hasWeather || Config.offline)
 
-    implicitHeight: layout.visibleChildren.length ? layout.implicitHeight : 120
+    // Pelo menos a altura comum das abas; os cards de altura livre crescem.
+    implicitHeight: layout.visibleChildren.length ? Math.max(layout.implicitHeight, DashboardState.pageHeight) : 120
 
     Txt {
         anchors.centerIn: parent
@@ -34,6 +35,7 @@ Item {
         id: layout
 
         width: parent.width
+        height: root.implicitHeight
         spacing: ThemeManager.spacing.normal
 
         // Coluna 1: usuário + relógio (e clima)
@@ -332,11 +334,16 @@ Item {
             Layout.fillWidth: !column3.visible
             visible: OverviewState.shows("calendar")
 
+            // Linhas de altura fixa: com o card mais alto, no meio dele.
             Calendar {
                 id: calendar
 
-                anchors.fill: parent
-                anchors.margins: root.cardMargin
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: root.cardMargin
+                anchors.rightMargin: root.cardMargin
+                height: implicitHeight
             }
         }
 

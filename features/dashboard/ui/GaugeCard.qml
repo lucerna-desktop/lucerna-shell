@@ -27,7 +27,7 @@ Surface {
 
     readonly property int margin: ThemeManager.spacing.normal + 2
 
-    implicitHeight: margin * 2 + titleRow.height + ThemeManager.spacing.small + body.height
+    implicitHeight: margin * 2 + titleRow.height + ThemeManager.spacing.tiny + body.height
 
     AnimatedNumber {
         id: shown
@@ -68,8 +68,8 @@ Surface {
             id: body
 
             anchors.horizontalCenter: parent.horizontalCenter
-            y: titleRow.y + titleRow.height + ThemeManager.spacing.small + Math.max(0, (parent.height - root.margin - titleRow.y - titleRow.height - ThemeManager.spacing.small - height) / 2)
-            spacing: ThemeManager.spacing.tiny
+            y: titleRow.y + titleRow.height + ThemeManager.spacing.tiny + Math.max(0, (parent.height - root.margin - titleRow.y - titleRow.height - ThemeManager.spacing.tiny - height) / 2)
+            spacing: 2
 
             CircularGauge {
                 anchors.horizontalCenter: parent.horizontalCenter

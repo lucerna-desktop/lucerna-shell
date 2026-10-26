@@ -6,7 +6,7 @@ import qs.core.theme
 import qs.core.widgets
 import qs.features.dashboard.state
 
-// Aba Clima, compacta, na altura da Mídia: um card do agora (o tempo e a
+// Aba Clima, compacta, na altura comum das abas: um card do agora (o tempo e a
 // temperatura; a cidade, o dia, o aviso e o sol; umidade, sensação e vento) e
 // os sete dias embaixo. A cidade se escolhe nas configurações; sem o
 // lucernad, só o motivo.
@@ -15,10 +15,7 @@ Item {
 
     readonly property int mode: !WeatherState.available ? 0 : !WeatherState.hasLocation ? 1 : 2
 
-    // A altura da aba com dados: a mesma da Mídia.
-    readonly property int pageHeight: 300
-
-    implicitHeight: mode === 0 ? unavailable.implicitHeight : mode === 1 ? noCity.implicitHeight : pageHeight
+    implicitHeight: mode === 0 ? unavailable.implicitHeight : mode === 1 ? noCity.implicitHeight : DashboardState.pageHeight
 
     // Sem o lucernad (ou com o módulo de rede fora): a forma com o motivo.
     EmptyState {
@@ -80,8 +77,8 @@ Item {
 
         visible: root.mode === 2
         width: parent.width
-        // A altura da Mídia: o card do agora em cima, os dias no resto.
-        height: root.pageHeight
+        // A altura comum das abas: o card do agora em cima, os dias no resto.
+        height: DashboardState.pageHeight
         spacing: ThemeManager.spacing.normal
 
         // (1) O agora: o tempo e a temperatura; a cidade, o dia, o aviso e o
