@@ -15,7 +15,7 @@
         "services/Clipboard.qml": ["wantedTopics", "sync", "configureParams", "configure", "listParams", "load", "more", "fetch", "request", "merge", "applyPage", "apply", "applyHistory", "applyStatus", "connectionChanged", "copy", "remove", "pin", "clear", "copyResult", "copyImage"],
         "services/Input.qml": ["option", "luaString", "luaValue", "nest", "unbindLua", "bindLua", "parseKeymap", "keyBlock", "patchKeymap"],
         "services/lucerna/LucernaClient.qml": ["backoff", "encode", "helloParams", "parse", "accept", "store", "receive", "send", "request", "handshake", "greeted", "offeredTopics", "subscribable", "setTopics", "union", "want", "subscribeNow", "unsubscribeNow", "subscribed", "settled", "resubscribe", "call", "open", "opened", "lost", "failPending"],
-        "services/Lyrics.qml": ["parse", "apply", "lineAt", "lineRole"],
+        "services/Lyrics.qml": ["wantedTopics", "sync", "trackParams", "sendTrack", "toLine", "apply", "applyLyrics", "clear", "connectionChanged", "lineAt", "lineRole"],
         "services/Media.qml": ["select", "nextPlayer", "cycle", "albumShown", "seekTo"],
         "services/Monitors.qml": ["keyOf", "parseMode", "normalize", "logicalSize", "luaFor", "lua"],
         "services/Network.qml": ["isSecure", "needsPassword"],
@@ -24,7 +24,8 @@
         "services/Spectrum.qml": ["pairMax", "wantedTopics", "sync", "playerParam", "configure", "apply", "applyBands", "applyStatus", "connectionChanged"],
         "services/SystemStats.qml": ["wantedTopics", "sync", "configure", "apply", "applyInfo", "applyStats", "applyDisks", "applyGpus", "applyStatus", "connectionChanged", "machineText"],
         "services/VideoWallpapers.qml": ["isVideo", "targetFor", "keyOf", "parseKey", "isQueued", "isPreparing", "forget"],
-        "services/Weather.qml": ["isStale"]
+        "services/Weather.qml": ["isStale"],
+        "services/Web.qml": ["wantedTopics", "sync", "configureParams", "configure", "apply", "applyStatus", "connectionChanged", "refresh", "searchCity"]
     },
     "exceções": {
         "core/panels/Panels.qml:Connections.onScreensChanged": "sinal do Quickshell ao mudar as telas; só chama disturb(), que é testada",

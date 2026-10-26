@@ -39,6 +39,7 @@ Singleton {
     property alias windUnit: adapter.windUnit
     property alias weatherRefresh: adapter.weatherRefresh
     property alias offline: adapter.offline
+    property alias vagalumeKey: adapter.vagalumeKey
     property alias batteryShowPercent: adapter.batteryShowPercent
     property alias batteryLowLevel: adapter.batteryLowLevel
     property alias batteryCriticalLevel: adapter.batteryCriticalLevel
@@ -174,6 +175,8 @@ Singleton {
             property int weatherRefresh: 30
             // Desliga tudo o que usa a internet (clima e letras)
             property bool offline: false
+            // A chave do Vagalume, do próprio usuário; só vai ao lucernad pelo web.configure
+            property string vagalumeKey: ""
 
             // Energia e bateria
             property bool batteryShowPercent: true

@@ -40,11 +40,19 @@ Singleton {
     readonly property bool lyricsSynced: Lyrics.synced
     readonly property int currentLine: Lyrics.lineAt(Media.position + 0.3)
 
-    // Busca a letra quando a faixa muda e a aba está visível.
-    readonly property string trackKey: DashboardState.isShowing("media") && Lyrics.enabled ? `${Media.artist}|${Media.title}` : ""
-    onTrackKeyChanged: {
-        if (trackKey)
-            Lyrics.request(Media.title, Media.artist, Media.album, Media.length);
+    // O aviso no lugar da letra (vazio com linhas).
+    readonly property string lyricsNote: {
+        if (lyrics.length > 0)
+            return "";
+        if (Config.offline)
+            return "Modo offline: a letra não é buscada";
+        if (!Web.available)
+            return Web.error === "" ? "Indisponível: sem conexão com o lucernad." : `Indisponível: ${Web.error}`;
+        if (Lyrics.loading)
+            return "Procurando a letra…";
+        if (Lyrics.error !== "")
+            return Lyrics.error;
+        return "Sem letra";
     }
 
     function togglePlaying(): void {

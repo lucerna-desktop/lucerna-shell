@@ -2,100 +2,99 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import qs.services
 
-// Letras sincronizadas pela LRCLIB (lrclib.net), com o XMLHttpRequest do
-// próprio QML. `lines` é [{ time (s), text }]; vazio se não houver letra.
+// A letra da faixa, vinda do módulo web do lucernad (o tópico web.lyrics): o
+// daemon busca (LRCLIB, Vagalume), guarda e publica; aqui só a faixa que vai
+// pelo web.track, a letra que volta e a linha atual. `lines` é [{ time (s),
+// text }], com time -1 sem tempo; vazio se não houver letra.
 Singleton {
     id: root
 
+    // Não é readonly: os testes trocam por um cliente próprio.
+    property var client: Lucernad.client
+    // Quem usa decide (o DashboardState): a aba Mídia à mostra e a letra ligada.
+    property bool active: false
+
     property var lines: []
-    // Falso com a letra desligada ou no modo offline: nenhuma busca sai.
-    property bool enabled: true
-    property bool loading: false
     property bool synced: false
+    // "searching", "found", "none" ou "error" ("" sem nada recebido).
+    property string state: ""
+    // "lrclib" ou "vagalume"; `url` é a página da letra (só do Vagalume).
+    property string source: ""
+    property string url: ""
+    property string error: ""
     property string key: ""
-    property var cache: ({})
+    readonly property bool loading: state === "searching"
 
-    function get(url: string, done: var): void {
-        const xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = () => {
-            if (xhr.readyState !== XMLHttpRequest.DONE)
-                return;
-            let data = null;
-            if (xhr.status === 200) {
-                try {
-                    data = JSON.parse(xhr.responseText);
-                } catch (e) {}
-            }
-            done(data);
+    // A faixa do Media; muda a cada título, artista, álbum ou duração.
+    readonly property string trackKey: `${Media.artist}\u0000${Media.title}\u0000${Media.album}\u0000${Math.round(Media.length)}`
+
+    function wantedTopics(active: bool): var {
+        return active ? ["web.lyrics"] : [];
+    }
+
+    function sync(): void {
+        client.want("lyrics", wantedTopics(active));
+    }
+
+    function trackParams(title: string, artist: string, album: string, length: real): var {
+        return {
+            title: title,
+            artist: artist,
+            album: album,
+            duration: length > 0 ? length : null
         };
-        xhr.open("GET", url);
-        xhr.setRequestHeader("User-Agent", "Lucerna (https://github.com/lucerna-desktop/lucerna-shell)");
-        xhr.send();
     }
 
-    // "[01:23.45] texto" → { time: 83.45, text: "texto" }
-    function parse(lrc: string): var {
-        const out = [];
-        for (const line of lrc.split("\n")) {
-            const m = line.match(/^\[(\d+):(\d+(?:\.\d+)?)\](.*)$/);
-            if (m)
-                out.push({ time: Number(m[1]) * 60 + Number(m[2]), text: m[3].trim() });
-        }
-        return out;
+    // Diz ao daemon a faixa de agora, sem esperar resposta (a letra chega pelo tópico).
+    function sendTrack(): void {
+        if (client.connected)
+            client.call("web.track", trackParams(Media.title, Media.artist, Media.album, Media.length), null);
     }
 
-    function apply(entry: var): void {
-        if (entry?.syncedLyrics) {
-            lines = parse(entry.syncedLyrics);
-            synced = true;
-        } else if (entry?.plainLyrics) {
-            lines = entry.plainLyrics.split("\n").map(t => ({ time: -1, text: t.trim() }));
-            synced = false;
-        } else {
-            lines = [];
-            synced = false;
-        }
+    function toLine(l: var): var {
+        return {
+            time: typeof l.time === "number" ? l.time : -1,
+            text: String(l.text ?? "")
+        };
     }
 
-    // Busca a letra da faixa; chamadas repetidas para a mesma faixa não refazem a busca.
-    function request(title: string, artist: string, album: string, length: real): void {
-        if (!enabled) {
-            key = "";
-            apply(null);
+    // Um estado recebido do daemon; `null` e tópico desconhecido não mudam nada.
+    function apply(topic: string, data: var): void {
+        if (data === null || data === undefined)
             return;
-        }
-        const k = `${artist}\u0000${title}`;
-        if (k === key)
-            return;
-        key = k;
-        if (!title) {
-            apply(null);
-            return;
-        }
-        if (k in cache) {
-            apply(cache[k]);
-            return;
-        }
-        loading = true;
+        if (topic === "web.lyrics")
+            applyLyrics(data);
+    }
+
+    function applyLyrics(data: var): void {
+        lines = Array.from(data.lines ?? []).map(l => toLine(l));
+        synced = data.synced === true;
+        state = String(data.state ?? "");
+        source = String(data.source ?? "");
+        const link = String(data.url ?? "");
+        url = link.startsWith("https://") ? link : "";
+        error = data.error ? String(data.error) : "";
+        key = String(data.key ?? "");
+    }
+
+    function clear(): void {
         lines = [];
-        const q = s => encodeURIComponent(s);
-        const finish = entry => {
-            cache[k] = entry;
-            if (key === k) {
-                apply(entry);
-                loading = false;
-            }
-        };
-        const url = `https://lrclib.net/api/get?track_name=${q(title)}&artist_name=${q(artist)}&album_name=${q(album)}${length > 0 ? `&duration=${Math.round(length)}` : ""}`;
-        get(url, exact => {
-            if (exact?.syncedLyrics || exact?.plainLyrics)
-                return finish(exact);
-            get(`https://lrclib.net/api/search?track_name=${q(title)}&artist_name=${q(artist)}`, results => {
-                const list = Array.isArray(results) ? results : [];
-                finish(list.find(r => r.syncedLyrics) ?? list[0] ?? null);
-            });
-        });
+        synced = false;
+        state = "";
+        source = "";
+        url = "";
+        error = "";
+        key = "";
+    }
+
+    // A conexão mudou: ao cair, a letra some; a faixa não vai daqui, e sim
+    // pelo Web.configured (o configure chega antes dela).
+    function connectionChanged(connected: bool): void {
+        if (!connected)
+            clear();
+        sync();
     }
 
     // O papel de uma linha para a formatação: "current" (a cantada agora),
@@ -115,4 +114,29 @@ Singleton {
             i++;
         return i;
     }
+
+    onActiveChanged: sync()
+    onTrackKeyChanged: sendTrack()
+
+    Connections {
+        target: root.client
+
+        function onReceived(topic: string, data: var): void {
+            root.apply(topic, data);
+        }
+
+        function onConnectedChanged(): void {
+            root.connectionChanged(root.client.connected);
+        }
+    }
+
+    Connections {
+        target: Web
+
+        function onConfigured(): void {
+            root.sendTrack();
+        }
+    }
+
+    Component.onCompleted: sync()
 }

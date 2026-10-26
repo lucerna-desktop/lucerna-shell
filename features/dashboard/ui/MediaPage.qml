@@ -296,7 +296,7 @@ Item {
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.Wrap
-                    text: MediaState.offline ? "Modo offline: a letra não é buscada" : MediaState.lyricsLoading ? "Procurando a letra…" : "Sem letra"
+                    text: MediaState.lyricsNote
                     faint: true
                 }
             }

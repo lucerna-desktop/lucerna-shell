@@ -118,10 +118,36 @@ Singleton {
         value: Config.weatherRefresh * 60 * 1000
     }
 
+    // Offline, a letra guardada continua aparecendo: o daemon é que não vai à rede.
     Binding {
         target: Lyrics
-        property: "enabled"
-        value: Config.lyricsEnabled && !Config.offline
+        property: "active"
+        value: root.isShowing("media") && Config.lyricsEnabled
+    }
+
+    // A configuração da rede externa, mandada ao lucernad pelo Web.
+    Binding {
+        target: Web
+        property: "offline"
+        value: Config.offline
+    }
+
+    Binding {
+        target: Web
+        property: "vagalumeKey"
+        value: Config.vagalumeKey
+    }
+
+    Binding {
+        target: Web
+        property: "location"
+        value: Config.weatherLocation
+    }
+
+    Binding {
+        target: Web
+        property: "refreshMinutes"
+        value: Config.weatherRefresh
     }
 
     Binding {

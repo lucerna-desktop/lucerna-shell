@@ -61,6 +61,7 @@ import "systemstats.test.js" as SystemStatsTest
 import "theme.test.js" as ThemeTest
 import "themeswitcher.test.js" as ThemeSwitcherTest
 import "videowallpapers.test.js" as VideoWallpapersTest
+import "web.test.js" as WebTest
 import "weather.test.js" as WeatherTest
 
 ShellRoot {
@@ -107,6 +108,7 @@ ShellRoot {
         ["media", MediaTest],
         ["session", SessionTest],
         ["weather", WeatherTest],
+        ["web", WebTest],
         ["themeswitcher", ThemeSwitcherTest],
         ["lucernaclient", LucernaClientTest]
     ]
@@ -230,6 +232,8 @@ ShellRoot {
             get SystemStats() { return SystemStats; },
             get VideoWallpapers() { return VideoWallpapers; },
             get Weather() { return Weather; },
+            get Web() { return Web; },
+            get MediaState() { return MediaState; },
             get ThemeSwitcherState() { return ThemeSwitcherState; }
         };
     }
