@@ -1,6 +1,6 @@
 {
     "name": "Catppuccin Latte",
-    "description": "A versão clara do Catppuccin: malva e azul vivos sobre um branco-acinzentado suave.",
+    "description": "A versão clara do Catppuccin: azul e malva vivos sobre um branco-acinzentado suave.",
     "dark": false,
     "colors": {
         "base": "#eff1f5",
@@ -10,7 +10,7 @@
         "text": "#4c4f69",
         "textMuted": "#5c5f77",
         "textFaint": "#8c8fa1",
-        "accent": "#8839ef",
+        "accent": "#1e66f5",
         "accentText": "#eff1f5",
         "danger": "#d20f39",
         "success": "#40a02b",
@@ -50,7 +50,7 @@
         "shader": "shaders/ondas.qsb"
     },
     "hyprland": {
-        "activeBorder": "#8839ef",
+        "activeBorder": "#1e66f5",
         "inactiveBorder": "#bcc0cc",
         "borderSize": 2,
         "rounding": 12,

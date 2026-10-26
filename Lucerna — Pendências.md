@@ -20,6 +20,7 @@ O que falta fazer, na ordem em que vamos seguir. Cada item vira um PR; ao termin
 14. [ ] **Instalação e distribuição:** script de instalação (link, trecho do `hyprland.lua`, atalhos padrão) e pacote no AUR. A verificação no CI já está feita: quatro checks obrigatórios (`ci/`, `dev/ci.sh`).
 15. [ ] **Lógica fora do shell (Rust).** Ver a seção "Separação da lógica" abaixo. Substitui o plano de plugins em C++ de `Lucerna — Plugins Próprios.md`, que precisa ser revisto à luz dela.
 16. [ ] **Equalizador de áudio**, com spec próprio: muda o som (filtro do PipeWire, `filter-chain`, ou controle do EasyEffects) e mostra o espectro ao vivo atrás das faixas, reaproveitando o módulo de espectro.
+17. [ ] **Temas com mais cores**, com spec próprio: o modelo de tema hoje tem um destaque só (`accent`, 152 usos) e usa 11 das 26 cores do Catppuccin. Ampliar para destaque primário, secundário e terciário (como o Caelestia) e mais papéis (informação/link, superfícies Mantle e Crust, variações para gráficos e estados), mapear os 13 temas nas paletas oficiais e revisar onde cada cor entra no shell. O ajuste rápido (o Catppuccin com o azul como destaque) já foi feito.
 
 ## Separação da lógica (a definir melhor)
 
