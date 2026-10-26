@@ -21,8 +21,7 @@ Item {
     // O clima só entra com dados (ou o aviso do modo offline); senão o relógio fica sozinho.
     readonly property bool weatherOn: OverviewState.shows("weather") && (OverviewState.hasWeather || Config.offline)
 
-    // Pelo menos a altura comum das abas; os cards de altura livre crescem.
-    implicitHeight: layout.visibleChildren.length ? Math.max(layout.implicitHeight, DashboardState.pageHeight) : 120
+    implicitHeight: layout.visibleChildren.length ? layout.implicitHeight : 120
 
     Txt {
         anchors.centerIn: parent
@@ -35,22 +34,10 @@ Item {
         id: layout
 
         width: parent.width
-        height: root.implicitHeight
         spacing: ThemeManager.spacing.normal
 
-        // Coluna 1: usuário, relógio e clima. Com o clima, os três dividem a
-        // altura comum das abas: cada um na altura do conteúdo, mais uma parte
-        // igual da sobra. Sem ele, o usuário fica com a altura do card de
-        // sistema e o relógio cresce até o fim, como antes.
+        // Coluna 1: usuário + relógio (e clima)
         ColumnLayout {
-            id: column1
-
-            readonly property int userNatural: 64 + 2 * root.cardMargin
-            readonly property int clockNatural: clockColumn.implicitHeight + 2 * root.cardMargin
-            readonly property int weatherNatural: weatherContent.implicitHeight + 2 * root.cardMargin
-            readonly property var naturals: [OverviewState.shows("user") ? userNatural : -1, OverviewState.shows("clock") ? clockNatural : -1, weatherNatural].filter(h => h >= 0)
-            readonly property real slack: Math.max(0, (DashboardState.pageHeight - spacing * (naturals.length - 1) - naturals.reduce((a, b) => a + b, 0)) / naturals.length)
-
             Layout.preferredWidth: 270
             Layout.fillWidth: !calendarCard.visible && !column3.visible
             Layout.fillHeight: true
@@ -60,7 +47,7 @@ Item {
 
             Surface {
                 Layout.fillWidth: true
-                Layout.preferredHeight: root.weatherOn ? column1.userNatural + column1.slack : root.topCardHeight
+                Layout.preferredHeight: root.topCardHeight
                 visible: OverviewState.shows("user")
 
                 Row {
@@ -171,137 +158,160 @@ Item {
                 }
             }
 
-            // O relógio: a hora e a data, no meio do card.
+            // Na altura do conteúdo; com sobra (o calendário mais alto), cresce até
+            // terminar na mesma linha que ele.
             Surface {
                 Layout.fillWidth: true
-                Layout.preferredHeight: root.weatherOn ? column1.clockNatural + column1.slack : column1.clockNatural
-                Layout.fillHeight: !root.weatherOn
-                visible: OverviewState.shows("clock")
+                Layout.preferredHeight: clockContent.implicitHeight + 2 * root.cardMargin
+                Layout.fillHeight: true
+                visible: OverviewState.shows("clock") || root.weatherOn
 
-                Column {
-                    id: clockColumn
-
-                    // A data numa linha ("Sábado, 17 de outubro"); se não couber, o dia da
-                    // semana numa linha e o dia e o mês na de baixo, sem reticências.
-                    readonly property string oneLine: `${OverviewState.weekday}, ${OverviewState.date}`
-                    readonly property bool dateFits: oneLineMetrics.advanceWidth <= width
+                // Duas colunas, centradas na altura: hora e data à esquerda, clima à direita.
+                // Sem clima (desligado, sem dados e fora do modo offline), o relógio fica
+                // sozinho e centralizado. Em card estreito, a data quebra em duas
+                // linhas e o clima encolhe (duas linhas ou elide); a hora, não.
+                RowLayout {
+                    id: clockContent
 
                     anchors.centerIn: parent
-                    width: Math.min(Math.max(clockRow.width, oneLineMetrics.advanceWidth), parent.width - 2 * root.cardMargin)
-                    spacing: 0
+                    width: Math.min(implicitWidth, parent.width - 2 * root.cardMargin)
+                    spacing: ThemeManager.spacing.normal + 2
 
-                    TextMetrics {
-                        id: oneLineMetrics
+                    Column {
+                        id: clockColumn
 
-                        font: dateText.font
-                        text: clockColumn.oneLine
-                    }
+                        // A data numa linha ("Sábado, 17 de outubro"); se não couber, o dia da
+                        // semana numa linha e o dia e o mês na de baixo, sem reticências.
+                        readonly property string oneLine: `${OverviewState.weekday}, ${OverviewState.date}`
+                        readonly property bool dateFits: oneLineMetrics.advanceWidth <= width
 
-                    // Dígitos em células de largura fixa (a do dígito mais largo): a hora não
-                    // pula ao mudar de minuto, mesmo numa fonte sem números tabulares.
-                    Row {
-                        id: clockRow
+                        visible: OverviewState.shows("clock")
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.minimumWidth: Math.max(clockRow.width, weekdayMetrics.advanceWidth, dayMetrics.advanceWidth)
+                        Layout.preferredWidth: Math.max(clockRow.width, oneLineMetrics.advanceWidth)
+                        Layout.maximumWidth: Layout.preferredWidth
+                        Layout.fillWidth: true
+                        spacing: 0
 
-                        readonly property real digitWidth: {
-                            // Ler a família religa a conta quando a fonte do tema muda.
-                            if (!digitMetrics.font.family)
-                                return 0;
-                            return Math.max(...[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => digitMetrics.advanceWidth(String(d))));
+                        TextMetrics {
+                            id: oneLineMetrics
+
+                            font: dateText.font
+                            text: clockColumn.oneLine
                         }
 
-                        FontMetrics {
-                            id: digitMetrics
+                        TextMetrics {
+                            id: weekdayMetrics
 
-                            font.family: ThemeManager.font.sans
-                            font.variableAxes: ThemeManager.fontAxes(Font.Light)
-                            font.pixelSize: ThemeManager.font.huge - 6
-                            font.weight: Font.Light
-                            font.features: { "tnum": 1 }
+                            font: dateText.font
+                            text: `${OverviewState.weekday},`
                         }
 
-                        Repeater {
-                            model: 5
+                        TextMetrics {
+                            id: dayMetrics
 
-                            delegate: Txt {
-                                required property int index
+                            font: dateText.font
+                            text: OverviewState.date
+                        }
 
-                                width: index === 2 ? implicitWidth : clockRow.digitWidth
-                                horizontalAlignment: Text.AlignHCenter
-                                elide: Text.ElideNone
-                                text: OverviewState.time.charAt(index)
-                                font.pixelSize: digitMetrics.font.pixelSize
-                                font.weight: digitMetrics.font.weight
+                        // Dígitos em células de largura fixa (a do dígito mais largo): a hora não
+                        // pula ao mudar de minuto, mesmo numa fonte sem números tabulares.
+                        Row {
+                            id: clockRow
+
+                            readonly property real digitWidth: {
+                                // Ler a família religa a conta quando a fonte do tema muda.
+                                if (!digitMetrics.font.family)
+                                    return 0;
+                                return Math.max(...[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => digitMetrics.advanceWidth(String(d))));
+                            }
+
+                            FontMetrics {
+                                id: digitMetrics
+
+                                font.family: ThemeManager.font.sans
+                                font.variableAxes: ThemeManager.fontAxes(Font.Light)
+                                font.pixelSize: ThemeManager.font.huge - 6
+                                font.weight: Font.Light
                                 font.features: { "tnum": 1 }
                             }
-                        }
-                    }
 
-                    Txt {
-                        id: dateText
+                            Repeater {
+                                model: 5
 
-                        width: parent.width
-                        text: clockColumn.dateFits ? clockColumn.oneLine : `${OverviewState.weekday},\n${OverviewState.date}`
-                        muted: true
-                        font.pixelSize: ThemeManager.font.small + 1
-                    }
-                }
-            }
+                                delegate: Txt {
+                                    required property int index
 
-            // O clima (só com dados, ou o aviso do modo offline): o ícone e a
-            // temperatura, e ao lado a condição e a cidade.
-            Surface {
-                Layout.fillWidth: true
-                Layout.preferredHeight: column1.weatherNatural + column1.slack
-                visible: root.weatherOn
-
-                Row {
-                    id: weatherContent
-
-                    anchors.centerIn: parent
-                    spacing: ThemeManager.spacing.normal
-
-                    Row {
-                        id: weatherNow
-
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: ThemeManager.spacing.small
-
-                        Icon {
-                            anchors.verticalCenter: parent.verticalCenter
-                            icon: OverviewState.weatherIcon
-                            filled: true
-                            size: 30
-                            color: ThemeManager.colors.accent
+                                    width: index === 2 ? implicitWidth : clockRow.digitWidth
+                                    horizontalAlignment: Text.AlignHCenter
+                                    elide: Text.ElideNone
+                                    text: OverviewState.time.charAt(index)
+                                    font.pixelSize: digitMetrics.font.pixelSize
+                                    font.weight: digitMetrics.font.weight
+                                    font.features: { "tnum": 1 }
+                                }
+                            }
                         }
 
                         Txt {
-                            visible: OverviewState.hasWeather
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: OverviewState.weatherTemp
-                            font.pixelSize: ThemeManager.font.huge - 14
-                            font.weight: Font.DemiBold
+                            id: dateText
+
+                            width: parent.width
+                            text: clockColumn.dateFits ? clockColumn.oneLine : `${OverviewState.weekday},\n${OverviewState.date}`
+                            muted: true
+                            font.pixelSize: ThemeManager.font.small + 1
                         }
                     }
 
-                    // A largura do texto mais longo; num card estreito, o que couber (elide).
                     Column {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: Math.min(Math.max(conditionText.implicitWidth, placeText.implicitWidth), weatherContent.parent.width - 2 * root.cardMargin - weatherNow.width - weatherContent.spacing)
+                        visible: root.weatherOn
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.minimumWidth: weatherRow.width
+                        Layout.preferredWidth: Math.max(weatherRow.width, conditionText.implicitWidth, placeText.implicitWidth)
+                        Layout.maximumWidth: Layout.preferredWidth
+                        Layout.fillWidth: true
                         spacing: 2
+
+                        Row {
+                            id: weatherRow
+
+                            spacing: ThemeManager.spacing.small
+                            anchors.horizontalCenter: parent.horizontalCenter
+
+                            Icon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                icon: OverviewState.weatherIcon
+                                filled: true
+                                size: 30
+                                color: ThemeManager.colors.accent
+                            }
+
+                            Txt {
+                                visible: OverviewState.hasWeather
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: OverviewState.weatherTemp
+                                font.pixelSize: ThemeManager.font.huge - 14
+                                font.weight: Font.DemiBold
+                            }
+                        }
 
                         Txt {
                             id: conditionText
 
                             width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
                             text: OverviewState.weatherText
                             muted: true
-                            font.pixelSize: ThemeManager.font.small + 1
+                            wrapMode: Text.WordWrap
+                            maximumLineCount: 2
+                            font.pixelSize: ThemeManager.font.small
                         }
 
                         Txt {
                             id: placeText
 
                             width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
                             visible: text !== ""
                             text: OverviewState.weatherPlace
                             faint: true
@@ -322,7 +332,6 @@ Item {
             Layout.fillWidth: !column3.visible
             visible: OverviewState.shows("calendar")
 
-            // As linhas crescem com o card, até a altura dele.
             Calendar {
                 id: calendar
 

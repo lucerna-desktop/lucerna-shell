@@ -11,13 +11,11 @@ Item {
 
     readonly property bool onScreen: DashboardState.isShowing("overview")
 
-    // O título e o cabeçalho dos dias, acima das seis linhas.
-    readonly property int headerHeight: 28 + ThemeManager.spacing.small + 22
-    // Altura de cada linha de dias: 30 no mínimo; com o card mais alto,
-    // as seis dividem a sobra.
-    readonly property int rowHeight: Math.max(30, Math.floor((height - headerHeight) / 6))
+    // Altura de cada linha de dias: fixa, o calendário não se espalha pela altura do card.
+    readonly property int rowHeight: 30
 
-    implicitHeight: headerHeight + 6 * 30
+    // Título, cabeçalho e seis linhas.
+    implicitHeight: 28 + ThemeManager.spacing.small + 22 + 6 * rowHeight
 
     MouseArea {
         anchors.fill: parent
