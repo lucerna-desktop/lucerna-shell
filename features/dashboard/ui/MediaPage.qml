@@ -16,7 +16,9 @@ Item {
 
     // A máscara das bordas da letra (duas texturas refeitas a cada linha) só
     // com a aba à mostra e com letra; desligada, o ListView fica como está.
-    readonly property bool lyricsMasked: MediaState.onScreen && MediaState.lyrics.length > 0
+    // No renderizador por software (o da fumaça) não há shader: o efeito
+    // sumiria com a letra inteira, então ela fica sem o esmaecimento.
+    readonly property bool lyricsMasked: MediaState.onScreen && MediaState.lyrics.length > 0 && root.GraphicsInfo.api !== GraphicsInfo.Software
 
     // Sem player
     Column {
