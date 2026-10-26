@@ -75,10 +75,5 @@ Column {
             title: "Opcionais"
             description: "PipeWire, UPower e NetworkManager"
         }
-
-        SettingRow {
-            title: "Serviços na internet"
-            description: "Open-Meteo (clima) e LRCLIB (letras), só com a aba correspondente aberta"
-        }
     }
 }

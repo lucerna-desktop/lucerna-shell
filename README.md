@@ -318,7 +318,29 @@ A saída fica em `ci-out/<check>/`. Como escrever um teste e o que a cobertura e
 
 ## Créditos
 
-O painel superior (o dashboard que desce da barra, com as abas Painel, Mídia, Desempenho e Clima) foi inspirado no dashboard do [Caelestia Shell](https://github.com/caelestia-dots/shell), assim como as curvas e durações de animação do Material 3 em `ThemeManager.anim`. O código do Lucerna foi escrito do zero, com componentes, serviços e recursos próprios; do Caelestia vieram a ideia e a referência visual. Obrigado ao projeto e a quem contribui com ele.
+A página Créditos, nas Configurações, traz o mesmo conteúdo, com o link de cada item.
+
+**Inspiração**
+
+- [Caelestia Shell](https://github.com/caelestia-dots/shell): o painel superior (o dashboard que desce da barra, com as abas Painel, Mídia, Desempenho e Clima) e a aba Clima foram inspirados no dashboard dele, assim como as curvas e durações de animação do Material 3 em `ThemeManager.anim`; GPL-3.0. O código do Lucerna foi escrito do zero, com componentes, serviços e recursos próprios; do Caelestia vieram a ideia e a referência visual. Obrigado ao projeto e a quem contribui com ele.
+
+**Dados**
+
+- [Open-Meteo](https://open-meteo.com/): previsão do tempo e busca de cidade; dados sob a licença CC BY 4.0.
+- [LRCLIB](https://lrclib.net/): letras sincronizadas.
+- [Vagalume](https://www.vagalume.com.br/): letras, só com a chave de quem usa.
+
+**Base**
+
+- [Quickshell](https://quickshell.org/)
+- [Hyprland](https://hyprland.org/)
+- [Material Symbols](https://fonts.google.com/icons): a fonte dos ícones, do Google; Apache 2.0.
+
+### Aviso sobre o Vagalume
+
+Os termos da API do Vagalume pedem crédito, com link, junto do conteúdo, e dizem que a API não transfere o direito de exibir a letra. O Lucerna é de uso próprio: a chave é de cada usuário e usar o Vagalume é escolha dele. O Lucerna não traz chave nenhuma.
+
+O crédito existe, portanto, de forma indireta: para usar o Vagalume, a pessoa precisa obrigatoriamente entrar no site deles e gerar a própria chave em <https://auth.vagalume.com.br/settings/api/>, e é por essa chave dela que a letra chega. Se o Vagalume pedir, o rótulo com link junto da letra é acrescentado (o `lucernad` já manda a fonte e a página).
 
 ## Licença
 

@@ -309,6 +309,7 @@ OverlayPanel {
                             capture: capturePage,
                             keyboard: keyboardPage,
                             shortcuts: shortcutsPage,
+                            credits: creditsPage,
                             about: aboutPage
                         })[SettingsState.current.id] ?? soonPage
 
@@ -449,6 +450,12 @@ OverlayPanel {
         id: shortcutsPage
 
         ShortcutsPage {}
+    }
+
+    Component {
+        id: creditsPage
+
+        CreditsPage {}
     }
 
     Component {

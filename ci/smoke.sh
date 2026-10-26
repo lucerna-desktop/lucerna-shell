@@ -441,7 +441,7 @@ step central notifications toggle
 step central panels open central
 step central panels toggle central
 for topic in appearance wallpaper displays idle nightlight launcher clipboard capture mouse keyboard glass \
-    notifications panels bar dashboard power shortcuts about; do
+    notifications panels bar dashboard power shortcuts credits about; do
     step settings settings open "$topic"
 done
 step themes panels open themes

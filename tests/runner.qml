@@ -65,6 +65,7 @@ import "videowallpapers.test.js" as VideoWallpapersTest
 import "web.test.js" as WebTest
 import "weather.test.js" as WeatherTest
 import "weatherstate.test.js" as WeatherStateTest
+import "credits.test.js" as CreditsTest
 
 ShellRoot {
     id: root
@@ -111,6 +112,7 @@ ShellRoot {
         ["session", SessionTest],
         ["weather", WeatherTest],
         ["weatherstate", WeatherStateTest],
+        ["credits", CreditsTest],
         ["web", WebTest],
         ["themeswitcher", ThemeSwitcherTest],
         ["lucernaclient", LucernaClientTest]
