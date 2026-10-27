@@ -13,7 +13,7 @@ import qs.features.dashboard.state
 // painel, a fileira de abas, seguida do conteúdo. Ao fechar, a peça encolhe de
 // volta para a aba da barra e o conteúdo dela reaparece. O fundo é um pedaço
 // da forma da tela (Frame); o conteúdo, com a largura do painel aberto, é
-// recortado por ela e entra quando ela passa de ~60%. Tab/Shift+Tab ou 1–4
+// recortado por ela e entra quando ela passa de ~70%. Tab/Shift+Tab ou 1–4
 // trocam de aba; Esc ou clique fora fecham.
 OverlayPanel {
     id: panel
@@ -62,82 +62,92 @@ OverlayPanel {
         x: (parent.width - width) / 2
         y: panel.fromPill ? panel.pill.y : 0
         height: Math.max(0, panel.startHeight + (panel.fullHeight - panel.startHeight) * panel.progress)
-        clip: true
 
         // Para "fechar ao tirar o mouse".
         HoverHandler {
             onHoveredChanged: DashboardState.setPointerInside(hovered)
         }
 
-        // Largura fixa (a do painel aberto): a forma cresce em volta dele sem
-        // refazer o layout a cada quadro.
-        FocusScope {
-            id: contentScope
+        // O recorte do conteúdo, recuado da beira da peça (Frame.contentInset):
+        // a forma, na outra janela, pode chegar um quadro depois.
+        Item {
+            id: inset
 
-            x: (parent.width - panel.fullWidth) / 2 + ThemeManager.spacing.large
-            width: panel.fullWidth - ThemeManager.spacing.large * 2
-            // O cabeçalho no topo da peça, logo abaixo da moldura.
-            y: Frame.thickness + ThemeManager.spacing.large - drawer.y
-            height: tabs.height + ThemeManager.spacing.normal + pages.height
-            focus: true
-            opacity: Frame.contentOpacity(panel.progress)
+            x: Frame.contentInset
+            width: Math.max(0, parent.width - Frame.contentInset * 2)
+            height: Math.max(0, parent.height - Frame.contentInset)
+            clip: true
 
-            Keys.onPressed: event => {
-                if (event.key === Qt.Key_Tab)
-                    DashboardState.setTab(panel.index + 1);
-                else if (event.key === Qt.Key_Backtab)
-                    DashboardState.setTab(panel.index - 1);
-                else if (event.key >= Qt.Key_1 && event.key < Qt.Key_1 + DashboardState.tabs.length)
-                    DashboardState.setTab(event.key - Qt.Key_1);
-                else
-                    return;
-                event.accepted = true;
-            }
+            // Largura fixa (a do painel aberto): a forma cresce em volta dele sem
+            // refazer o layout a cada quadro.
+            FocusScope {
+                id: contentScope
 
-            TabBar {
-                id: tabs
+                x: (drawer.width - panel.fullWidth) / 2 + ThemeManager.spacing.large - Frame.contentInset
+                width: panel.fullWidth - ThemeManager.spacing.large * 2
+                // O cabeçalho no topo da peça, logo abaixo da moldura.
+                y: Frame.thickness + ThemeManager.spacing.large - drawer.y
+                height: tabs.height + ThemeManager.spacing.normal + pages.height
+                focus: true
+                opacity: Frame.contentOpacity(panel.progress)
 
-                width: parent.width
-                tabs: DashboardState.tabs
-                currentIndex: panel.index
-                onActivated: index => DashboardState.setTab(index)
-            }
+                Keys.onPressed: event => {
+                    if (event.key === Qt.Key_Tab)
+                        DashboardState.setTab(panel.index + 1);
+                    else if (event.key === Qt.Key_Backtab)
+                        DashboardState.setTab(panel.index - 1);
+                    else if (event.key >= Qt.Key_1 && event.key < Qt.Key_1 + DashboardState.tabs.length)
+                        DashboardState.setTab(event.key - Qt.Key_1);
+                    else
+                        return;
+                    event.accepted = true;
+                }
 
-            Item {
-                id: pages
+                TabBar {
+                    id: tabs
 
-                anchors.top: tabs.bottom
-                anchors.topMargin: ThemeManager.spacing.normal
-                width: parent.width
-                height: (panel.currentPage?.item as Item)?.implicitHeight ?? 0
-                clip: true
+                    width: parent.width
+                    tabs: DashboardState.tabs
+                    currentIndex: panel.index
+                    onActivated: index => DashboardState.setTab(index)
+                }
 
-                Behavior on height { Anim { type: Anim.Spatial } }
+                Item {
+                    id: pages
+
+                    anchors.top: tabs.bottom
+                    anchors.topMargin: ThemeManager.spacing.normal
+                    width: parent.width
+                    height: (panel.currentPage?.item as Item)?.implicitHeight ?? 0
+                    clip: true
+
+                    Behavior on height { Anim { type: Anim.Spatial } }
 
 
-                // As páginas seguem a ordem e a visibilidade das abas.
-                Row {
-                    id: pagesRow
+                    // As páginas seguem a ordem e a visibilidade das abas.
+                    Row {
+                        id: pagesRow
 
-                    x: -panel.index * pages.width
+                        x: -panel.index * pages.width
 
-                    Behavior on x { Anim { type: Anim.Spatial } }
+                        Behavior on x { Anim { type: Anim.Spatial } }
 
-                    Repeater {
-                        id: pageRepeater
+                        Repeater {
+                            id: pageRepeater
 
-                        model: DashboardState.tabs
+                            model: DashboardState.tabs
 
-                        delegate: Loader {
-                            required property var modelData
+                            delegate: Loader {
+                                required property var modelData
 
-                            width: pages.width
-                            sourceComponent: ({
-                                overview: overviewPage,
-                                media: mediaPage,
-                                performance: performancePage,
-                                weather: weatherPage
-                            })[modelData.id]
+                                width: pages.width
+                                sourceComponent: ({
+                                    overview: overviewPage,
+                                    media: mediaPage,
+                                    performance: performancePage,
+                                    weather: weatherPage
+                                })[modelData.id]
+                            }
                         }
                     }
                 }

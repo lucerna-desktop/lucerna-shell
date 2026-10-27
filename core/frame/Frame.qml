@@ -28,9 +28,15 @@ Singleton {
     // (o raio do arco que funde dois pedaços).
     readonly property real thickness: 8
     readonly property real radius: ThemeManager.radius.large
+    // O frame.frag descarta além de 20 px (o `reach` dele): até 18 aqui.
     readonly property real smoothing: 18
-    // O conteúdo de um painel entra quando a forma dele passa disto.
-    readonly property real contentStart: 0.6
+    // O conteúdo de um painel entra quando a forma dele passa disto: a forma
+    // e o conteúdo ficam em janelas diferentes e podem chegar à tela com um
+    // quadro de diferença; entrando tarde, a forma já está à frente dele.
+    readonly property real contentStart: 0.7
+    // Quanto o conteúdo fica recuado da beira da forma que o recorta (o
+    // painel superior): um quadro de atraso da forma não o deixa sem fundo.
+    readonly property real contentInset: 4
     // Quanto um lado preso a uma borda passa dela: os cantos desse lado ficam
     // fora da tela, e a junção com a borda vira o arco côncavo.
     readonly property real overhang: 64

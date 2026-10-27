@@ -19,7 +19,7 @@ import qs.core.theme
 // Saindo da moldura (`frameScreen`, ver Frame): o fundo é um pedaço da forma
 // da tela, desenhado pela janela da barra, que esta espera existir para ficar
 // por cima dela; o conteúdo não esmaece com a janela (o painel o mostra quando
-// a forma passa de ~60%); e, modal, a pílula fundida fica fora da máscara: o
+// a forma passa de ~70%); e, modal, a pílula fundida fica fora da máscara: o
 // clique nela vai para a barra.
 PanelWindow {
     id: root

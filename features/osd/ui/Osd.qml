@@ -9,7 +9,7 @@ import qs.features.osd.state
 // Indicador de volume/brilho: sai da borda direita, no meio da altura, em pé:
 // o número em cima, a trilha e o ícone embaixo. O fundo é um pedaço da forma da
 // tela (Frame), preso à borda com os arcos côncavos, que cresce dela para fora
-// com mola; o conteúdo entra quando ele passa de ~60%. Não recebe cliques.
+// com mola; o conteúdo entra quando ele passa de ~70%. Não recebe cliques.
 PanelWindow {
     id: window
 

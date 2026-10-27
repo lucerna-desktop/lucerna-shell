@@ -32,6 +32,34 @@ PanelWindow {
     readonly property var parts: Frame.blobsOn(targetScreen)
     readonly property real fuse: Frame.progressIn(parts)
     readonly property bool compact: Frame.compactOn(parts, fuse, screenSize)
+    // Sem pedaço, a janela some só depois de apresentar um quadro vazio: o
+    // último buffer dela nunca é a forma antiga (que sobraria um quadro além
+    // do conteúdo do painel, na outra janela). Os quadros vazios a esperar.
+    property int lingering: 0
+
+    onPartsChanged: {
+        if (!parts.length && visible) {
+            lingering = 2;
+            lingerLimit.restart();
+        }
+    }
+
+    Connections {
+        target: root.contentItem.Window.window
+
+        function onFrameSwapped() {
+            if (root.lingering > 0 && !root.parts.length)
+                root.lingering--;
+        }
+    }
+
+    // Se nenhum quadro vier (nada mudou na tela), não fica presa à mostra.
+    Timer {
+        id: lingerLimit
+
+        interval: 250
+        onTriggered: root.lingering = 0
+    }
 
     Behavior on progress {
         Anim {
@@ -40,7 +68,7 @@ PanelWindow {
     }
 
     screen: targetScreen
-    visible: parts.length > 0
+    visible: parts.length > 0 || lingering > 0
     anchors {
         top: true
         bottom: true

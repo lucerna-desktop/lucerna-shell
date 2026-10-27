@@ -5,7 +5,7 @@ import qs.core.widgets
 
 // Um dos dois painéis da central: `panelWidth` de largura, a `margin` da borda
 // direita (dentro da moldura). O fundo é o bloco da central (a forma da tela);
-// o conteúdo aparece quando ele passa de ~60% da entrada. Entra deslizando da
+// o conteúdo aparece quando ele passa de ~70% da entrada. Entra deslizando da
 // direita e sai, mais rápido, pelo mesmo caminho. Com os dois abrindo juntos,
 // a entrada vai em cascata, com um atraso pela ordem (`order`: 40 ms por
 // passo, na escala das animações). Os filhos vão para dentro da margem

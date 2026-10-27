@@ -62,9 +62,12 @@ function run(t) {
     scenario("frame: a moldura segue o painel da moldura mais aberto", [hiddenPill, dash, osd], () => {
         t.near(F.progressOn("A"), 0.5, 1e-9, "metade aberta");
         t.eq(F.progressOn("B"), 0, "outra tela: sem moldura");
-        dash.progress = 1.08;
-        t.eq(F.progressOn("A"), 1, "a mola passa do alvo; a moldura não");
-        dash.progress = 0.5;
+        try {
+            dash.progress = 1.08;
+            t.eq(F.progressOn("A"), 1, "a mola passa do alvo; a moldura não");
+        } finally {
+            dash.progress = 0.5;
+        }
         t.check(F.fusedOn("A") && !F.fusedOn("B"), "a pílula fica fundida só na tela do painel");
     });
 
@@ -101,9 +104,9 @@ function run(t) {
         t.eq([F.clamp(-1), F.clamp(0.4), F.clamp(2)], [0, 0.4, 1]);
         t.eq([F.thicknessAt(0), F.thicknessAt(0.5), F.thicknessAt(1.2)], [0, F.thickness / 2, F.thickness]);
         t.eq([F.smoothingAt(0), F.smoothingAt(0.25), F.smoothingAt(0.5), F.smoothingAt(1)], [0, F.smoothing / 2, F.smoothing, F.smoothing]);
-        t.eq(F.contentOpacity(0.3), 0, "antes de ~60%, sem conteúdo");
+        t.eq(F.contentOpacity(0.3), 0, "antes de ~70%, sem conteúdo");
         t.eq(F.contentOpacity(F.contentStart), 0);
-        t.near(F.contentOpacity(0.8), 0.5, 1e-9, "entra entre 60% e 100%");
+        t.near(F.contentOpacity(0.85), 0.5, 1e-9, "entra entre 70% e 100%");
         t.eq(F.contentOpacity(1.1), 1);
     });
 
@@ -131,6 +134,12 @@ function run(t) {
         t.eq(box(F.bounds([pill, dash], 0.3, size)), [0, 0, 1920, 1080], "com a moldura: a janela toda");
         t.eq(box(F.bounds([], 0, size)), [0, 0, 0, 0], "nada: nada");
         t.eq(box(F.bounds([pill], 0, size)), [700 - pad, 0, 480 + pad * 2, 8 + 34 + pad], "a pílula com a folga, sem sair da janela");
+    });
+
+    // O frame.frag descarta o que fica a mais de 20 px (`reach`) da moldura e
+    // dos pedaços: o arco da união (até a suavização) tem de caber nisso.
+    t.test("frame: a suavização cabe no alcance do shader", () => {
+        t.check(F.smoothing + 2 <= 20, "subir a suavização pede subir o reach do frame.frag");
     });
 
     t.test("frame: as faixas do shader, sem sobreposição", () => {

@@ -15,7 +15,7 @@ import qs.features.central.state
 // direita (em cascata, se os dois abrem juntos) e sai mais rápido; as
 // Notificações sobem e descem junto com a entrada e a saída das Ações. O fundo
 // do bloco é um pedaço da forma da tela (Frame), do tamanho dos painéis à
-// mostra; o conteúdo de cada um entra quando ele passa de ~60%. A pílula fundida
+// mostra; o conteúdo de cada um entra quando ele passa de ~70%. A pílula fundida
 // continua clicável por cima. Esc ou o clique fora dos painéis fecham os dois.
 OverlayPanel {
     id: panel
