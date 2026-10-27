@@ -144,7 +144,20 @@ Singleton {
         }
     }
 
-    Component.onCompleted: blurDelay.start()
+    // Os painéis que saem da moldura não ganham o esmaecer de camada do
+    // Hyprland: a forma deles (na janela da barra) e o conteúdo (na janela de
+    // cada um) entram juntos, sem a camada inteira começar transparente.
+    readonly property string frameRule: Hypr.usingLua ? noAnimLua() : ""
+
+    Component.onCompleted: {
+        blurDelay.start();
+        if (frameRule)
+            Hypr.evalLua(frameRule);
+    }
+
+    function noAnimLua(): string {
+        return `hl.layer_rule({ match = { namespace = "^lucerna-panel-(bar|dashboard|central|notifications|osd)$" }, no_anim = true })`;
+    }
 
     // Desfoque atrás dos painéis do shell ("lucerna-panel-*"). O ignore_alpha
     // restringe o desfoque aos pixels quase opacos: o véu escuro atrás dos
