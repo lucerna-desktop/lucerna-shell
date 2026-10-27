@@ -25,7 +25,7 @@ OverlayPanel {
     inputItem: drawer
     onDismissed: DashboardState.close()
 
-    readonly property real fullWidth: Math.min(920, width - ThemeManager.spacing.small * 2)
+    readonly property real fullWidth: Math.min(920, areaWidth - ThemeManager.spacing.small * 2)
     // Da borda de cima (com a moldura) até o fim do conteúdo.
     readonly property real fullHeight: Frame.thickness + contentScope.height + ThemeManager.spacing.large * 2
     // A aba da barra dessa tela, de onde a peça parte; sem ela, sai direto da moldura.
@@ -59,7 +59,7 @@ OverlayPanel {
         readonly property real grow: Frame.clamp(panel.progress)
 
         width: panel.startWidth + (panel.fullWidth - panel.startWidth) * grow
-        x: (parent.width - width) / 2
+        x: (panel.areaWidth - width) / 2
         y: panel.fromPill ? panel.pill.y : 0
         height: Math.max(0, panel.startHeight + (panel.fullHeight - panel.startHeight) * panel.progress)
 

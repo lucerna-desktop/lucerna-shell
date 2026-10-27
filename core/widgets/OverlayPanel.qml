@@ -33,6 +33,12 @@ PanelWindow {
     property var frameScreen: null
     readonly property bool framed: frameScreen !== null
     readonly property real progress: shown
+    // O tamanho para o layout: saindo da moldura, o da tela dela. A janela só
+    // ganha o tamanho da tela depois de aparecer (antes, 0 ou o padrão), e a
+    // forma, desenhada na janela da barra, já aparece antes dela: medida pela
+    // janela, saía por um quadro no canto de cima à esquerda.
+    readonly property real areaWidth: framed ? frameScreen?.width ?? 0 : width
+    readonly property real areaHeight: framed ? frameScreen?.height ?? 0 : height
     default property alias content: container.data
 
     signal dismissed

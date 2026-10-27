@@ -114,8 +114,8 @@ OverlayPanel {
             const x = Math.min(...parts.map(c => c.x));
             const top = Math.min(...parts.map(c => c.y));
             const bottom = Math.max(...parts.map(c => c.y + c.height));
-            const edge = (top <= CentralState.top + 0.5 ? "top-" : "") + Frame.edges.central + (bottom >= panel.height - panel.margin - 0.5 ? "-bottom" : "");
-            return Frame.attach(Qt.rect(x, top, panel.width - x, bottom - top), edge);
+            const edge = (top <= CentralState.top + 0.5 ? "top-" : "") + Frame.edges.central + (bottom >= panel.areaHeight - panel.margin - 0.5 ? "-bottom" : "");
+            return Frame.attach(Qt.rect(x, top, panel.areaWidth - x, bottom - top), edge);
         }
     }
 
@@ -126,9 +126,9 @@ OverlayPanel {
         z: 1
         order: 0
         margin: panel.margin
-        areaWidth: panel.width
+        areaWidth: panel.areaWidth
         y: CentralState.top
-        maxHeight: Math.max(0, panel.height - y - panel.margin - (CentralState.notificationsOpen ? panel.gap + panel.inboxMin : 0))
+        maxHeight: Math.max(0, panel.areaHeight - y - panel.margin - (CentralState.notificationsOpen ? panel.gap + panel.inboxMin : 0))
     }
 
     InboxPanel {
@@ -136,8 +136,8 @@ OverlayPanel {
 
         order: 1
         margin: panel.margin
-        areaWidth: panel.width
+        areaWidth: panel.areaWidth
         y: CentralState.top + panel.reserve * (actions.height + panel.gap)
-        height: Math.max(0, panel.height - y - panel.margin)
+        height: Math.max(0, panel.areaHeight - y - panel.margin)
     }
 }
