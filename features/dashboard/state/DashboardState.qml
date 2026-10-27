@@ -40,13 +40,21 @@ Singleton {
 
     // Ao abrir: a última aba usada ou uma fixa.
     onOpenChanged: {
-        if (open)
-            openedOn = Hypr.focusedScreen;
         if (open && Config.dashboardStartTab !== "last" && tabs.some(t => t.id === Config.dashboardStartTab))
             Config.dashboardTab = Config.dashboardStartTab;
         if (!open) {
             pointerInside = false;
             pointerEntered = false;
+        }
+    }
+
+    // A tela é gravada antes de o painel abrir: aberto, ele já está nela.
+    Connections {
+        target: Panels
+
+        function onOpening(name) {
+            if (name === "dashboard")
+                root.openedOn = Hypr.focusedScreen;
         }
     }
 

@@ -311,10 +311,27 @@ function run(t) {
             P.opened = [];
             D.openedOn = null;
             K.openedOn = null;
-            P.opened = ["dashboard"];
-            t.check(D.openedOn === screen && D.screen === screen, "o painel superior grava a tela com foco");
-            P.opened = ["central"];
-            t.check(K.openedOn === screen && K.screen === screen, "a central também");
+            // A tela já está gravada quando o painel aparece como aberto.
+            let seen = [];
+            const watch = () => seen.push([P.opened.join(" "), D.openedOn, K.openedOn]);
+            P.openedChanged.connect(watch);
+            try {
+                P.open("dashboard");
+                t.check(D.openedOn === screen && D.screen === screen, "o painel superior grava a tela com foco");
+                t.check(seen.length > 0 && seen[0][1] === screen, "antes de abrir, não depois");
+                D.openedOn = "fora";
+                P.open("dashboard");
+                t.eq(D.openedOn, "fora", "já aberto: não troca de tela");
+                seen = [];
+                P.open("central");
+                t.check(K.openedOn === screen && K.screen === screen, "a central também");
+                t.check(seen.length > 0 && seen[0][2] === screen, "a central, antes de abrir");
+                K.openedOn = "fora";
+                P.openNotifications();
+                t.eq(K.openedOn, "fora", "trocar o que está à mostra na central não troca de tela");
+            } finally {
+                P.openedChanged.disconnect(watch);
+            }
             P.opened = [];
             O.armed = true;
             O.shown = false;

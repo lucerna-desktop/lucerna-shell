@@ -61,7 +61,14 @@ Singleton {
         return !isCompanion(name) && !bases.includes(name);
     }
 
+    // Um painel fechado vai abrir: avisa antes de `opened` mudar, para quem
+    // grava a tela da abertura (os painéis da moldura) já ter a nova quando
+    // o painel aparecer como aberto.
+    signal opening(string name)
+
     function open(name: string): void {
+        if (!isOpen(name))
+            opening(name);
         if (!isCompanion(name))
             opened = [name];
         else if (!opened.includes(name))

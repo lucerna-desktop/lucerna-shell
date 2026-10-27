@@ -40,11 +40,6 @@ Singleton {
     // "bluetooth", "output", "input" ou "battery".
     property string page: ""
 
-    onOpenChanged: {
-        if (open)
-            openedOn = Hypr.focusedScreen;
-    }
-
     // Zera só ao abrir as Ações: na saída, o card continua na página até sumir.
     onActionsOpenChanged: {
         if (actionsOpen)
@@ -57,6 +52,12 @@ Singleton {
 
     Connections {
         target: Panels
+
+        // A tela é gravada antes de a central abrir: aberta, ela já está nela.
+        function onOpening(name) {
+            if (name === "central")
+                root.openedOn = Hypr.focusedScreen;
+        }
 
         function onActionsOpened(entry) {
             root.page = root.pageFor(entry, root.has);
