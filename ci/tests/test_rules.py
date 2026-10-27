@@ -83,8 +83,8 @@ class SuppressionsTest(RepoCase):
             "features/settings/ui/MonitorConfirm.qml": "    margins.top: 90 // qmllint disable unqualified missing-property\n",
             self.OSD: "    margins.bottom: 72 // qmllint disable unqualified missing-property\n",
             "features/notifications/ui/NotificationPopups.qml": (
-                "    margins.top: ThemeManager.spacing.small // qmllint disable unqualified missing-property\n"
-                "    margins.right: ThemeManager.spacing.small // qmllint disable unqualified missing-property\n"
+                "    margins.top: Frame.thickness + ThemeManager.spacing.small // qmllint disable unqualified missing-property\n"
+                "    margins.right: Frame.thickness + ThemeManager.spacing.small // qmllint disable unqualified missing-property\n"
             ),
         }
         self.assertEqual(self.found(files), [])

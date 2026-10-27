@@ -67,8 +67,8 @@ QMLLINT_ALLOWED = {
     "features/settings/ui/MonitorConfirm.qml": ("margins.top: 90",),
     "features/osd/ui/Osd.qml": ("margins.bottom: 72",),
     "features/notifications/ui/NotificationPopups.qml": (
-        "margins.top: ThemeManager.spacing.small",
-        "margins.right: ThemeManager.spacing.small",
+        "margins.top: Frame.thickness + ThemeManager.spacing.small",
+        "margins.right: Frame.thickness + ThemeManager.spacing.small",
     ),
 }
 QMLLINT_SUPPRESSION = re.compile(r"qmllint\s+(disable|enable)\b")
