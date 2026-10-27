@@ -210,6 +210,7 @@ Tudo pode ser chamado de fora com `qs -c lucerna ipc call <alvo> <função> [arg
 | `launcher` | `open <categoria> <busca>` (`apps`, `files`, `documents`, `images`, `music`, `videos`, `web`; a busca pode ser `""`), `toggle` |
 | `session` | `lock`, `isLocked` |
 | `theme` | `set <id>`, `get`, `list` |
+| `blur` | `set <performance\|full\|off>` (o nível do desfoque; outro valor não muda nada), `get` |
 | `brightness` | `up`, `down`, `set <0-100>` (a tela em foco), `setFor <id> <0-100>`, `list` (as telas e os ids: `backlight`, `ddc:<conector>`, ex.: `ddc:HDMI-A-1`) |
 | `monitors` | `identify` |
 | `overview` | `toggle` |
@@ -317,6 +318,8 @@ dev/ci.sh shell lint   # um bash no container de um check, com o repositório em
 ```
 
 A saída fica em `ci-out/<check>/`. Como escrever um teste e o que a cobertura exige está no [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+Para comparar o custo dos níveis do desfoque na sua sessão Hyprland (CPU do Hyprland e do `qs` e, se der para ler, da GPU, com o painel superior aberto em cada nível): `dev/bench-blur.sh 20` (segundos por nível; no fim, volta o nível que estava).
 
 ## Créditos
 
