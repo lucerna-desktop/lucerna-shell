@@ -13,7 +13,9 @@ import qs.core.theme
 // por cima. A moldura nos quatro lados aparece com os pedaços "da moldura"
 // (`framed`: a barra, o painel superior e a central): engrossa de 0 até
 // `thickness` junto com a abertura deles e some quando fecham; a barra é uma
-// aba fundida à borda de cima dela.
+// aba fundida à borda de cima dela, e o painel superior é essa aba
+// transformada (`fromBar`): ela se alarga e cresce para baixo, e o conteúdo da
+// barra esmaece.
 //
 // A janela da barra só existe enquanto há algum pedaço ativo na tela dela;
 // as janelas dos painéis esperam por ela (`isReady`), para ficarem por cima
@@ -75,6 +77,18 @@ Singleton {
     // nessa tela. A mola passa do alvo; a moldura não.
     function progressOn(screen: var): real {
         return clamp(Math.max(0, ...blobs.filter(b => b.framed && b.screen === screen).map(b => b.progress)));
+    }
+
+    // Quanto a barra dessa tela já virou painel (0 a 1): o mais aberto dos
+    // pedaços `fromBar` (o painel superior).
+    function morphOn(screen: var): real {
+        return clamp(Math.max(0, ...blobs.filter(b => b.fromBar && b.screen === screen).map(b => b.progress)));
+    }
+
+    // O conteúdo da barra esmaece logo no começo da transformação (até 40%)
+    // e volta só no fim do recolhimento.
+    function barContentOpacity(morph: real): real {
+        return 1 - clamp(morph / 0.4);
     }
 
     // Algum painel da moldura (fora a própria barra) aberto nessa tela: a barra

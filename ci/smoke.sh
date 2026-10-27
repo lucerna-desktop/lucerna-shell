@@ -484,10 +484,11 @@ step central notifications open
 step central notifications toggle
 step central panels open central
 step central panels toggle central
-# A pílula fundida à moldura continua clicável por cima dos painéis que saem
-# dela: um clique na hora (no meio do topo) com a central aberta troca a
-# central pelo painel superior (o clique não cai na central, que fecharia
-# tudo); outro, com ele aberto, o fecha. O clique vem de um ponteiro virtual.
+# A barra fundida à moldura continua clicável por cima da central: um clique
+# na hora (no meio do topo) com a central aberta troca a central pelo painel
+# superior (o clique não cai na central, que fecharia tudo). Aberto, o painel
+# superior é a própria barra transformada: outro clique no mesmo ponto cai
+# nele, e ele fica aberto. O clique vem de um ponteiro virtual.
 # click_pill <esperado no panels get>
 click_pill() {
     local got
@@ -496,14 +497,16 @@ click_pill() {
     sleep 1
     alive || fail "o shell caiu depois do clique na pílula"
     got=$(ipc panels get) || fail "ipc call panels get falhou: $(why $?)"
-    row "clique na pílula fundida" "$1" "${got:-(nenhum)}"
-    [ "$got" = "$1" ] || fail "depois do clique na hora da pílula fundida, o panels get trouxe \"$got\"; o esperado era \"${1:-nenhum}\""
+    row "clique na barra fundida" "$1" "${got:-(nenhum)}"
+    [ "$got" = "$1" ] || fail "depois do clique na hora da barra fundida, o panels get trouxe \"$got\"; o esperado era \"${1:-nenhum}\""
     shot "$out/shots/$(printf '%02d' "$n")-clique-pilula.png" || fail "o grim não capturou o clique na pílula: $(why $?)"
 }
 ipc central open "" > /dev/null || fail "ipc call central open falhou: $(why $?)"
 sleep 1
 click_pill dashboard
-click_pill ""
+click_pill dashboard
+ipc panels close > /dev/null || fail "ipc call panels close falhou: $(why $?)"
+sleep 1
 for topic in appearance wallpaper displays idle nightlight launcher clipboard capture mouse keyboard glass \
     notifications panels bar dashboard power shortcuts credits about; do
     step settings settings open "$topic"

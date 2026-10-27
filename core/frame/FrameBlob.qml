@@ -13,6 +13,9 @@ QtObject {
     property string role: "panel"
     // Traz a moldura junto (o painel superior e a central).
     property bool framed: false
+    // A barra se transforma nele (o painel superior): com ele abrindo, o
+    // conteúdo da barra esmaece e ela deixa de receber o mouse.
+    property bool fromBar: false
     // Pedido aberto; `progress` é a abertura animada (0 a 1, a mola passa de 1).
     property bool open: false
     property real progress: 0

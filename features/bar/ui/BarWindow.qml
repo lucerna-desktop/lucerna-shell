@@ -79,5 +79,6 @@ PanelWindow {
 
         anchors.fill: parent
         progress: root.progress
+        morph: Frame.morphOn(root.targetScreen)
     }
 }

@@ -145,4 +145,20 @@ function run(t) {
         const many = F.slots(Array.from({ length: 8 }, () => dash), 1);
         t.eq(many.rects.length, F.slotCount, "mais pedaços que vagas: os que cabem");
     });
+
+    scenario("frame: a barra se transforma no painel superior", [pill, dash, blob({ fromBar: true, framed: true, open: true, progress: 0.3 }), blob({ screen: "B", fromBar: true, progress: 1 })], () => {
+        t.near(F.morphOn("A"), 0.3, 1e-9, "a abertura do painel que sai da barra");
+        t.eq(F.morphOn("C"), 0, "sem ele, a barra é a barra");
+    });
+
+    scenario("frame: a mola não passa a transformação de 1", [blob({ fromBar: true, open: true, progress: 1.08 })], () => {
+        t.eq(F.morphOn("A"), 1);
+    });
+
+    t.test("frame: o conteúdo da barra esmaece no começo da transformação", () => {
+        t.eq(F.barContentOpacity(0), 1, "barra inteira");
+        t.near(F.barContentOpacity(0.2), 0.5, 1e-9, "na metade do esmaecer");
+        t.eq(F.barContentOpacity(0.4), 0, "some antes do conteúdo do painel entrar");
+        t.eq(F.barContentOpacity(1), 0);
+    });
 }

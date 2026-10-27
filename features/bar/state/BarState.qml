@@ -18,7 +18,8 @@ import qs.services
 // quando o mouse sai e quando um painel centralizado abre; não aparece por
 // cima de uma janela em tela cheia. Na área de trabalho vazia (sem janelas no
 // workspace daquela tela), fica à mostra: não cobre nada. Com um painel da
-// moldura aberto (o painel superior ou a central), fica à mostra e clicável.
+// moldura aberto, fica à mostra: por cima da central, clicável; com o painel
+// superior, ela se transforma nele (ver Frame.morphOn).
 Singleton {
     id: root
 
@@ -161,6 +162,16 @@ Singleton {
 
     // Painéis
     readonly property bool dashboardOpen: Panels.isOpen("dashboard")
+
+    // A barra se transforma no painel superior e deixa de receber o mouse (o
+    // HoverHandler dela não vê a saída): ao abrir, o mouse conta como fora, e
+    // ao fechar ela só fica se ainda tiver motivo para estar à mostra.
+    onDashboardOpenChanged: {
+        if (dashboardOpen) {
+            hovering = false;
+            hideDelay.restart();
+        }
+    }
 
     function registerSurface(window: var): void {
         Panels.register(window);

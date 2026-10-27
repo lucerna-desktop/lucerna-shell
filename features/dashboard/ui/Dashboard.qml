@@ -6,12 +6,15 @@ import qs.core.theme
 import qs.core.widgets
 import qs.features.dashboard.state
 
-// Painel superior: escorre da moldura de cima, logo abaixo da pílula fundida
-// (a "cabeça" dele), com mola: a forma cresce da largura da pílula até a do
-// painel e da altura 0 até a da aba atual. O fundo é um pedaço da forma da tela
-// (Frame); o conteúdo, com a largura do painel aberto, é recortado por ela e
-// entra quando ela passa de ~60%. Tab/Shift+Tab ou 1–4 trocam de aba; Esc ou
-// clique fora fecham.
+// Painel superior: a aba da barra, fundida à moldura de cima, se transforma
+// nele, com mola: uma peça só, que se alarga da largura da aba até a do painel
+// e cresce para baixo até a altura da aba atual. O conteúdo da barra esmaece
+// no começo (ver Frame.morphOn); o topo da peça passa a ser o cabeçalho do
+// painel, a fileira de abas, seguida do conteúdo. Ao fechar, a peça encolhe de
+// volta para a aba da barra e o conteúdo dela reaparece. O fundo é um pedaço
+// da forma da tela (Frame); o conteúdo, com a largura do painel aberto, é
+// recortado por ela e entra quando ela passa de ~60%. Tab/Shift+Tab ou 1–4
+// trocam de aba; Esc ou clique fora fecham.
 OverlayPanel {
     id: panel
 
@@ -23,10 +26,13 @@ OverlayPanel {
     onDismissed: DashboardState.close()
 
     readonly property real fullWidth: Math.min(920, width - ThemeManager.spacing.small * 2)
-    readonly property real fullHeight: contentScope.height + ThemeManager.spacing.large * 2
-    // A pílula fundida dessa tela; sem ela, o painel sai direto da moldura.
+    // Da borda de cima (com a moldura) até o fim do conteúdo.
+    readonly property real fullHeight: Frame.thickness + contentScope.height + ThemeManager.spacing.large * 2
+    // A aba da barra dessa tela, de onde a peça parte; sem ela, sai direto da moldura.
     readonly property rect pill: Frame.pillOn(DashboardState.screen)
     readonly property bool fromPill: pill.width > 0
+    readonly property real startWidth: fromPill ? pill.width : fullWidth
+    readonly property real startHeight: fromPill ? pill.height : 0
 
     onOpenChanged: {
         if (open)
@@ -39,19 +45,23 @@ OverlayPanel {
     FrameBlob {
         screen: DashboardState.screen
         framed: true
+        fromBar: true
         open: panel.open
         progress: panel.progress
-        rect: Qt.rect(drawer.x, drawer.y, drawer.width, drawer.height)
+        rect: Frame.attach(Qt.rect(drawer.x, drawer.y, drawer.width, drawer.height), Frame.edges.dashboard)
     }
 
-    // A área da forma do painel: o conteúdo é recortado por ela.
+    // A peça, da aba da barra até o painel: o conteúdo é recortado por ela, e
+    // ela recebe o mouse (a barra, transformada nela, deixa de receber).
     Item {
         id: drawer
 
-        width: panel.fromPill ? panel.pill.width + (panel.fullWidth - panel.pill.width) * Frame.clamp(panel.progress) : panel.fullWidth
+        readonly property real grow: Frame.clamp(panel.progress)
+
+        width: panel.startWidth + (panel.fullWidth - panel.startWidth) * grow
         x: (parent.width - width) / 2
-        height: Math.max(0, panel.fullHeight * panel.progress)
-        y: panel.fromPill ? panel.pill.y + panel.pill.height : Frame.thicknessAt(panel.progress)
+        y: panel.fromPill ? panel.pill.y : 0
+        height: Math.max(0, panel.startHeight + (panel.fullHeight - panel.startHeight) * panel.progress)
         clip: true
 
         // Para "fechar ao tirar o mouse".
@@ -66,8 +76,8 @@ OverlayPanel {
 
             x: (parent.width - panel.fullWidth) / 2 + ThemeManager.spacing.large
             width: panel.fullWidth - ThemeManager.spacing.large * 2
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: ThemeManager.spacing.large
+            // O cabeçalho no topo da peça, logo abaixo da moldura.
+            y: Frame.thickness + ThemeManager.spacing.large - drawer.y
             height: tabs.height + ThemeManager.spacing.normal + pages.height
             focus: true
             opacity: Frame.contentOpacity(panel.progress)

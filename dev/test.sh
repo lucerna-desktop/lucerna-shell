@@ -81,9 +81,10 @@
 #   dev/test.sh ipc brightness up; dev/test.sh shot $p-osd; dev/test.sh ipc brightness down
 #   dev/test.sh run 'cat /tmp/lucerna-power/sys/class/backlight/lucerna_teste/brightness'
 #   dev/test.sh shot $p-barra   # (com o mouse no topo, ou o workspace vazio)
-#   # A pílula fundida clicável com a central aberta (ponteiro virtual, sem
+#   # A barra fundida clicável com a central aberta (ponteiro virtual, sem
 #   # ferramenta de fora): o sino fecha só as notificações; a hora troca a
-#   # central pelo painel superior.
+#   # central pelo painel superior (aberto, ele é a barra transformada: um
+#   # clique ali cai nele).
 #   dev/test.sh ipc central open ""; sleep 1
 #   dev/test.sh run 'python3 -I ~/.config/quickshell/lucerna/ci/vclick.py 960 21'; sleep 1; dev/test.sh ipc panels get
 #   for e in compact full grid; do dev/test.sh setc "dict(launcherStyle='$e')"; dev/test.sh see $p-$e launcher open apps ""; done; dev/test.sh setc "dict(launcherStyle='compact')"
