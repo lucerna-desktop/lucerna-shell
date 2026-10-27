@@ -139,6 +139,10 @@ Adiadas na revisão final da branch `feat/paineis-moldura` (a barra fundida à m
 - [ ] **A borda da forma com escala fracionária:** a suavização é de 1 px lógico (`frame.frag`), e em 1,25 ou 1,5 a beira e o contorno do tema ficam um pouco borrados. Usar `fwidth` no lugar.
 - [ ] **O Esc na central aberta pelo atalho com uma janela focada por baixo.** A central não pega mais o teclado com exclusividade (para o clique na barra funcionar); conferir no Hyprland de verdade que o Esc ainda chega a ela.
 - [ ] **Depois de um `hyprctl reload`**, as regras do tema, do desfoque e da moldura são reenviadas pelo shell; conferir numa sessão de verdade (no container, o reload derruba a saída aninhada).
+- [ ] **A janela da forma volta à tela inteira quando o OSD acaba.** Com `parts` vazio, o `Frame.compactOn` dá falso, e a janela pede um resize de tela cheia só para os quadros do `lingering`. Manter o último `compact` enquanto não houver pedaços (ou tratar a lista vazia como compacta).
+- [ ] **O `lingering` da `BarWindow` depende da ordem entre o `onPartsChanged` e a binding do `visible`.** Hoje o handler vem antes, mas é frágil: derivar a condição de uma flag própria (`hadParts`), não do próprio `visible`.
+- [ ] **A junção da barra com a moldura fica com suavização 17, não 22.** O limite "metade do menor lado à mostra" vale também para a pílula de 34 px. Se o 22 for desejado na barra, isentar o `role === "pill"` do limite da suavização (ou limitar só o raio); se não, registrar no spec.
+- [ ] **O canto próprio da central reaparece na subida das Notificações.** O `top-` do bloco só entra com o topo a até 0,5 px da moldura; quando as Ações saem e o inbox sobe animado, o bloco fica solto e "estala" na junção ao chegar. Conferir a olho; se incomodar, interpolar a junção pela distância até a moldura (prender sem esticar o bloco).
 - [ ] **As capturas da documentação** (`docs/screenshots/desktop.jpg` e talvez `hero.jpg`) ainda mostram a barra antiga.
 
 ## Depois
