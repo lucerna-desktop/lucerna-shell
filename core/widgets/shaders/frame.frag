@@ -45,6 +45,15 @@ float smin(float a, float b, float k) {
     return max(k, min(a, b)) - length(max(vec2(k) - vec2(a, b), vec2(0.0)));
 }
 
+// Longe da moldura e de todo pedaço: nada a desenhar (a maior parte da tela,
+// que assim nem é escrita).
+bool near(vec2 p, vec4 b, vec4 k, float reach) {
+    if (k.z < 0.5)
+        return false;
+    vec2 q = abs(p - b.xy - b.zw * 0.5) - b.zw * 0.5;
+    return max(q.x, q.y) < reach;
+}
+
 float blend(float u, vec2 p, vec4 b, vec4 k) {
     if (k.z < 0.5)
         return u;
@@ -60,6 +69,11 @@ void main() {
     vec2 sh = frame.zw * 0.5;
     vec2 ih = max(sh - vec2(frame.x), vec2(0.0));
     float u = -sdRoundedBox(p, sh, ih, min(frame.y, min(ih.x, ih.y)));
+    // O arco de uma união chega a até ~0,6·k da beira; a suavização máxima é 18.
+    float reach = 20.0;
+    if (u > reach && !(near(p, b0, k0, reach) || near(p, b1, k1, reach) || near(p, b2, k2, reach)
+            || near(p, b3, k3, reach) || near(p, b4, k4, reach) || near(p, b5, k5, reach)))
+        discard;
     u = blend(u, p, b0, k0);
     u = blend(u, p, b1, k1);
     u = blend(u, p, b2, k2);

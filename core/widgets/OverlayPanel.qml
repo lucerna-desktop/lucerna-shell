@@ -58,7 +58,10 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     // "lucerna-panel-*" recebe o desfoque do Hyprland (ver ThemeSwitcherState).
-    WlrLayershell.namespace: `lucerna-panel-${name}`
+    // Saindo da moldura, "lucerna-frame-*": o fundo é a forma, já desfocada
+    // na janela da barra; desfocar de novo atrás do conteúdo dobraria o custo
+    // do Hyprland a cada quadro.
+    WlrLayershell.namespace: framed ? `lucerna-frame-${name}` : `lucerna-panel-${name}`
     // Não modal: teclado "sob demanda", que o Hyprland entrega ao abrir e ao
     // clicar; mais de um aberto, fica com o último clicado.
     // Modal da moldura (a central): também sob demanda. Com o teclado exclusivo,

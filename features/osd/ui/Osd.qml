@@ -33,7 +33,8 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     mask: Region {}
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "lucerna-panel-osd"
+    // Sem o desfoque: o fundo é a forma, na janela da barra (ver OverlayPanel).
+    WlrLayershell.namespace: "lucerna-frame-osd"
 
     // O bloco, em coordenadas da tela (a janela fica no meio da borda direita).
     FrameBlob {

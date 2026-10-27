@@ -60,7 +60,8 @@ PanelWindow {
         item: list.contentItem
     }
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "lucerna-panel-notifications"
+    // Sem o desfoque: o fundo é a forma, na janela da barra (ver OverlayPanel).
+    WlrLayershell.namespace: "lucerna-frame-notifications"
 
     // O bloco, em coordenadas da tela (a janela fica na beira direita).
     FrameBlob {
