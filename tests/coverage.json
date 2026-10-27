@@ -37,6 +37,8 @@
         "core/panels/Panels.qml:IpcHandler.get": "IPC panels get: exercitado pela fumaça a cada passo",
         "core/theme/ThemeManager.qml:IpcHandler.set": "IPC theme set: repassa a apply(), testada",
         "core/theme/ThemeManager.qml:IpcHandler.get": "IPC theme get: só devolve current",
-        "core/theme/ThemeManager.qml:IpcHandler.list": "IPC theme list: só junta os ids de themes"
+        "core/theme/ThemeManager.qml:IpcHandler.list": "IPC theme list: só junta os ids de themes",
+        "core/theme/ThemeManager.qml:IpcHandler.set#2": "IPC blur set: repassa a setBlurMode(), testada; exercitado pela fumaça",
+        "core/theme/ThemeManager.qml:IpcHandler.get#2": "IPC blur get: só devolve blur.mode; exercitado pela fumaça"
     }
 }
