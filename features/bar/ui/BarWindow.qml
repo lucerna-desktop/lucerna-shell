@@ -15,7 +15,7 @@ import qs.features.bar.state
 // ela. O conteúdo dos painéis fica nas janelas deles, por cima desta.
 //
 // Só existe enquanto há forma na tela. Ocupa a tela inteira, ou só a coluna
-// da direita quando só os popups e o OSD estão à mostra, sem a moldura
+// da direita quando só o OSD está à mostra, sem a moldura
 // (Frame.compactOn): o Hyprland desfoca e recompõe a cada quadro só ela. Só a
 // barra recebe o mouse: o resto (a moldura, os fundos) deixa o clique passar.
 PanelWindow {
@@ -54,7 +54,7 @@ PanelWindow {
     mask: layout.mask
     // Na camada de cima de tudo, como os painéis: a forma fica atrás do
     // conteúdo deles (que esperam esta janela existir, Frame.isReady) e por
-    // cima de uma janela em tela cheia (o OSD e os popups precisam).
+    // cima de uma janela em tela cheia (o OSD precisa).
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "lucerna-panel-bar"
 

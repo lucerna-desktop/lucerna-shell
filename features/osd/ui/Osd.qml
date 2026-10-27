@@ -14,7 +14,9 @@ PanelWindow {
     id: window
 
     readonly property real flare: Frame.smoothing
-    readonly property real bodyWidth: 52 + Frame.thickness
+    // A espessura da moldura entra só com ela à mostra (o painel superior
+    // aberto); sozinho, o OSD sai da borda sem moldura.
+    readonly property real bodyWidth: 52 + Frame.thicknessAt(Frame.progressOn(OsdState.screen))
     readonly property real bodyHeight: 220
     property real shown: OsdState.shown ? 1 : 0
 
@@ -27,7 +29,8 @@ PanelWindow {
     screen: OsdState.screen
     visible: shown > 0 && Frame.isReady(OsdState.screen)
     anchors.right: true
-    implicitWidth: bodyWidth + flare
+    // Fixa (com a moldura inteira): a janela não muda de tamanho a cada quadro.
+    implicitWidth: 52 + Frame.thickness + flare
     implicitHeight: bodyHeight + flare * 2
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
@@ -51,7 +54,7 @@ PanelWindow {
     Item {
         x: window.width - window.bodyWidth * window.shown
         y: window.flare
-        width: window.bodyWidth - Frame.thickness
+        width: 52
         height: window.bodyHeight
         opacity: Frame.contentOpacity(window.shown)
 

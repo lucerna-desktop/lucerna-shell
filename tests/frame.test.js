@@ -68,7 +68,7 @@ function run(t) {
         t.check(F.fusedOn("A") && !F.fusedOn("B"), "a pílula fica fundida só na tela do painel");
     });
 
-    scenario("frame: o OSD e os popups não trazem a moldura", [hiddenPill, osd], () => {
+    scenario("frame: o OSD não traz a moldura", [hiddenPill, osd], () => {
         osd.open = true;
         osd.progress = 1;
         try {
@@ -110,7 +110,6 @@ function run(t) {
     t.test("frame: de que borda cada painel sai", () => {
         t.eq(F.edges.dashboard, "top");
         t.eq(F.edges.central, "right");
-        t.eq(F.edges.notifications, "top-right");
         t.eq(F.edges.osd, "right");
     });
 

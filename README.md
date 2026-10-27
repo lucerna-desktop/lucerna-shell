@@ -32,7 +32,7 @@ A barra e as janelas com as bordas e o arredondamento que o tema aplica no Hyprl
 
 Visão geral, mídia com letra sincronizada, desempenho e clima. É a própria barra transformada: a aba fundida à moldura se alarga e cresce para baixo, o conteúdo da barra esmaece e o topo da peça vira a fileira de abas; ao fechar, ela encolhe de volta para a barra. A altura acompanha a aba.
 
-Os painéis que saem das bordas (o painel superior, a central, os popups de notificação e o OSD) são uma peça só com a tela: ao abrir o painel superior ou a central, uma moldura fina aparece nos quatro lados com a barra fundida à borda de cima, e o painel incha da borda com a junção arredondada, como um líquido; ao fechar, tudo recolhe e a moldura some.
+Os painéis que saem das bordas (o painel superior, a central e o OSD) são uma peça só com a tela: ao abrir o painel superior ou a central, uma moldura fina aparece nos quatro lados com a barra fundida à borda de cima, e o painel incha da borda com a junção arredondada, como um líquido; ao fechar, tudo recolhe e a moldura some.
 
 | Mídia | Desempenho |
 | --- | --- |

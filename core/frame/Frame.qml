@@ -8,8 +8,9 @@ import qs.core.theme
 // pelo core/widgets/FrameShape (união suave por SDF) na janela da barra.
 //
 // Cada pedaço da forma é um FrameBlob, registrado aqui: a pílula da barra e o
-// fundo de cada painel que sai de uma borda (o painel superior, a central, os
-// popups de notificação e o OSD). O conteúdo deles fica nas próprias janelas,
+// fundo de cada painel que sai de uma borda (o painel superior, a central e o
+// OSD; os popups de notificação são cartões soltos, fora da forma). O
+// conteúdo deles fica nas próprias janelas,
 // por cima. A moldura nos quatro lados aparece com os pedaços "da moldura"
 // (`framed`: a barra, o painel superior e a central): engrossa de 0 até
 // `thickness` junto com a abertura deles e some quando fecham; a barra é uma
@@ -37,15 +38,14 @@ Singleton {
     readonly property int slotCount: 6
     // Quantas faixas a forma usa no máximo (um ShaderEffect cada; ver regions).
     readonly property int regionCount: 16
-    // A coluna da direita, onde os popups e o OSD saem sem a moldura: a janela
-    // da forma encolhe para ela (ver compactOn).
-    readonly property real column: 480
+    // A coluna da direita, onde o OSD sai sem a moldura: a janela da forma
+    // encolhe para ela (ver compactOn).
+    readonly property real column: 128
 
     // De que borda cada um sai.
     readonly property var edges: ({
             dashboard: "top",
             central: "right",
-            notifications: "top-right",
             osd: "right"
         })
 
@@ -173,7 +173,7 @@ Singleton {
 
     // Sem a moldura e com todos os pedaços (e a folga do arco) na coluna da
     // direita, a janela da forma ocupa só a coluna: o Hyprland desfoca e
-    // recompõe a cada quadro só ela, não a tela inteira (um popup por cima de
+    // recompõe a cada quadro só ela, não a tela inteira (o OSD por cima de
     // um vídeo). Muda só na passagem entre com e sem moldura.
     function compactOn(on: var, frame: real, size: size): bool {
         const pad = smoothing + 2;

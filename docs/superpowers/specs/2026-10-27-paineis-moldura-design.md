@@ -20,8 +20,10 @@ Hoje cada painel é um cartão solto que desce ou desliza. O usuário quer a flu
 - **De onde cada painel sai:**
   - painel superior (dashboard): da própria barra, fundida à moldura de cima (ver acima);
   - central (ações e notificações): da borda direita, um bloco só, como a sidebar do Caelestia;
-  - popups de notificação: do canto superior direito; com a central aberta, ficam dentro dela;
+  - ~~popups de notificação: do canto superior direito; com a central aberta, ficam dentro dela;~~ (saíram da moldura; ver abaixo)
   - OSD de volume e brilho: da borda direita, no meio da altura, vertical.
+- **Os popups de notificação saem da moldura (decisão de 2026-10-27, na revisão final):** voltam a ser cartões soltos no canto superior direito, como na `main` (fundo e cantos próprios, a mesma entrada e saída deslizando pela direita), e a chegada de uma notificação não faz a moldura aparecer nem entra na forma do shader. Com a central aberta, continuam escondidos, e a lista dela mostra as mesmas.
+- **O mouse no topo sempre traz a barra (decisão de 2026-10-27, na revisão final):** como na `main`, inclusive com uma janela maximizada ou em tela cheia. A troca de workspace e o workspace vazio não trazem a barra por cima de uma janela em tela cheia de verdade (a maximizada não conta).
 - **Ficam como estão (centralizados):** launcher, configurações, área de transferência, menu de energia, seletor de temas, visão geral dos workspaces, captura.
 
 ## Objetivos
