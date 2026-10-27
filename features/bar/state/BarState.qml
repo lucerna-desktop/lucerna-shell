@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import qs.core.config
 import qs.core.format
+import qs.core.frame
 import qs.core.panels
 import qs.core.widgets
 import qs.services
@@ -12,8 +13,11 @@ import qs.services
 //
 // A barra fica escondida e aparece na tela onde o mouse encostou no topo
 // (ou, por um instante, ao trocar de workspace). Some quando o mouse sai e
-// quando um painel abre. Na área de trabalho vazia (sem janelas no workspace
-// daquela tela), fica à mostra: não cobre nada.
+// quando um painel centralizado abre; não aparece por cima de uma janela em
+// tela cheia. Na área de trabalho vazia (sem janelas no workspace daquela
+// tela), fica à mostra: não cobre nada. Com um painel da moldura aberto (o
+// painel superior ou a central, ver Frame), ela sobe e se funde à moldura, à
+// mostra e clicável; ao fechar, descola e flutua um instante antes de sumir.
 Singleton {
     id: root
 
@@ -32,9 +36,35 @@ Singleton {
     readonly property bool expanded: hovering || peeking
 
     function shownOn(screen: var): bool {
+        if (Frame.fusedOn(screen))
+            return true;
         if (panelOpen)
             return false;
-        return revealedScreen === screen || (Config.barOnEmpty && Hypr.isScreenEmpty(screen));
+        if (revealedScreen !== screen && !(Config.barOnEmpty && Hypr.isScreenEmpty(screen)))
+            return false;
+        return !Hypr.hasFullscreen(screen);
+    }
+
+    // O topo da pílula: `gap` abaixo da borda flutuando, encostada nela fundida
+    // (`fuse` de 0 a 1), e acima da tela escondida (`progress` 0).
+    function pillY(gap: real, height: real, progress: real, fuse: real): real {
+        return gap * (1 - Frame.clamp(fuse)) - (1 - progress) * (height + gap * 2);
+    }
+
+    // A tela onde a pílula está fundida (ou null). Ao descolar, ela fica à
+    // mostra, flutuando, até o mouse sair (ou não entrar) dela.
+    readonly property var fusedScreen: Quickshell.screens.find(s => Frame.fusedOn(s)) ?? null
+    property var lastFused: null
+
+    onFusedScreenChanged: unfuse(lastFused, fusedScreen)
+
+    function unfuse(was: var, now: var): void {
+        lastFused = now;
+        if (!was || was === now)
+            return;
+        revealedScreen = was;
+        if (!hovering)
+            hideDelay.restart();
     }
 
     // Mouse encostou no topo da tela.

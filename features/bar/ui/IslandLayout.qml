@@ -9,18 +9,22 @@ Item {
     id: root
 
     required property real progress
+    // Fundida à moldura (0 a 1): sobe até encostar na borda de cima.
+    required property real fuse
     readonly property bool expanded: BarState.expanded
     readonly property real gap: ThemeManager.spacing.small
 
     readonly property Region mask: Region {
         item: island
     }
+    // O fundo, que a forma da tela desenha (Frame).
+    readonly property rect shape: Qt.rect(island.x, island.y, island.width, island.height)
 
     Glass {
         id: island
 
         anchors.horizontalCenter: parent.horizontalCenter
-        y: root.gap - (1 - root.progress) * (height + root.gap * 2)
+        y: BarState.pillY(root.gap, height, root.progress, root.fuse)
         width: content.width + ThemeManager.spacing.small * 2
         height: ThemeManager.barHeight
         radius: height / 2
