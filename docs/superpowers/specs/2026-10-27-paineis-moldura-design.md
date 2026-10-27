@@ -29,7 +29,7 @@ Hoje cada painel é um cartão solto que desce ou desliza. O usuário quer a flu
 ## Objetivos
 
 - Uma forma única por monitor (moldura + pílula + fundos dos painéis abertos) com a junção líquida, a cor e a transparência da barra (`ThemeManager.glass(colors.base, 0)`) e o desfoque do Hyprland funcionando, inclusive nos cantos côncavos.
-- Animação com as molas de hoje (`ThemeManager.anim`): a moldura engrossa de 0 até a espessura final (≈ 8–10 px) enquanto o painel incha; o conteúdo do painel entra quando a forma já passou de ~60%.
+- Animação com as molas de hoje (`ThemeManager.anim`): a moldura engrossa de 0 até a espessura final (≈ 8–10 px) enquanto o painel incha; o conteúdo do painel entra quando a forma já passou de ~70% (era ~60%; subiu na revisão final, pelo quadro de diferença entre a janela da forma e a do conteúdo).
 - Desempenho igual ao de hoje: nada redesenha com tudo parado; nenhum crescimento de memória.
 - As janelas não mudam de tamanho: a moldura é desenhada por cima da beira da tela, sem reservar espaço.
 

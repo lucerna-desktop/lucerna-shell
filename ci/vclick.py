@@ -90,7 +90,6 @@ send(2, 0, struct.pack("<I", manager) + wstr("zwlr_virtual_pointer_manager_v1") 
 send(4, 0, struct.pack("<II", 0, 5))  # create_virtual_pointer(seat nulo) -> 5
 
 
-
 def now():
     return int(time.monotonic() * 1000) & 0xFFFFFFFF
 
