@@ -84,6 +84,12 @@ function run(t) {
             t.eq([T.blur.mode, T.blur.customized], ["full", true]);
             T.setBlurMode("off");
             t.eq([T.blur.mode, T.blur.enabled], ["off", false]);
+            T.setBlurMode("performance");
+            t.eq([T.blur.mode, T.blur.customized, C.blurOverride], ["performance", false, null], "o nível do tema não é ajuste");
+            T.setBlur("size", 10);
+            T.setBlurMode("full");
+            T.setBlurMode("performance");
+            t.eq(C.blurOverride, { size: 10 }, "volta ao do tema sem perder o size");
         } finally {
             T.resetGlass();
         }

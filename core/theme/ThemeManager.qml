@@ -258,14 +258,18 @@ Singleton {
     }
 
     // Grava o nível no ajuste do usuário, sem perder size e passes; tira o
-    // enabled antigo, que o mode substitui.
+    // enabled antigo, que o mode substitui. O nível que o tema já dá não é
+    // ajuste: sai do override (e o "Restaurar padrões do tema" não aparece).
     function setBlurMode(mode: string): void {
         if (!blurModes.includes(mode))
             return;
         const next = Object.assign({}, Config.blurOverride ?? {});
         delete next.enabled;
-        next.mode = mode;
-        Config.blurOverride = next;
+        if (mode === modeFrom({}, data.hyprland ?? {}))
+            delete next.mode;
+        else
+            next.mode = mode;
+        Config.blurOverride = Object.keys(next).length ? next : null;
     }
 
     // Volta transparência e desfoque aos valores do tema.

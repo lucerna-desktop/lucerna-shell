@@ -221,6 +221,12 @@ function run(t) {
         t.check(!w.includes("no_blur = false"));
     });
 
+    t.test("themeswitcher: religar o desfoque das janelas recarrega, desligar manda a regra", () => {
+        t.eq(S.windowRuleAction(S.windowBlurLua(), false), "eval", "desligar");
+        t.eq(S.windowRuleAction("", true), "reload", "religar depois de enviada");
+        t.eq(S.windowRuleAction("", false), "", "nada enviado, nada a desfazer");
+    });
+
     t.test("themeswitcher: o reload reenvia as regras do desfoque", () => {
         const windows0 = C.blurWindows;
         try {

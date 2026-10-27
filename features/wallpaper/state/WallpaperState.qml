@@ -7,7 +7,6 @@ import qs.core.config
 import qs.core.frame
 import qs.core.panels
 import qs.core.theme
-import qs.core.widgets
 import qs.services
 
 // Papel de parede de cada monitor: de onde vem (o tema ativo ou o de outro
@@ -72,7 +71,7 @@ Singleton {
     function shouldAnimate(screen: var): bool {
         if (!showsEffect(screen) || Session.locked)
             return false;
-        if (blurCovers(screen, ThemeManager.transparency.enabled && ThemeManager.blur.enabled, Panels.surfaces.filter(w => w instanceof OverlayPanel), Frame.windows))
+        if (blurCovers(screen, ThemeManager.transparency.enabled && ThemeManager.blur.enabled, Panels.surfaces, Frame.windows))
             return false;
         if (Hypr.hasFullscreen(screen) || Hypr.isDpmsOff(screen))
             return false;
@@ -81,8 +80,9 @@ Singleton {
         return true;
     }
 
-    // Uma camada desfocada grande cobre a tela: um painel aberto (surfaces, com
-    // `screen`) ou a janela da forma da moldura à mostra com algum pedaço além
+    // Uma camada desfocada grande cobre a tela: um painel aberto (surfaces com
+    // `screen` e `open`; a barra e as janelas de monitores também se registram
+    // no Panels, mas não têm `open`) ou a janela da forma da moldura à mostra com algum pedaço além
     // da pílula da barra (windows, com `targetScreen` e `parts`). Só a pílula
     // não conta: com a barra na área de trabalho vazia (barOnEmpty), o papel
     // nunca andaria. Pausa, não baixa o FPS: cada quadro do papel suja o
@@ -93,7 +93,7 @@ Singleton {
     function blurCovers(screen: var, blurOn: bool, surfaces: var, windows: var): bool {
         if (!blurOn)
             return false;
-        return surfaces.some(w => w.screen === screen && w.visible) || windows.some(w => w.targetScreen === screen && w.visible && (w.parts ?? []).some(p => p.role !== "pill"));
+        return surfaces.some(w => w.open === true && w.screen === screen && w.visible) || windows.some(w => w.targetScreen === screen && w.visible && (w.parts ?? []).some(p => p.role !== "pill"));
     }
 
     // Vídeos: cada tela toca a versão feita para ela (resolução, proporção,

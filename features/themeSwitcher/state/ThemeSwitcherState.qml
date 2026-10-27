@@ -139,13 +139,20 @@ Singleton {
     // no_blur do próprio usuário): recarrega a config do Hyprland, que apaga a
     // regra, e o reapply() manda de volta o que é do shell.
     onWindowRuleChanged: {
-        if (windowRule) {
+        const action = windowRuleAction(windowRule, windowRuleSent);
+        if (action === "eval")
             Hypr.evalLua(windowRule);
-            windowRuleSent = true;
-        } else if (windowRuleSent) {
-            windowRuleSent = false;
+        else if (action === "reload")
             Hypr.reloadConfig();
-        }
+        windowRuleSent = windowRule !== "";
+    }
+
+    // O que fazer quando a regra de janela muda: "eval" (mandar a regra),
+    // "reload" (ela saiu depois de enviada) ou "" (nada).
+    function windowRuleAction(rule: string, sent: bool): string {
+        if (rule)
+            return "eval";
+        return sent ? "reload" : "";
     }
 
     // Intensidade do desfoque: com atraso, para não mandar um comando por
