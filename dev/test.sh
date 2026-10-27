@@ -81,6 +81,11 @@
 #   dev/test.sh ipc brightness up; dev/test.sh shot $p-osd; dev/test.sh ipc brightness down
 #   dev/test.sh run 'cat /tmp/lucerna-power/sys/class/backlight/lucerna_teste/brightness'
 #   for e in pill island; do dev/test.sh setc "dict(barStyle='$e')"; sleep 1; dev/test.sh shot $p-barra-$e; done; dev/test.sh setc "dict(barStyle='pill')"
+#   # A pílula fundida clicável com a central aberta (ponteiro virtual, sem
+#   # ferramenta de fora): o sino fecha só as notificações; a hora troca a
+#   # central pelo painel superior.
+#   dev/test.sh ipc central open ""; sleep 1
+#   dev/test.sh run 'python3 -I ~/.config/quickshell/lucerna/ci/vclick.py 960 21'; sleep 1; dev/test.sh ipc panels get
 #   for e in compact full grid; do dev/test.sh setc "dict(launcherStyle='$e')"; dev/test.sh see $p-$e launcher open apps ""; done; dev/test.sh setc "dict(launcherStyle='compact')"
 #   # Nesta imagem, o Hyprland (0.56.2, config Lua) não aceita mais o
 #   # `hyprctl dispatch exec "[workspace N silent] CMD"` clássico (dá erro de

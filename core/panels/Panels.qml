@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import qs.core.config
-import qs.core.theme
 
 // Ponte entre features: diz quais painéis estão abertos.
 //
@@ -154,10 +153,6 @@ Singleton {
             clearedCheck.restart();
         }
     }
-
-    // Distância do topo para os painéis que descem ou encostam no topo: a
-    // barra se esconde sozinha (some com um painel aberto), então colados à borda.
-    readonly property real topInset: ThemeManager.spacing.small
 
     function isOpen(name: string): bool {
         return opened.includes(name);

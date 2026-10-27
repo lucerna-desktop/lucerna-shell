@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.core.frame
 import qs.core.panels
 import qs.core.theme
 
@@ -14,6 +15,12 @@ import qs.core.theme
 // Não modal (acompanhante ou base, ver Panels): não escurece nem cobre a tela;
 // só `inputItem` recebe o mouse, então a barra e os outros painéis seguem
 // clicáveis. O clique fora é tratado pelo Panels.
+//
+// Saindo da moldura (`frameScreen`, ver Frame): o fundo é um pedaço da forma
+// da tela, desenhado pela janela da barra, que esta espera existir para ficar
+// por cima dela; o conteúdo não esmaece com a janela (o painel o mostra quando
+// a forma passa de ~60%); e, modal, a pílula fundida fica fora da máscara: o
+// clique nela vai para a barra.
 PanelWindow {
     id: root
 
@@ -22,6 +29,9 @@ PanelWindow {
     property string name: "panel"
     readonly property bool modal: Panels.isModal(name) || !inputItem
     property Item inputItem: null
+    // A tela da moldura de onde o painel sai; null para os centralizados.
+    property var frameScreen: null
+    readonly property bool framed: frameScreen !== null
     readonly property real progress: shown
     default property alias content: container.data
 
@@ -37,7 +47,7 @@ PanelWindow {
         }
     }
 
-    visible: shown > 0
+    visible: shown > 0 && (!framed || Frame.isReady(frameScreen))
     color: "transparent"
     anchors {
         top: true
@@ -51,13 +61,35 @@ PanelWindow {
     WlrLayershell.namespace: `lucerna-panel-${name}`
     // Não modal: teclado "sob demanda", que o Hyprland entrega ao abrir e ao
     // clicar; mais de um aberto, fica com o último clicado.
-    WlrLayershell.keyboardFocus: modal ? (open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None) : !visible ? WlrKeyboardFocus.None : WlrKeyboardFocus.OnDemand
-    mask: !modal ? companionMask : null
+    // Modal da moldura (a central): também sob demanda. Com o teclado exclusivo,
+    // o Hyprland manda todo clique para a camada exclusiva, mesmo fora da
+    // máscara, e a pílula fundida deixaria de ser clicável; o clique fora dela
+    // continua caindo na tela inteira deste painel, que fecha.
+    WlrLayershell.keyboardFocus: modal && !framed ? (open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None) : !visible ? WlrKeyboardFocus.None : WlrKeyboardFocus.OnDemand
+    mask: !modal ? companionMask : framed ? pillMask : null
 
     Region {
         id: companionMask
 
         item: root.inputItem
+    }
+
+    // A tela inteira menos a pílula fundida da tela da moldura.
+    Region {
+        id: pillMask
+
+        readonly property rect pill: root.framed ? Frame.pillOn(root.frameScreen) : Qt.rect(0, 0, 0, 0)
+
+        width: root.width
+        height: root.height
+
+        Region {
+            x: pillMask.pill.x
+            y: pillMask.pill.y
+            width: pillMask.pill.width
+            height: pillMask.pill.height
+            intersection: Intersection.Subtract
+        }
     }
 
     Component.onCompleted: Panels.register(root)
@@ -82,7 +114,7 @@ PanelWindow {
         id: container
 
         anchors.fill: parent
-        opacity: root.shown
+        opacity: root.framed ? 1 : root.shown
         focus: true
         Keys.onEscapePressed: root.dismissed()
     }

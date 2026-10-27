@@ -15,7 +15,6 @@ Singleton {
 
     readonly property bool open: Panels.isOpen("dashboard")
     readonly property var screen: Hypr.focusedScreen
-    readonly property real topOffset: Panels.topInset
     // A altura comum das abas: o painel não pula ao trocar de aba. O
     // Desempenho cabe nela com os anéis do disco e da memória de 109 px.
     readonly property int pageHeight: 300

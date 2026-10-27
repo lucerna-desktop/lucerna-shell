@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.core.frame
 import qs.core.panels
 import qs.services
 
@@ -21,8 +22,8 @@ Singleton {
     readonly property bool actionsOpen: Panels.actionsOpen
     readonly property bool notificationsOpen: Panels.notificationsOpen
     readonly property var screen: Hypr.focusedScreen
-    // Distância do topo da tela, a mesma do painel superior.
-    readonly property real top: Panels.topInset
+    // O topo do bloco: encostado na moldura de cima (Frame), onde ele se funde.
+    readonly property real top: Frame.thickness
 
     // O que existe na máquina, para as páginas e os tiles.
     readonly property var has: ({

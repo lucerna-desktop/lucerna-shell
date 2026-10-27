@@ -1,20 +1,32 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.core.frame
 import qs.core.theme
 import qs.core.widgets
 import qs.features.dashboard.state
 
-// Painel superior: desce de dentro da barra, com mola, e a altura acompanha a
-// aba atual. Tab/Shift+Tab ou 1–4 trocam de aba; Esc ou clique fora fecham.
+// Painel superior: escorre da moldura de cima, logo abaixo da pílula fundida
+// (a "cabeça" dele), com mola: a forma cresce da largura da pílula até a do
+// painel e da altura 0 até a da aba atual. O fundo é um pedaço da forma da tela
+// (Frame); o conteúdo, com a largura do painel aberto, é recortado por ela e
+// entra quando ela passa de ~60%. Tab/Shift+Tab ou 1–4 trocam de aba; Esc ou
+// clique fora fecham.
 OverlayPanel {
     id: panel
 
     name: "dashboard"
     open: DashboardState.open
     screen: DashboardState.screen
+    frameScreen: DashboardState.screen
     inputItem: drawer
     onDismissed: DashboardState.close()
+
+    readonly property real fullWidth: Math.min(920, width - ThemeManager.spacing.small * 2)
+    readonly property real fullHeight: contentScope.height + ThemeManager.spacing.large * 2
+    // A pílula fundida dessa tela; sem ela, o painel sai direto da moldura.
+    readonly property rect pill: Frame.pillOn(DashboardState.screen)
+    readonly property bool fromPill: pill.width > 0
 
     onOpenChanged: {
         if (open)
@@ -24,37 +36,41 @@ OverlayPanel {
     readonly property int index: DashboardState.currentIndex
     readonly property Loader currentPage: pageRepeater.count > index ? pageRepeater.itemAt(index) as Loader : null
 
-    // Cartão flutuante que desce do topo da tela com mola.
-    Rectangle {
+    FrameBlob {
+        screen: DashboardState.screen
+        framed: true
+        open: panel.open
+        progress: panel.progress
+        rect: Qt.rect(drawer.x, drawer.y, drawer.width, drawer.height)
+    }
+
+    // A área da forma do painel: o conteúdo é recortado por ela.
+    Item {
         id: drawer
 
-        width: Math.min(920, parent.width - ThemeManager.spacing.small * 2)
+        width: panel.fromPill ? panel.pill.width + (panel.fullWidth - panel.pill.width) * Frame.clamp(panel.progress) : panel.fullWidth
         x: (parent.width - width) / 2
-        height: contentScope.height + ThemeManager.spacing.large * 2
-        y: DashboardState.topOffset - (1 - panel.progress) * (height + DashboardState.topOffset + 16)
-        color: ThemeManager.glass(ThemeManager.colors.base, 0)
-        radius: ThemeManager.radius.large
-        border.width: ThemeManager.outlines ? 1 : 0
-        border.color: ThemeManager.colors.border
+        height: Math.max(0, panel.fullHeight * panel.progress)
+        y: panel.fromPill ? panel.pill.y + panel.pill.height : Frame.thicknessAt(panel.progress)
+        clip: true
 
         // Para "fechar ao tirar o mouse".
         HoverHandler {
             onHoveredChanged: DashboardState.setPointerInside(hovered)
         }
 
+        // Largura fixa (a do painel aberto): a forma cresce em volta dele sem
+        // refazer o layout a cada quadro.
         FocusScope {
             id: contentScope
 
-            anchors {
-                left: parent.left
-                right: parent.right
-                bottom: parent.bottom
-                leftMargin: ThemeManager.spacing.large
-                rightMargin: ThemeManager.spacing.large
-                bottomMargin: ThemeManager.spacing.large
-            }
+            x: (parent.width - panel.fullWidth) / 2 + ThemeManager.spacing.large
+            width: panel.fullWidth - ThemeManager.spacing.large * 2
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: ThemeManager.spacing.large
             height: tabs.height + ThemeManager.spacing.normal + pages.height
             focus: true
+            opacity: Frame.contentOpacity(panel.progress)
 
             Keys.onPressed: event => {
                 if (event.key === Qt.Key_Tab)
