@@ -143,7 +143,7 @@ Adiadas na revisão final da branch `feat/paineis-moldura` (a barra fundida à m
 - [ ] **O `lingering` da `BarWindow` depende da ordem entre o `onPartsChanged` e a binding do `visible`.** Hoje o handler vem antes, mas é frágil: derivar a condição de uma flag própria (`hadParts`), não do próprio `visible`.
 - [ ] **A junção da barra com a moldura fica com suavização 17, não 22.** O limite "metade do menor lado à mostra" vale também para a pílula de 34 px. Se o 22 for desejado na barra, isentar o `role === "pill"` do limite da suavização (ou limitar só o raio); se não, registrar no spec.
 - [ ] **O canto próprio da central reaparece na subida das Notificações.** O `top-` do bloco só entra com o topo a até 0,5 px da moldura; quando as Ações saem e o inbox sobe animado, o bloco fica solto e "estala" na junção ao chegar. Conferir a olho; se incomodar, interpolar a junção pela distância até a moldura (prender sem esticar o bloco).
-- [ ] **As capturas da documentação** (`docs/screenshots/desktop.jpg` e talvez `hero.jpg`) ainda mostram a barra antiga.
+- [ ] **As capturas da documentação:** a `docs/screenshots/desktop.jpg` já mostra a barra fundida à moldura; a `hero.jpg` (e as dos painéis, se for o caso) ainda mostram a barra antiga.
 
 ## Depois
 
