@@ -155,6 +155,22 @@ Singleton {
             Hypr.evalLua(frameRule);
     }
 
+    // Um `hyprctl reload` apaga as regras de camada e a config aplicadas por
+    // cima do hyprland.lua: manda tudo de novo.
+    Connections {
+        target: Hypr
+
+        function onConfigReloaded() {
+            root.reapply();
+        }
+    }
+
+    function reapply(): void {
+        for (const lua of [root.hyprlandConfig, root.blurRule, root.blurConfig, root.frameRule])
+            if (lua)
+                Hypr.evalLua(lua);
+    }
+
     function noAnimLua(): string {
         return `hl.layer_rule({ match = { namespace = "^lucerna-(panel-bar|frame-.*)$" }, no_anim = true })`;
     }
