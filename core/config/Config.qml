@@ -22,7 +22,6 @@ Singleton {
     property alias barPeek: adapter.barPeek
     property alias barShowDate: adapter.barShowDate
     property alias barOnEmpty: adapter.barOnEmpty
-    property alias barStyle: adapter.barStyle
     property alias dashboardTabOrder: adapter.dashboardTabOrder
     property alias dashboardTabsHidden: adapter.dashboardTabsHidden
     property alias dashboardStartTab: adapter.dashboardStartTab
@@ -146,10 +145,6 @@ Singleton {
             property bool barShowDate: true
             // A barra fica à mostra quando o workspace não tem janelas.
             property bool barOnEmpty: true
-            // Estilo da barra: "pill" (tudo à mostra) ou "island" (só a hora;
-            // expande com o mouse). Os que saíram ("strip", "islands") viram "pill"
-            // no BarState e no SettingsState.
-            property string barStyle: "pill"
 
             // Painel superior
             property var dashboardTabOrder: ["overview", "media", "performance", "weather"]

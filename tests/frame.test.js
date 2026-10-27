@@ -26,7 +26,8 @@ function run(t) {
         });
     }
 
-    const pill = blob({ role: "pill", open: true, progress: 1, rect: Qt.rect(700, 8, 480, 34), radius: 17 });
+    const pill = blob({ role: "pill", framed: true, open: true, progress: 1, rect: Qt.rect(700, 8, 480, 34), radius: 17 });
+    const hiddenPill = blob({ role: "pill", framed: true, rect: Qt.rect(700, -34, 480, 34), radius: 17 });
     const dash = blob({ framed: true, open: true, progress: 0.5, rect: Qt.rect(500, 42, 920, 200) });
     const osd = blob({ open: false, progress: 0, rect: Qt.rect(1860, 400, 124, 220) });
     const other = blob({ screen: "B", framed: true, open: true, progress: 1 });
@@ -53,7 +54,12 @@ function run(t) {
         t.eq(F.pillOn("B").width, 0, "sem pílula: vazio");
     });
 
-    scenario("frame: a moldura segue o painel da moldura mais aberto", [pill, dash, osd], () => {
+    scenario("frame: a barra traz a moldura junto", [pill], () => {
+        t.eq(F.progressOn("A"), 1, "a barra à mostra: a moldura inteira");
+        t.check(!F.fusedOn("A"), "mas só ela não segura a barra à mostra");
+    });
+
+    scenario("frame: a moldura segue o painel da moldura mais aberto", [hiddenPill, dash, osd], () => {
         t.near(F.progressOn("A"), 0.5, 1e-9, "metade aberta");
         t.eq(F.progressOn("B"), 0, "outra tela: sem moldura");
         dash.progress = 1.08;
@@ -62,24 +68,23 @@ function run(t) {
         t.check(F.fusedOn("A") && !F.fusedOn("B"), "a pílula fica fundida só na tela do painel");
     });
 
-    scenario("frame: só os painéis da moldura trazem a moldura", [pill, osd], () => {
+    scenario("frame: o OSD e os popups não trazem a moldura", [hiddenPill, osd], () => {
         osd.open = true;
         osd.progress = 1;
         try {
             t.eq(F.progressOn("A"), 0, "o OSD sai da borda sem moldura");
             t.check(!F.fusedOn("A"), "e a pílula não se funde");
-            t.check(F.fullOn("A"), "mas a janela da forma ocupa a tela");
+            t.check(F.wantedOn("A"), "mas a janela da forma existe");
         } finally {
             osd.open = false;
             osd.progress = 0;
         }
     });
 
-    scenario("frame: a janela da forma", [pill], () => {
-        t.check(F.wantedOn("A") && !F.wantedOn("B"), "existe onde há pedaço");
-        t.check(!F.fullOn("A"), "só a pílula: a faixa de cima");
-        F.register(dash);
-        t.check(F.fullOn("A"), "com um painel: a tela inteira");
+    scenario("frame: a janela da forma", [pill, hiddenPill], () => {
+        t.check(F.wantedOn("A") && !F.wantedOn("B"), "existe onde há pedaço ativo");
+        F.unregister(pill);
+        t.check(!F.wantedOn("A"), "a barra escondida não conta");
     });
 
     scenario("frame: os painéis esperam a janela da forma à mostra", [], () => {

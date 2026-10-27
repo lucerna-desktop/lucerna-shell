@@ -11,29 +11,23 @@ import qs.services
 
 // View model da barra: o que ela mostra e quando ela aparece.
 //
-// A barra fica escondida e aparece na tela onde o mouse encostou no topo
-// (ou, por um instante, ao trocar de workspace). Some quando o mouse sai e
-// quando um painel centralizado abre; não aparece por cima de uma janela em
-// tela cheia. Na área de trabalho vazia (sem janelas no workspace daquela
-// tela), fica à mostra: não cobre nada. Com um painel da moldura aberto (o
-// painel superior ou a central, ver Frame), ela sobe e se funde à moldura, à
-// mostra e clicável; ao fechar, descola e flutua um instante antes de sumir.
+// A barra tem um modelo só: uma aba fundida à borda de cima da moldura da
+// tela (ver Frame); quando ela aparece, a moldura aparece junto, nos quatro
+// lados, e as duas recolhem juntas. Fica escondida e aparece na tela onde o
+// mouse encostou no topo (ou, por um instante, ao trocar de workspace). Some
+// quando o mouse sai e quando um painel centralizado abre; não aparece por
+// cima de uma janela em tela cheia. Na área de trabalho vazia (sem janelas no
+// workspace daquela tela), fica à mostra: não cobre nada. Com um painel da
+// moldura aberto (o painel superior ou a central), fica à mostra e clicável.
 Singleton {
     id: root
 
-    // Estilo: "pill" ou "island". Os estilos que saíram ("strip", "islands") e
-    // qualquer valor desconhecido viram a pílula.
-    readonly property string style: Config.barStyle === "island" ? "island" : "pill"
     readonly property bool showDate: Config.barShowDate
 
     // Visibilidade
     readonly property bool panelOpen: Panels.anyOpen
     property var revealedScreen: null
     property bool hovering: false
-    property bool peeking: false
-    // A ilha se expande (workspaces, data e ações) com o mouse em cima e ao
-    // aparecer por troca de workspace; no resto do tempo mostra só a hora.
-    readonly property bool expanded: hovering || peeking
 
     function shownOn(screen: var): bool {
         if (Frame.fusedOn(screen))
@@ -45,26 +39,10 @@ Singleton {
         return !Hypr.hasFullscreen(screen);
     }
 
-    // O topo da pílula: `gap` abaixo da borda flutuando, encostada nela fundida
-    // (`fuse` de 0 a 1), e acima da tela escondida (`progress` 0).
-    function pillY(gap: real, height: real, progress: real, fuse: real): real {
-        return gap * (1 - Frame.clamp(fuse)) - (1 - progress) * (height + gap * 2);
-    }
-
-    // A tela onde a pílula está fundida (ou null). Ao descolar, ela fica à
-    // mostra, flutuando, até o mouse sair (ou não entrar) dela.
-    readonly property var fusedScreen: Quickshell.screens.find(s => Frame.fusedOn(s)) ?? null
-    property var lastFused: null
-
-    onFusedScreenChanged: unfuse(lastFused, fusedScreen)
-
-    function unfuse(was: var, now: var): void {
-        lastFused = now;
-        if (!was || was === now)
-            return;
-        revealedScreen = was;
-        if (!hovering)
-            hideDelay.restart();
+    // O topo da barra, encostada na borda de cima (aberta, `progress` 1) ou
+    // acima da tela (0), descendo junto com a moldura.
+    function pillY(height: real, progress: real): real {
+        return -(1 - progress) * height;
     }
 
     // Mouse encostou no topo da tela.
@@ -86,7 +64,6 @@ Singleton {
         if (panelOpen)
             return;
         revealedScreen = screen;
-        peeking = true;
         peekDelay.restart();
     }
 
@@ -105,7 +82,6 @@ Singleton {
 
         interval: 1400
         onTriggered: {
-            root.peeking = false;
             if (!root.hovering)
                 root.revealedScreen = null;
         }

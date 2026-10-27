@@ -387,17 +387,6 @@ Singleton {
     }
 
     // Barra
-    readonly property var barStyles: [
-        { id: "pill", label: "Pílula", hint: "Tudo à mostra" },
-        { id: "island", label: "Ilha", hint: "Só a hora; abre com o mouse" }
-    ]
-    // Um estilo que saiu ("strip", "islands") aparece como a pílula, como na barra.
-    readonly property string barStyle: barStyles.some(s => s.id === Config.barStyle) ? Config.barStyle : "pill"
-
-    function setBarStyle(id: string): void {
-        Config.barStyle = id;
-    }
-
     readonly property bool barPeek: Config.barPeek
     readonly property bool barShowDate: Config.barShowDate
     readonly property bool barOnEmpty: Config.barOnEmpty

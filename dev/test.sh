@@ -80,7 +80,7 @@
 #   dev/test.sh run 'lucernad brilho'
 #   dev/test.sh ipc brightness up; dev/test.sh shot $p-osd; dev/test.sh ipc brightness down
 #   dev/test.sh run 'cat /tmp/lucerna-power/sys/class/backlight/lucerna_teste/brightness'
-#   for e in pill island; do dev/test.sh setc "dict(barStyle='$e')"; sleep 1; dev/test.sh shot $p-barra-$e; done; dev/test.sh setc "dict(barStyle='pill')"
+#   dev/test.sh shot $p-barra   # (com o mouse no topo, ou o workspace vazio)
 #   # A pílula fundida clicável com a central aberta (ponteiro virtual, sem
 #   # ferramenta de fora): o sino fecha só as notificações; a hora troca a
 #   # central pelo painel superior.

@@ -4,14 +4,12 @@ import qs.core.theme
 import qs.core.widgets
 import qs.features.bar.state
 
-// Pílula: uma só, flutuante e centralizada, com tudo à mostra.
+// A barra: uma aba centralizada, fundida à borda de cima da moldura (a forma
+// da tela desenha o fundo dela), com tudo à mostra.
 Item {
     id: root
 
     required property real progress
-    // Fundida à moldura (0 a 1): sobe até encostar na borda de cima.
-    required property real fuse
-    readonly property real gap: ThemeManager.spacing.small
 
     readonly property Region mask: Region {
         item: pill
@@ -23,7 +21,7 @@ Item {
         id: pill
 
         anchors.horizontalCenter: parent.horizontalCenter
-        y: BarState.pillY(root.gap, height, root.progress, root.fuse)
+        y: BarState.pillY(height, root.progress)
         width: row.implicitWidth + ThemeManager.spacing.normal * 2
         height: ThemeManager.barHeight
         radius: height / 2

@@ -10,10 +10,10 @@ import qs.core.theme
 // Cada pedaço da forma é um FrameBlob, registrado aqui: a pílula da barra e o
 // fundo de cada painel que sai de uma borda (o painel superior, a central, os
 // popups de notificação e o OSD). O conteúdo deles fica nas próprias janelas,
-// por cima. A moldura nos quatro lados aparece com os painéis "da moldura"
-// (`framed`: o painel superior e a central): engrossa de 0 até `thickness`
-// junto com a abertura deles e some quando fecham; a pílula sobe e se funde
-// nela enquanto isso.
+// por cima. A moldura nos quatro lados aparece com os pedaços "da moldura"
+// (`framed`: a barra, o painel superior e a central): engrossa de 0 até
+// `thickness` junto com a abertura deles e some quando fecham; a barra é uma
+// aba fundida à borda de cima dela.
 //
 // A janela da barra só existe enquanto há algum pedaço ativo na tela dela;
 // as janelas dos painéis esperam por ela (`isReady`), para ficarem por cima
@@ -77,19 +77,16 @@ Singleton {
         return clamp(Math.max(0, ...blobs.filter(b => b.framed && b.screen === screen).map(b => b.progress)));
     }
 
-    // Algum painel da moldura aberto nessa tela: a pílula fica fundida.
+    // Algum painel da moldura (fora a própria barra) aberto nessa tela: a barra
+    // fica à mostra. A barra fica de fora antes de ler o `open` dela, que vem
+    // daqui (senão o binding dela ficaria em laço).
     function fusedOn(screen: var): bool {
-        return blobs.some(b => b.framed && b.open && b.screen === screen);
+        return blobs.some(b => b.role !== "pill" && b.framed && b.open && b.screen === screen);
     }
 
     // A tela precisa da janela da forma.
     function wantedOn(screen: var): bool {
         return blobsOn(screen).length > 0;
-    }
-
-    // A janela da forma precisa da tela inteira (não só da faixa da pílula).
-    function fullOn(screen: var): bool {
-        return blobsOn(screen).some(b => b.role !== "pill") || progressOn(screen) > 0;
     }
 
     function addWindow(window: var): void {
