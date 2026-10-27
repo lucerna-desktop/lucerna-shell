@@ -153,6 +153,18 @@ Adiadas na revisão final da branch `feat/paineis-moldura` (a barra fundida à m
 - [ ] **O canto próprio da central reaparece na subida das Notificações.** O `top-` do bloco só entra com o topo a até 0,5 px da moldura; quando as Ações saem e o inbox sobe animado, o bloco fica solto e "estala" na junção ao chegar. Conferir a olho; se incomodar, interpolar a junção pela distância até a moldura (prender sem esticar o bloco).
 - [ ] **As capturas da documentação:** a `docs/screenshots/desktop.jpg` já mostra a barra fundida à moldura; a `hero.jpg` (e as dos painéis, se for o caso) ainda mostram a barra antiga.
 
+## Sobras do desfoque
+
+Adiadas na revisão final da branch `feat/desfoque` (níveis do desfoque, xray, pausa do papel de parede).
+
+- [ ] **A barra em repouso ainda custa o desfoque da tela inteira.** Com `barOnEmpty` (o padrão), a pílula da barra fica à mostra na área de trabalho vazia, e a janela da forma (`lucerna-panel-bar`) ocupa a tela inteira e é desfocada; com o papel animado, o Hyprland refaz o desfoque da tela toda a cada quadro do papel (no Desempenho, o xray ainda suja o fundo guardado). A pausa do papel não vale para a pílula sozinha (senão o papel nunca andaria onde aparece), então o repouso e a barra revelada medem igual à `main`. Resolver na tarefa de juntar o conteúdo dos painéis na janela da forma (acima, nas sobras da moldura), ou encolhendo a janela da barra para o tamanho da pílula quando só há a pílula (ou uma regra/namespace própria para ela).
+- [ ] **Migração de canto do `blurOverride.enabled`.** Antes, `{ enabled: true }` no ajuste do usuário vencia um tema com `hyprland.blur: false`; agora o `modeFrom` ignora o `enabled: true` e o tema deixa o nível em `off`. Nenhum tema embutido tem `blur: false`. Se importar: com `custom.enabled === true`, usar o `blurMode` do tema ou `"performance"`, sem olhar o `theme.blur`.
+- [ ] **O `windowRuleSent` não sobrevive a um reinício do shell.** Se o shell reinicia depois de mandar a regra `no_blur` e o `blurWindows` volta a `true` por fora (editando o config), a regra fica até o próximo reload. Caso remoto.
+- [ ] **Religar o desfoque das janelas faz `hyprctl reload`**, que apaga ajustes em tempo de execução de fora do shell (um `hyprctl keyword` do usuário) e devolve os monitores ao arquivo por uns 300 ms antes do `DisplaysState` reaplicar. O texto da linha avisa; mesmo padrão do `Input.reload()`. Conferido no container: a regra vale para janelas já abertas e o reload devolve o desfoque delas (a saída aninhada continuou de pé desta vez).
+- [ ] **A config do desfoque força `popups = false` e `new_optimizations = true`** por cima do `hyprland.lua` do usuário (decisão do spec). Citar no PR; se alguém reclamar, deixar só o `debug.vfr`.
+- [ ] **8×2 em vez de 12×1:** com uma passada o desfoque saía em blocos, então os temas ficaram com as mesmas duas passadas da `main` e raio maior (32 em vez de 24, um pouco mais desfocado). O ganho de custo vem do xray e da pausa do papel, não de menos passadas.
+- [ ] **A prévia do vidro (`GlassPreview`) não simula o xray** no nível Desempenho; só a intensidade.
+
 ## Depois
 
 - [ ] Aba Desempenho: um medidor de bateria em forma de pilha, só no notebook. Rascunhos de três encaixes (ao lado de CPU e GPU, em pé ao lado da Memória, faixa embaixo) em `.superpowers/brainstorm/436361-1792526405/content/bateria-desempenho.html`; o usuário quer planejar melhor antes.
