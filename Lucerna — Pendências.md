@@ -130,6 +130,18 @@ Adiadas na revisão do módulo `web` do `lucernad` (lucernad#17) e do shell (PR 
   - a barra de ações rápidas do Painel não tem navegação pelo teclado (o Tab do painel troca de aba); se fizer falta, as setas;
   - sem teste do `openLink` (só `https://`) da página Créditos nem do `openSettings` da aba Clima.
 
+## Sobras dos painéis da moldura
+
+Adiadas na revisão final da branch `feat/paineis-moldura` (a barra fundida à moldura e os painéis que saem das bordas).
+
+- [ ] **O conteúdo dos painéis na mesma janela da forma**, como o `ContentWindow` do Caelestia. Hoje a forma é desenhada na janela da barra e o conteúdo do painel superior e da central fica na janela de cada um: duas superfícies que redesenham a cada quadro. Por isso a central ainda gasta perto do dobro de CPU da `main` ao abrir, e a forma e o conteúdo podem chegar à tela com um quadro de diferença (atenuado: o conteúdo entra mais tarde e recuado da beira). Juntar resolve as duas coisas e a ordem das camadas; o preço é o teclado, que a janela da forma passaria a pegar conforme o painel aberto.
+- [ ] **A barra revelada pelo mouse custa mais que na `main`.** Com ela, a moldura aparece nos quatro lados, e a janela da forma ocupa a tela toda: o Hyprland desfoca a tela inteira a cada quadro da animação (na `main`, só o retângulo da pílula). Fica perto de 62 contra 67 FPS no container. Só se resolve dividindo a moldura em janelas por borda ou desligando o desfoque durante a animação.
+- [ ] **A borda da forma com escala fracionária:** a suavização é de 1 px lógico (`frame.frag`), e em 1,25 ou 1,5 a beira e o contorno do tema ficam um pouco borrados. Usar `fwidth` no lugar.
+- [ ] **O alcance do shader ainda é fixo** (20 px no `frame.frag`), amarrado à suavização de 18 do `Frame`. Um teste avisa se alguém subir a suavização; o certo seria passar o alcance como uniform.
+- [ ] **O Esc na central aberta pelo atalho com uma janela focada por baixo.** A central não pega mais o teclado com exclusividade (para o clique na barra funcionar); conferir no Hyprland de verdade que o Esc ainda chega a ela.
+- [ ] **Depois de um `hyprctl reload`**, as regras do tema, do desfoque e da moldura são reenviadas pelo shell; conferir numa sessão de verdade (no container, o reload derruba a saída aninhada).
+- [ ] **As capturas da documentação** (`docs/screenshots/desktop.jpg` e talvez `hero.jpg`) ainda mostram a barra antiga.
+
 ## Depois
 
 - [ ] Aba Desempenho: um medidor de bateria em forma de pilha, só no notebook. Rascunhos de três encaixes (ao lado de CPU e GPU, em pé ao lado da Memória, faixa embaixo) em `.superpowers/brainstorm/436361-1792526405/content/bateria-desempenho.html`; o usuário quer planejar melhor antes.
