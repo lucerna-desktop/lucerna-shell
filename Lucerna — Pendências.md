@@ -18,6 +18,13 @@ O que falta fazer, na ordem em que vamos seguir. Cada item vira um PR; ao termin
 12. [x] **Central.** Dois painéis flutuantes na direita, no lugar da barra lateral: ações (tiles com uma página por recurso, inclusive o volume de cada app, e os sliders de volume e brilho) e notificações, independentes (`Super+A`, `Super+N`; os dois com `Super+C`). Mudança de comportamento: `Super+N` (a ação `notifications`) agora abre só as notificações; a central inteira fica em `Super+C`.
 13. [ ] **Dock**, com spec próprio.
 14. [ ] **Instalação e distribuição:** script de instalação (link, trecho do `hyprland.lua`, atalhos padrão) e pacote no AUR. A verificação no CI já está feita: quatro checks obrigatórios (`ci/`, `dev/ci.sh`).
+    - **Outras distros** (o Lucerna não depende do Arch, e sim de Hyprland 0.56+, Quickshell 0.3+ e Qt 6 recente; o `lucernad` compila em qualquer distro com PipeWire, D-Bus e logind). Ordem sugerida:
+      1. AUR (o shell e o `lucernad`), a base dos outros;
+      2. Nix (flake): NixOS e quem usa Nix em qualquer distro, com as versões fixadas (resolve Qt e Hyprland antigos);
+      3. Fedora (COPR), a distro grande com Hyprland e Qt em dia;
+      4. script de instalação genérico para as outras: compila o que falta e avisa as versões mínimas;
+      5. sem systemd (Void, Alpine, Artix): o shell inicia o `lucernad` quando não acha o socket (hoje ele sobe por socket do usuário do systemd).
+    - Debian e Ubuntu estáveis ficam para depois (fora o Nix): o Hyprland e o Qt deles costumam estar atrás das versões mínimas.
 15. [ ] **Lógica fora do shell (Rust).** Ver a seção "Separação da lógica" abaixo. Substitui o plano de plugins em C++ de `Lucerna — Plugins Próprios.md`, que precisa ser revisto à luz dela.
 16. [ ] **Equalizador de áudio**, com spec próprio: muda o som (filtro do PipeWire, `filter-chain`, ou controle do EasyEffects) e mostra o espectro ao vivo atrás das faixas, reaproveitando o módulo de espectro.
 17. [ ] **Temas com mais cores e o papel de parede como escolha**, com spec próprio (projeto aprovado em 2026-10-26). O modelo de tema hoje tem um destaque só (`accent`, 152 usos) e usa 11 das 26 cores do Catppuccin; o ajuste rápido (o Catppuccin com o azul como destaque) já foi feito (PR #51).
