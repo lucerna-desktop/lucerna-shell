@@ -2,7 +2,6 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import qs.core.theme
 
 // A moldura da tela e o que sai dela: uma forma só por monitor, desenhada
 // pelo core/widgets/FrameShape (união suave por SDF) na janela da barra.
@@ -25,11 +24,14 @@ Singleton {
     id: root
 
     // Espessura da moldura aberta, raio dos cantos de dentro e a suavização
-    // (o raio do arco que funde dois pedaços).
+    // (o raio do arco que funde dois pedaços; os cantos dos pedaços seguem o
+    // raio grande do tema, no FrameBlob).
     readonly property real thickness: 8
-    readonly property real radius: ThemeManager.radius.large
-    // O frame.frag descarta além de 20 px (o `reach` dele): até 18 aqui.
-    readonly property real smoothing: 18
+    readonly property real radius: 24
+    readonly property real smoothing: 22
+    // Até onde o arco de uma união chega da beira (a suavização e um pixel de
+    // borda): o shader descarta além disso, e as faixas têm essa folga.
+    readonly property real reach: smoothing + 2
     // O conteúdo de um painel entra quando a forma dele passa disto: a forma
     // e o conteúdo ficam em janelas diferentes e podem chegar à tela com um
     // quadro de diferença; entrando tarde, a forma já está à frente dele.
@@ -182,7 +184,7 @@ Singleton {
     // recompõe a cada quadro só ela, não a tela inteira (o OSD por cima de
     // um vídeo). Muda só na passagem entre com e sem moldura.
     function compactOn(on: var, frame: real, size: size): bool {
-        const pad = smoothing + 2;
+        const pad = reach;
         return frame <= 0 && on.length > 0 && on.every(b => b.rect.x - pad >= size.width - column);
     }
 
@@ -193,7 +195,7 @@ Singleton {
             return Qt.rect(0, 0, size.width, size.height);
         if (!on.length)
             return Qt.rect(0, 0, 0, 0);
-        const pad = smoothing + 2;
+        const pad = reach;
         const x0 = Math.max(0, Math.min(...on.map(b => b.rect.x)) - pad);
         const y0 = Math.max(0, Math.min(...on.map(b => b.rect.y)) - pad);
         const x1 = Math.min(size.width, Math.max(...on.map(b => b.rect.x + b.rect.width)) + pad);
@@ -209,7 +211,7 @@ Singleton {
     // pedaço com a folga da suavização. O resto da janela fica sem shader.
     // Passando de `regionCount`, a área inteira (bounds) numa faixa só.
     function regions(on: var, frame: real, size: size): var {
-        const pad = smoothing + 2;
+        const pad = reach;
         const boxes = [];
         if (frame > 0) {
             const band = thicknessAt(frame) + radius * clamp(frame) + pad;
@@ -268,8 +270,11 @@ Singleton {
 
     // Os pedaços nas vagas do shader: rects[i] = [x, y, largura, altura] e
     // props[i] = [raio, suavização, em uso]. A pílula funde com a moldura
-    // (`fuse`); os outros, com o que já estiver ali, pela própria abertura.
-    function slots(on: var, fuse: real): var {
+    // (`fuse`); os outros, com o que já estiver ali, pela própria abertura. O
+    // raio e a suavização ficam até a metade do menor lado à mostra na tela
+    // (`size`; o que passa da borda não conta): o arco não come um pedaço
+    // estreito, como o OSD, nem um que ainda está saindo.
+    function slots(on: var, fuse: real, size: size): var {
         const rects = [], props = [];
         for (let i = 0; i < slotCount; i++) {
             const b = on[i];
@@ -279,7 +284,10 @@ Singleton {
                 continue;
             }
             rects.push([b.rect.x, b.rect.y, b.rect.width, b.rect.height]);
-            props.push([b.radius, smoothingAt(b.role === "pill" ? fuse : b.progress), 1]);
+            const shownWidth = Math.min(size.width, b.rect.x + b.rect.width) - Math.max(0, b.rect.x);
+            const shownHeight = Math.min(size.height, b.rect.y + b.rect.height) - Math.max(0, b.rect.y);
+            const half = Math.max(0, Math.min(shownWidth, shownHeight) / 2);
+            props.push([Math.min(b.radius, half), Math.min(smoothingAt(b.role === "pill" ? fuse : b.progress), half), 1]);
         }
         return { rects: rects, props: props };
     }

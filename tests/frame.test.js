@@ -130,22 +130,22 @@ function run(t) {
     t.test("frame: a área que o shader cobre", () => {
         const size = Qt.size(1920, 1080);
         const box = q => [q.x, q.y, q.width, q.height];
-        const pad = F.smoothing + 2;
+        const pad = F.reach;
         t.eq(box(F.bounds([pill, dash], 0.3, size)), [0, 0, 1920, 1080], "com a moldura: a janela toda");
         t.eq(box(F.bounds([], 0, size)), [0, 0, 0, 0], "nada: nada");
         t.eq(box(F.bounds([pill], 0, size)), [700 - pad, 0, 480 + pad * 2, 8 + 34 + pad], "a pílula com a folga, sem sair da janela");
     });
 
-    // O frame.frag descarta o que fica a mais de 20 px (`reach`) da moldura e
-    // dos pedaços: o arco da união (até a suavização) tem de caber nisso.
-    t.test("frame: a suavização cabe no alcance do shader", () => {
-        t.check(F.smoothing + 2 <= 20, "subir a suavização pede subir o reach do frame.frag");
+    // O frame.frag descarta o que fica além de `reach` da moldura e dos
+    // pedaços: o arco da união (até a suavização) tem de caber nisso.
+    t.test("frame: o alcance do shader segue a suavização", () => {
+        t.check(F.reach > F.smoothing, "o arco cabe no alcance");
     });
 
     t.test("frame: as faixas do shader, sem sobreposição", () => {
         const size = Qt.size(1920, 1080);
         const box = q => [q.x, q.y, q.width, q.height];
-        const pad = F.smoothing + 2;
+        const pad = F.reach;
         t.eq(F.regions([], 0, size), [], "nada: nenhuma faixa");
         t.eq(F.regions([pill], 0, size).map(box), [[700 - pad, 0, 480 + pad * 2, 8 + 34 + pad]], "só a pílula: a área dela com a folga, cortada na janela");
         const band = Math.ceil(F.thickness + F.radius + pad);
@@ -181,15 +181,22 @@ function run(t) {
     });
 
     t.test("frame: as vagas do shader", () => {
-        const s = F.slots([pill, dash, blob({ rect: Qt.rect(0, 0, 0, 10) })], 0.5);
+        const size = Qt.size(1920, 1080);
+        const s = F.slots([pill, dash, blob({ rect: Qt.rect(0, 0, 0, 10) })], 0.25, size);
         t.eq(s.rects.length, F.slotCount);
         t.eq(s.rects[0], [700, 8, 480, 34]);
-        t.eq(s.props[0], [17, F.smoothingAt(0.5), 1], "a pílula funde pela moldura");
+        t.eq(s.props[0], [17, F.smoothingAt(0.25), 1], "a pílula funde pela moldura");
         t.eq(s.props[1], [16, F.smoothingAt(0.5), 1], "o painel, pela própria abertura");
         t.eq(s.props[2], [0, 0, 0], "sem área: vaga vazia");
         t.eq(s.props[5], [0, 0, 0]);
-        const many = F.slots(Array.from({ length: 8 }, () => dash), 1);
+        const many = F.slots(Array.from({ length: 8 }, () => dash), 1, size);
         t.eq(many.rects.length, F.slotCount, "mais pedaços que vagas: os que cabem");
+        // Estreito (o OSD saindo da borda direita): o arco e o raio até a
+        // metade do que está à mostra; o que passa da borda não conta.
+        const narrow = F.slots([blob({ open: true, progress: 1, rect: Qt.rect(1900, 400, 20 + F.overhang, 220), radius: 22 })], 1, size);
+        t.eq(narrow.props[0], [10, 10, 1], "20 px à mostra: no máximo 10");
+        const wide = F.slots([blob({ open: true, progress: 1, rect: Qt.rect(1860, 400, 60 + F.overhang, 220), radius: 22 })], 1, size);
+        t.eq(wide.props[0], [22, F.smoothing, 1], "60 px à mostra: o raio e a suavização inteiros");
     });
 
     scenario("frame: a barra se transforma no painel superior", [pill, dash, blob({ fromBar: true, framed: true, open: true, progress: 0.3 }), blob({ screen: "B", fromBar: true, progress: 1 })], () => {

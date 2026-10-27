@@ -20,6 +20,9 @@ layout(std140, binding = 0) uniform buf {
     vec4 fill;
     vec4 edge;
     float outline;
+    // Até onde o arco de uma união chega da beira (Frame.reach): além disso,
+    // nada a desenhar.
+    float reach;
     // Os pedaços: b = x, y, largura, altura; k = raio, suavização, em uso.
     vec4 b0;
     vec4 k0;
@@ -69,8 +72,6 @@ void main() {
     vec2 sh = frame.zw * 0.5;
     vec2 ih = max(sh - vec2(frame.x), vec2(0.0));
     float u = -sdRoundedBox(p, sh, ih, min(frame.y, min(ih.x, ih.y)));
-    // O arco de uma união chega a até ~0,6·k da beira; a suavização máxima é 18.
-    float reach = 20.0;
     if (u > reach && !(near(p, b0, k0, reach) || near(p, b1, k1, reach) || near(p, b2, k2, reach)
             || near(p, b3, k3, reach) || near(p, b4, k4, reach) || near(p, b5, k5, reach)))
         discard;

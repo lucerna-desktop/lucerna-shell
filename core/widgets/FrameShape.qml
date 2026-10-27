@@ -24,13 +24,14 @@ Item {
     // Onde a janela começa na tela (presa à direita).
     readonly property real originX: screenSize.width - width
     readonly property var regions: Frame.regions(parts, fuse, screenSize)
-    readonly property var packed: Frame.slots(parts, fuse)
+    readonly property var packed: Frame.slots(parts, fuse, screenSize)
 
     // As uniforms comuns a todas as faixas, calculadas uma vez por quadro.
     readonly property vector4d frame: Qt.vector4d(Frame.thicknessAt(fuse), Frame.radius * fuse, screenSize.width, screenSize.height)
     readonly property vector4d fill: vec(ThemeManager.glass(ThemeManager.colors.base, 0))
     readonly property vector4d edge: vec(ThemeManager.colors.border)
     readonly property real outline: ThemeManager.outlines ? 1 : 0
+    readonly property real reach: Frame.reach
     readonly property vector4d b0: slot(0)
     readonly property vector4d k0: props(0)
     readonly property vector4d b1: slot(1)
@@ -78,6 +79,7 @@ Item {
             property vector4d fill: root.fill
             property vector4d edge: root.edge
             property real outline: root.outline
+            property real reach: root.reach
             property vector4d b0: root.b0
             property vector4d k0: root.k0
             property vector4d b1: root.b1
