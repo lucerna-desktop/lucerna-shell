@@ -14,9 +14,6 @@ import qs.core.theme
 // Não modal (acompanhante ou base, ver Panels): não escurece nem cobre a tela;
 // só `inputItem` recebe o mouse, então a barra e os outros painéis seguem
 // clicáveis. O clique fora é tratado pelo Panels.
-//
-// Modal com `keepBar` (a central): a máscara de entrada é a tela inteira menos
-// a faixa da barra (Panels.barStrip), que continua clicável.
 PanelWindow {
     id: root
 
@@ -25,9 +22,6 @@ PanelWindow {
     property string name: "panel"
     readonly property bool modal: Panels.isModal(name) || !inputItem
     property Item inputItem: null
-    // Modal que deixa a barra clicável (a central): a faixa Panels.barStrip
-    // fica fora da máscara, e o clique nela vai para a barra.
-    property bool keepBar: false
     readonly property real progress: shown
     default property alias content: container.data
 
@@ -58,31 +52,12 @@ PanelWindow {
     // Não modal: teclado "sob demanda", que o Hyprland entrega ao abrir e ao
     // clicar; mais de um aberto, fica com o último clicado.
     WlrLayershell.keyboardFocus: modal ? (open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None) : !visible ? WlrKeyboardFocus.None : WlrKeyboardFocus.OnDemand
-    mask: !modal ? companionMask : keepBar && Panels.barStrip > 0 ? barMask : null
+    mask: !modal ? companionMask : null
 
     Region {
         id: companionMask
 
         item: root.inputItem
-    }
-
-    // A tela inteira menos a faixa da barra.
-    Region {
-        id: barMask
-
-        item: root.contentItem
-
-        Region {
-            item: barArea
-            intersection: Intersection.Subtract
-        }
-    }
-
-    Item {
-        id: barArea
-
-        width: root.width
-        height: Panels.barStrip
     }
 
     Component.onCompleted: Panels.register(root)

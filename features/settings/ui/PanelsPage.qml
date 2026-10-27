@@ -33,7 +33,7 @@ Column {
     Txt {
         width: parent.width
         wrapMode: Text.Wrap
-        text: "Ligado, o painel superior fica aberto por cima das configurações e a barra continua clicável. Desligado, ele abre sozinho e fecha os demais. A central, o launcher, os temas e o menu de energia sempre abrem sozinhos."
+        text: "Ligado, o painel superior fica aberto por cima das configurações. Desligado, ele abre sozinho e fecha os demais. A central, o launcher, os temas e o menu de energia sempre abrem sozinhos."
         faint: true
         font.pixelSize: ThemeManager.font.small
     }

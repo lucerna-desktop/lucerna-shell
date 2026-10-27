@@ -9,7 +9,7 @@ import qs.features.central.state
 // escurecer a tela, que abrem e fecham cada um pelo seu estado: as Ações em
 // cima (na altura do conteúdo, até deixar o mínimo das Notificações, se elas
 // estiverem abertas) e as Notificações embaixo, na altura que sobra; sozinhas,
-// elas sobem para logo abaixo da barra. Cada painel entra deslizando da
+// elas sobem até perto do topo. Cada painel entra deslizando da
 // direita (em cascata, se os dois abrem juntos) e sai mais rápido; as
 // Notificações sobem e descem junto com a entrada e a saída das Ações. Esc ou
 // o clique fora dos painéis fecham os dois.
@@ -20,8 +20,6 @@ OverlayPanel {
     open: CentralState.open
     screen: CentralState.screen
     dim: 0
-    // A barra continua clicável: o mesmo ícone fecha, outro troca a entrada.
-    keepBar: true
     onDismissed: CentralState.close()
 
     // Distância das bordas da tela e entre os dois painéis.

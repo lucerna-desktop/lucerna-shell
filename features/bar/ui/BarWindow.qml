@@ -8,8 +8,8 @@ import qs.core.widgets
 import qs.features.bar.state
 
 // A janela da barra num monitor. O arranjo vem do estilo escolhido nas
-// configurações (faixa, ilha, pílula ou três ilhas); todos seguem as mesmas
-// regras de aparecer e esconder, e só as partes visíveis recebem o mouse.
+// configurações (pílula ou ilha); os dois flutuam no topo, se escondem
+// sozinhos e só as partes visíveis recebem o mouse.
 PanelWindow {
     id: root
 
@@ -17,7 +17,6 @@ PanelWindow {
     // daria laço: mudar a visibilidade renotifica `screen`.
     required property var targetScreen
     readonly property bool shown: BarState.shownOn(targetScreen)
-    readonly property bool strip: BarState.style === "strip"
     property real progress: shown ? 1 : 0
 
     Behavior on progress {
@@ -33,13 +32,14 @@ PanelWindow {
         left: true
         right: true
     }
-    implicitHeight: strip ? ThemeManager.barHeight : ThemeManager.barHeight + ThemeManager.spacing.small * 2
+    implicitHeight: ThemeManager.barHeight + ThemeManager.spacing.small * 2
     color: "transparent"
-    exclusionMode: BarState.autoHide ? ExclusionMode.Ignore : ExclusionMode.Auto
+    // Escondida sozinha: não reserva espaço, as janelas começam no topo.
+    exclusionMode: ExclusionMode.Ignore
     // O item do Loader é um QObject: o `as` de cada estilo dá o tipo que tem `mask`.
     function layoutMask(): Region {
         const item = layout.item;
-        return (item as StripLayout)?.mask ?? (item as IslandLayout)?.mask ?? (item as PillLayout)?.mask ?? (item as IslandsLayout)?.mask ?? null;
+        return (item as IslandLayout)?.mask ?? (item as PillLayout)?.mask ?? null;
     }
 
     mask: layoutMask()
@@ -54,20 +54,7 @@ PanelWindow {
         id: layout
 
         anchors.fill: parent
-        sourceComponent: ({
-            strip: stripLayout,
-            island: islandLayout,
-            pill: pillLayout,
-            islands: islandsLayout
-        })[BarState.style] ?? stripLayout
-    }
-
-    Component {
-        id: stripLayout
-
-        StripLayout {
-            progress: root.progress
-        }
+        sourceComponent: BarState.style === "island" ? islandLayout : pillLayout
     }
 
     Component {
@@ -82,14 +69,6 @@ PanelWindow {
         id: pillLayout
 
         PillLayout {
-            progress: root.progress
-        }
-    }
-
-    Component {
-        id: islandsLayout
-
-        IslandsLayout {
             progress: root.progress
         }
     }

@@ -21,7 +21,7 @@ Singleton {
     readonly property bool actionsOpen: Panels.actionsOpen
     readonly property bool notificationsOpen: Panels.notificationsOpen
     readonly property var screen: Hypr.focusedScreen
-    // Distância do topo da tela: abaixo da barra, como o painel superior.
+    // Distância do topo da tela, a mesma do painel superior.
     readonly property real top: Panels.topInset
 
     // O que existe na máquina, para as páginas e os tiles.

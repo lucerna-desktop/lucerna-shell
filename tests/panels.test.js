@@ -58,20 +58,15 @@ function run(t) {
         t.check(!P.anyOpen, "nada aberto");
     });
 
-    t.test("panels: faixa da barra que fica clicável", () => {
+    t.test("panels: colados ao topo, com a barra escondida sozinha", () => {
         const T = t.ThemeManager;
-        const hide0 = C.barAutoHide;
         const style0 = C.barStyle;
         try {
-            C.barAutoHide = false;
-            C.barStyle = "strip";
-            t.eq(P.barStrip, T.barHeight, "em faixa: a altura da barra");
-            C.barStyle = "island";
-            t.eq(P.barStrip, T.barHeight + T.spacing.small, "flutuante: a barra e a folga de cima");
-            C.barAutoHide = true;
-            t.eq(P.barStrip, 0, "escondida sozinha: nenhuma");
+            for (const style of ["pill", "island", "strip"]) {
+                C.barStyle = style;
+                t.eq(P.topInset, T.spacing.small, `com a barra ${style}: só a folga`);
+            }
         } finally {
-            C.barAutoHide = hide0;
             C.barStyle = style0;
         }
     });

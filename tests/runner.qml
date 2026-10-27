@@ -20,6 +20,7 @@ import qs.core.shapes
 import qs.core.theme
 import qs.core.time
 import qs.core.widgets
+import qs.features.bar.state
 import qs.features.central.state
 import qs.features.clipboard.state
 import qs.features.dashboard.state
@@ -31,6 +32,7 @@ import qs.services.lucerna
 import "appinfo.test.js" as AppInfoTest
 import "audio.test.js" as AudioTest
 import "audiostreams.test.js" as AudioStreamsTest
+import "bar.test.js" as BarTest
 import "battery.test.js" as BatteryTest
 import "blobshapes.test.js" as BlobShapesTest
 import "bluetooth.test.js" as BluetoothTest
@@ -88,6 +90,7 @@ ShellRoot {
         ["nightschedule", NightScheduleTest],
         ["theme", ThemeTest],
         ["panels", PanelsTest],
+        ["bar", BarTest],
         ["central", CentralTest],
         ["overview", OverviewTest],
         ["performance", PerformanceTest],
@@ -229,6 +232,7 @@ ShellRoot {
             get SearchEngines() { return SearchEngines; },
             get NightSchedule() { return NightSchedule; },
             get Panels() { return Panels; },
+            get BarState() { return BarState; },
             get CentralState() { return CentralState; },
             get ClipboardState() { return ClipboardState; },
             get ControlsState() { return ControlsState; },

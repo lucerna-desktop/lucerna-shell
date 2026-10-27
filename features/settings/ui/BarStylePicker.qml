@@ -47,15 +47,6 @@ Flow {
 
                 readonly property color bar: card.current ? ThemeManager.colors.accent : ThemeManager.colors.textMuted
 
-                // Faixa
-                Rectangle {
-                    visible: card.modelData.id === "strip"
-                    width: parent.width
-                    height: 9
-                    color: screen.bar
-                    opacity: 0.85
-                }
-
                 // Pílula
                 Rectangle {
                     visible: card.modelData.id === "pill"
@@ -91,23 +82,6 @@ Flow {
                     radius: 4.5
                     color: screen.bar
                     opacity: 0.85
-                }
-
-                // Três ilhas
-                Repeater {
-                    model: card.modelData.id === "islands" ? [{ x: 5, w: 28 }, { x: (screen.width - 20) / 2, w: 20 }, { x: screen.width - 33, w: 28 }] : []
-
-                    delegate: Rectangle {
-                        required property var modelData
-
-                        x: modelData.x
-                        y: 5
-                        width: modelData.w
-                        height: 9
-                        radius: 4.5
-                        color: screen.bar
-                        opacity: 0.85
-                    }
                 }
 
                 // Uma janela, para dar escala.

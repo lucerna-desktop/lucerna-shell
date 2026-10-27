@@ -19,7 +19,6 @@ Singleton {
     property alias notificationTimeout: adapter.notificationTimeout
     property alias settingsTopic: adapter.settingsTopic
     property alias outlines: adapter.outlines
-    property alias barAutoHide: adapter.barAutoHide
     property alias barPeek: adapter.barPeek
     property alias barShowDate: adapter.barShowDate
     property alias barOnEmpty: adapter.barOnEmpty
@@ -141,16 +140,16 @@ Singleton {
             property string settingsTopic: "glass"
             // Contorno nos cartões; null = seguir o tema.
             property var outlines: null
-            // Barra: some sozinha (aparece ao encostar o mouse no topo), aparece
-            // por um instante ao trocar de workspace, e mostra a data.
-            property bool barAutoHide: false
+            // Barra (sempre se escondendo sozinha; aparece ao encostar o mouse
+            // no topo): aparece por um instante ao trocar de workspace, e mostra a data.
             property bool barPeek: true
             property bool barShowDate: true
-            // Com auto-ocultar, a barra fica à mostra quando o workspace não tem janelas.
+            // A barra fica à mostra quando o workspace não tem janelas.
             property bool barOnEmpty: true
-            // Estilo da barra: "strip" (faixa de ponta a ponta), "island" (ilha que
-            // expande), "pill" ou "islands" (três ilhas).
-            property string barStyle: "strip"
+            // Estilo da barra: "pill" (tudo à mostra) ou "island" (só a hora;
+            // expande com o mouse). Os que saíram ("strip", "islands") viram "pill"
+            // no BarState e no SettingsState.
+            property string barStyle: "pill"
 
             // Painel superior
             property var dashboardTabOrder: ["overview", "media", "performance", "weather"]

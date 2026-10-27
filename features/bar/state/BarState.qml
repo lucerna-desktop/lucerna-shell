@@ -10,17 +10,19 @@ import qs.services
 
 // View model da barra: o que ela mostra e quando ela aparece.
 //
-// Com auto-ocultar ligado, a barra fica escondida e aparece na tela onde o
-// mouse encostou no topo (ou, por um instante, ao trocar de workspace). Some
-// quando o mouse sai e quando um painel abre. Na área de trabalho vazia (sem
-// janelas no workspace daquela tela), fica à mostra: não cobre nada.
+// A barra fica escondida e aparece na tela onde o mouse encostou no topo
+// (ou, por um instante, ao trocar de workspace). Some quando o mouse sai e
+// quando um painel abre. Na área de trabalho vazia (sem janelas no workspace
+// daquela tela), fica à mostra: não cobre nada.
 Singleton {
     id: root
 
-    // Visibilidade
-    readonly property bool autoHide: Config.barAutoHide
-    readonly property string style: Config.barStyle
+    // Estilo: "pill" ou "island". Os estilos que saíram ("strip", "islands") e
+    // qualquer valor desconhecido viram a pílula.
+    readonly property string style: Config.barStyle === "island" ? "island" : "pill"
     readonly property bool showDate: Config.barShowDate
+
+    // Visibilidade
     readonly property bool panelOpen: Panels.anyOpen
     property var revealedScreen: null
     property bool hovering: false
@@ -30,8 +32,6 @@ Singleton {
     readonly property bool expanded: hovering || peeking
 
     function shownOn(screen: var): bool {
-        if (!autoHide)
-            return true;
         if (panelOpen)
             return false;
         return revealedScreen === screen || (Config.barOnEmpty && Hypr.isScreenEmpty(screen));
@@ -55,12 +55,6 @@ Singleton {
     function peek(screen: var): void {
         if (panelOpen)
             return;
-        // Barra fixa: não precisa aparecer, só expandir por um instante.
-        if (!autoHide) {
-            peeking = true;
-            peekDelay.restart();
-            return;
-        }
         revealedScreen = screen;
         peeking = true;
         peekDelay.restart();

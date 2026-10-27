@@ -40,7 +40,7 @@ Singleton {
         { id: "notifications", icon: Icons.bell, label: "Notificações", description: "Popups e não perturbe" },
         { id: "panels", icon: Icons.panels, label: "Painéis", description: "O painel superior junto das configurações" },
         { id: "launcher", icon: Icons.apps, label: "Launcher", description: "Estilo, busca e favoritos" },
-        { id: "bar", icon: Icons.toolbar, label: "Barra", description: "Quando aparece e o que mostra" },
+        { id: "bar", icon: Icons.toolbar, label: "Barra", description: "O que mostra e quando aparece" },
         { id: "dashboard", icon: Icons.dashboard, label: "Painel superior", description: "Abas, cartões, clima e privacidade" },
         { id: "power", icon: Icons.bolt, label: "Energia e bateria", description: "Avisos, perfil e modo leve" },
         { id: "shortcuts", icon: Icons.keyboard, label: "Atalhos", description: "As teclas do shell" },
@@ -388,28 +388,22 @@ Singleton {
 
     // Barra
     readonly property var barStyles: [
-        { id: "strip", label: "Faixa", hint: "De ponta a ponta" },
-        { id: "island", label: "Ilha", hint: "Só a hora; abre com o mouse" },
-        { id: "pill", label: "Pílula", hint: "Flutuante, tudo à mostra" },
-        { id: "islands", label: "Três ilhas", hint: "Uma em cada canto" }
+        { id: "pill", label: "Pílula", hint: "Tudo à mostra" },
+        { id: "island", label: "Ilha", hint: "Só a hora; abre com o mouse" }
     ]
-    readonly property string barStyle: Config.barStyle
+    // Um estilo que saiu ("strip", "islands") aparece como a pílula, como na barra.
+    readonly property string barStyle: barStyles.some(s => s.id === Config.barStyle) ? Config.barStyle : "pill"
 
     function setBarStyle(id: string): void {
         Config.barStyle = id;
     }
 
-    readonly property bool barAutoHide: Config.barAutoHide
     readonly property bool barPeek: Config.barPeek
     readonly property bool barShowDate: Config.barShowDate
     readonly property bool barOnEmpty: Config.barOnEmpty
 
     function setBarOnEmpty(on: bool): void {
         Config.barOnEmpty = on;
-    }
-
-    function setBarAutoHide(on: bool): void {
-        Config.barAutoHide = on;
     }
 
     function setBarPeek(on: bool): void {

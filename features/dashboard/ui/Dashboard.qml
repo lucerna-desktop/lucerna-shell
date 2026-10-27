@@ -24,8 +24,7 @@ OverlayPanel {
     readonly property int index: DashboardState.currentIndex
     readonly property Loader currentPage: pageRepeater.count > index ? pageRepeater.itemAt(index) as Loader : null
 
-    // Cartão flutuante que desce do topo da tela com mola (abaixo da barra,
-    // quando ela está fixa).
+    // Cartão flutuante que desce do topo da tela com mola.
     Rectangle {
         id: drawer
 

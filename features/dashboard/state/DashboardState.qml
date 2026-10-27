@@ -48,7 +48,7 @@ Singleton {
     }
 
     // Fechar ao tirar o mouse: só depois de o mouse ter entrado no painel
-    // (com a barra fixa ele abre abaixo do cursor, que está na hora).
+    // (ele pode abrir com o mouse fora dele, pelo atalho ou pela hora).
     property bool pointerInside: false
     property bool pointerEntered: false
 

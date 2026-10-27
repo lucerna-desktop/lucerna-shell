@@ -155,19 +155,9 @@ Singleton {
         }
     }
 
-    // Distância do topo para os painéis que descem ou encostam no topo: colados
-    // à borda com a barra escondida; abaixo dela quando ela está fixa.
-    readonly property real topInset: {
-        const gap = ThemeManager.spacing.small;
-        if (Config.barAutoHide)
-            return gap;
-        return Config.barStyle === "strip" ? ThemeManager.barHeight + gap : ThemeManager.barHeight + gap * 2;
-    }
-
-    // Faixa da barra, a partir do topo, que um modal com keepBar (a central)
-    // deixa fora da camada para a barra continuar clicável. Com a barra
-    // escondida sozinha, nenhuma: ela some com um painel aberto.
-    readonly property real barStrip: Config.barAutoHide ? 0 : topInset - ThemeManager.spacing.small
+    // Distância do topo para os painéis que descem ou encostam no topo: a
+    // barra se esconde sozinha (some com um painel aberto), então colados à borda.
+    readonly property real topInset: ThemeManager.spacing.small
 
     function isOpen(name: string): bool {
         return opened.includes(name);
