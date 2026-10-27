@@ -30,7 +30,9 @@ A barra e as janelas com as bordas e o arredondamento que o tema aplica no Hyprl
 
 ### Painel superior
 
-Visão geral, mídia com letra sincronizada, desempenho e clima. Desce de dentro da barra, e a altura acompanha a aba.
+Visão geral, mídia com letra sincronizada, desempenho e clima. Escorre da moldura de cima, logo abaixo da pílula da barra, e a altura acompanha a aba.
+
+Os painéis que saem das bordas (o painel superior, a central, os popups de notificação e o OSD) são uma peça só com a tela: ao abrir o painel superior ou a central, uma moldura fina aparece nos quatro lados, a pílula da barra sobe e se funde a ela, e o painel incha da borda com a junção arredondada, como um líquido; ao fechar, tudo recolhe e a moldura some.
 
 | Mídia | Desempenho |
 | --- | --- |
@@ -40,7 +42,7 @@ Visão geral, mídia com letra sincronizada, desempenho e clima. Desce de dentro
 
 ### Central
 
-Ações em cima e notificações embaixo, na direita, sobre a área de trabalho. Cada painel abre e fecha sozinho (`Super+A` as ações, `Super+N` as notificações, e o sino da barra), e os dois podem ficar abertos juntos (`Super+C` abre o que falta, ou fecha os dois); sozinhas, as notificações sobem e ocupam a altura toda. Os tiles ligam e desligam no corpo e abrem a página do recurso na setinha. O ícone da barra escolhe a página das ações: o de rede abre a do Wi-Fi; o de som, a da saída de áudio; o de bateria, a da bateria; o mesmo ícone de novo fecha só as ações. `Esc` e o clique fora fecham os dois.
+Um bloco só que sai da borda direita, com as ações em cima e as notificações embaixo, sobre a área de trabalho. Cada painel abre e fecha sozinho (`Super+A` as ações, `Super+N` as notificações, e o sino da barra), e os dois podem ficar abertos juntos (`Super+C` abre o que falta, ou fecha os dois); sozinhas, as notificações sobem e ocupam a altura toda. Os tiles ligam e desligam no corpo e abrem a página do recurso na setinha. O ícone da barra escolhe a página das ações: o de rede abre a do Wi-Fi; o de som, a da saída de áudio; o de bateria, a da bateria; o mesmo ícone de novo fecha só as ações (a pílula fica fundida à moldura e clicável com a central aberta). `Esc` e o clique fora fecham os dois.
 
 ![Central: ações e notificações](docs/screenshots/central.jpg)
 
@@ -106,7 +108,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 | **Captura de tela** | Painel próprio (`Print`): foto ou vídeo, de uma área (arrastando, com alças), de uma janela (clicando) ou da tela, com espera, cursor e som. A foto vai para a pasta e para a área de transferência, com um aviso que abre o arquivo ou a pasta; a gravação (pela GPU quando dá) mostra o tempo na barra e para ao clicar. Também tela inteira (`Shift+Print`) e janela ativa (`Ctrl+Print`) direto. |
 | **Tela de bloqueio** | Relógio e senha (PAM). |
 | **Energia** | Menu (bloquear, suspender, sair, reiniciar, desligar). Avisos de bateria baixa e crítica, ação no nível crítico com prazo para cancelar, troca de perfil na tomada e modo leve na bateria. |
-| **OSD** | Volume e brilho. |
+| **OSD** | Volume e brilho, saindo da borda direita (não aparece com a central aberta, que já mostra os dois). |
 | **Ociosidade** | Escurece, desliga a tela, bloqueia e suspende depois de um tempo sem uso, com tempos próprios na tomada e na bateria, sem precisar do `hypridle`. Segura com mídia tocando, com app em tela cheia e com "Não apagar a tela" (nos tiles da central, para apresentações). |
 | **Luz noturna** | Tela mais quente à noite, do pôr ao nascer do sol (pela cidade do clima, calculado sem rede), num horário fixo ou sempre, entrando e saindo aos poucos. Nos tiles da central, liga ou desliga até a próxima virada. Usa o `hyprsunset`, que muda a cor no hardware, sem custo para a GPU. |
 | **Papel de parede** | Imagem com transição na troca e efeito animado por cima (shader, a 30 ou 60 fps, no ritmo da tela, e em meia resolução). Pausa com app em tela cheia, tela bloqueada ou tela apagada, e opcionalmente com qualquer janela aberta; no automático, fica parado na bateria. Modo e origem por monitor. |
