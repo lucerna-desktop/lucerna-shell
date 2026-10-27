@@ -85,12 +85,13 @@ Singleton {
         }
     }
 
-    // Aparece por um instante (troca de workspace).
+    // Aparece por um instante (troca de workspace). Com o mouse em cima dela
+    // (a roda nos workspaces), vale o mouse: a tela cheia não a esconde.
     function peek(screen: var): void {
         if (panelOpen)
             return;
         revealedScreen = screen;
-        peeking = true;
+        peeking = !hovering;
         peekDelay.restart();
     }
 

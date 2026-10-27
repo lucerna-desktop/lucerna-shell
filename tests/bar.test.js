@@ -53,6 +53,8 @@ function run(t) {
             t.check(B.peeking && B.shownOn(screen), "a troca de workspace, sem tela cheia");
             B.setHovering(true);
             t.check(!B.peeking, "o mouse em cima dela durante a troca: passa a valer o mouse");
+            B.peek(screen);
+            t.check(!B.peeking && B.shownOn(screen), "a troca com o mouse em cima dela (a roda nos workspaces): vale o mouse");
         } finally {
             t.Config.barOnEmpty = onEmpty0;
         }
