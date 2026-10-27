@@ -29,6 +29,7 @@ import qs.features.notifications.state
 import qs.features.osd.state
 import qs.features.settings.state
 import qs.features.themeSwitcher.state
+import qs.features.wallpaper.state
 import qs.services
 import qs.services.lucerna
 import "appinfo.test.js" as AppInfoTest
@@ -68,6 +69,7 @@ import "systemstats.test.js" as SystemStatsTest
 import "theme.test.js" as ThemeTest
 import "themeswitcher.test.js" as ThemeSwitcherTest
 import "videowallpapers.test.js" as VideoWallpapersTest
+import "wallpaper.test.js" as WallpaperTest
 import "web.test.js" as WebTest
 import "weather.test.js" as WeatherTest
 import "weatherstate.test.js" as WeatherStateTest
@@ -108,6 +110,7 @@ ShellRoot {
         ["input", InputTest],
         ["systemstats", SystemStatsTest],
         ["videowallpapers", VideoWallpapersTest],
+        ["wallpaper", WallpaperTest],
         ["lyrics", LyricsTest],
         ["notifications", NotificationsTest],
         ["osd", OsdTest],
@@ -277,7 +280,8 @@ ShellRoot {
             get SettingsState() { return SettingsState; },
             get WeatherState() { return WeatherState; },
             weatherSample: root.weatherSample,
-            get ThemeSwitcherState() { return ThemeSwitcherState; }
+            get ThemeSwitcherState() { return ThemeSwitcherState; },
+            get WallpaperState() { return WallpaperState; }
         };
     }
 

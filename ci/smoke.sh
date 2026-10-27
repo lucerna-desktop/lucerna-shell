@@ -403,6 +403,30 @@ for tab in overview media performance weather; do
     step dashboard dashboard open "$tab"
 done
 
+# Fase "desfoque": o nível pelo IPC (blur get/set). Valor desconhecido não
+# muda nada. Um painel aberto em cada nível, com captura (no sway não há
+# desfoque; confere que trocar de nível não derruba o shell).
+# blur_check <esperado no get> [set <nível>]: troca (se pedido), confere o get.
+blur_check() {
+    local expected=$1 got
+    shift
+    if [ $# -gt 0 ]; then
+        ipc blur set "$1" > /dev/null || fail "ipc call blur set $1 falhou: $(why $?)"
+    fi
+    alive || fail "o shell caiu depois de: ipc call blur set ${1:-}"
+    got=$(ipc blur get) || fail "ipc call blur get falhou: $(why $?)"
+    row "ipc call blur ${1:+set $1 + }get" "$expected" "${got:-(nada)}"
+    [ "$got" = "$expected" ] || fail "o blur get trouxe \"$got\"; o esperado era \"$expected\""
+}
+blur_check performance
+blur_check full full
+blur_check full xray
+step dashboard dashboard open overview
+blur_check off off
+step dashboard dashboard open overview
+blur_check performance performance
+step dashboard dashboard open overview
+
 # Fase "espectro": com a aba Mídia aberta, o shell assina as bandas e diz ao
 # lucernad qual player seguir; o daemon liga um fluxo de captura ao nó do mpv.
 # capture_state: o `capturing` e o `player` do spectrum.status numa linha

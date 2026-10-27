@@ -95,6 +95,7 @@ Singleton {
 
     component BlurTokens: QtObject {
         property var custom: ({})
+        property string mode
         property bool enabled
         property int size
         property int passes
@@ -218,11 +219,15 @@ Singleton {
     }
 
     // Desfoque atrás dos painéis, feito pelo Hyprland (regra de camada aplicada
-    // pelo seletor de temas). Só tem efeito com a transparência ligada.
+    // pelo seletor de temas). Só tem efeito com a transparência ligada. O nível
+    // (blurModes): "performance" desfoca só o fundo (xray), "full" tudo o que
+    // está atrás, "off" nada.
+    readonly property var blurModes: ["performance", "full", "off"]
     readonly property BlurTokens blur: BlurTokens {
         custom: Config.blurOverride ?? {}
-        enabled: custom.enabled ?? root.data.hyprland?.blur ?? true
-        size: custom.size ?? root.data.hyprland?.blurSize ?? 6
+        mode: root.modeFrom(custom, root.data.hyprland ?? {})
+        enabled: mode !== "off"
+        size: custom.size ?? root.data.hyprland?.blurSize ?? 8
         passes: custom.passes ?? root.data.hyprland?.blurPasses ?? 2
         customized: Object.keys(custom).length > 0
     }
@@ -237,6 +242,34 @@ Singleton {
         const next = Object.assign({}, Config.blurOverride ?? {});
         next[key] = value;
         Config.blurOverride = next;
+    }
+
+    // O nível do desfoque: o do usuário (mode; o enabled: false de antes vale
+    // "off", sem reescrever o arquivo), o do tema (blurMode; blur: false vale
+    // "off") ou "performance". Valor desconhecido é ignorado.
+    function modeFrom(custom: var, theme: var): string {
+        if (blurModes.includes(custom.mode))
+            return custom.mode;
+        if (custom.enabled === false)
+            return "off";
+        if (blurModes.includes(theme.blurMode))
+            return theme.blurMode;
+        return theme.blur === false ? "off" : "performance";
+    }
+
+    // Grava o nível no ajuste do usuário, sem perder size e passes; tira o
+    // enabled antigo, que o mode substitui. O nível que o tema já dá não é
+    // ajuste: sai do override (e o "Restaurar padrões do tema" não aparece).
+    function setBlurMode(mode: string): void {
+        if (!blurModes.includes(mode))
+            return;
+        const next = Object.assign({}, Config.blurOverride ?? {});
+        delete next.enabled;
+        if (mode === modeFrom({}, data.hyprland ?? {}))
+            delete next.mode;
+        else
+            next.mode = mode;
+        Config.blurOverride = Object.keys(next).length ? next : null;
     }
 
     // Volta transparência e desfoque aos valores do tema.
@@ -412,6 +445,18 @@ Singleton {
 
         function list(): string {
             return root.themes.map(t => t.id).join("\n");
+        }
+    }
+
+    IpcHandler {
+        target: "blur"
+
+        function set(mode: string): void {
+            root.setBlurMode(mode);
+        }
+
+        function get(): string {
+            return root.blur.mode;
         }
     }
 

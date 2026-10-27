@@ -127,6 +127,15 @@ Singleton {
     readonly property real panelOpacity: ThemeManager.transparency.base
     readonly property real cardOpacity: ThemeManager.transparency.layers
     readonly property bool blur: ThemeManager.blur.enabled
+    // O nível do desfoque (ThemeManager.blurModes), com o texto de cada um.
+    readonly property string blurMode: ThemeManager.blur.mode
+    readonly property var blurModeOptions: [
+        { value: "off", label: "Desligado", description: "Painéis translúcidos sem desfoque" },
+        { value: "performance", label: "Desempenho", description: "Desfoca só o papel de parede atrás dos painéis; mais leve com janelas se mexendo" },
+        { value: "full", label: "Completo", description: "Desfoca tudo o que está atrás, janelas incluídas" }
+    ]
+    readonly property string blurModeDescription: blurModeOptions.find(o => o.value === blurMode)?.description ?? ""
+    readonly property bool blurWindows: Config.blurWindows
     readonly property int blurSize: ThemeManager.blur.size
     readonly property int blurPasses: ThemeManager.blur.passes
     readonly property bool glassCustomized: ThemeManager.transparency.customized || ThemeManager.blur.customized
@@ -144,8 +153,12 @@ Singleton {
         ThemeManager.setTransparency("layers", Math.round(value * 100) / 100);
     }
 
-    function setBlur(on: bool): void {
-        ThemeManager.setBlur("enabled", on);
+    function setBlurMode(mode: string): void {
+        ThemeManager.setBlurMode(mode);
+    }
+
+    function setBlurWindows(on: bool): void {
+        Config.blurWindows = on;
     }
 
     function setBlurSize(value: real): void {

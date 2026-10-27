@@ -15,6 +15,7 @@ Singleton {
     property alias weatherLocation: adapter.weatherLocation
     property alias transparencyOverride: adapter.transparencyOverride
     property alias blurOverride: adapter.blurOverride
+    property alias blurWindows: adapter.blurWindows
     property alias animationScale: adapter.animationScale
     property alias notificationTimeout: adapter.notificationTimeout
     property alias settingsTopic: adapter.settingsTopic
@@ -129,9 +130,13 @@ Singleton {
             property var weatherLocation: null
             // Ajustes do usuário por cima do tema; null = seguir o tema.
             //   transparencyOverride: { enabled, base, layers }
-            //   blurOverride: { enabled, size, passes }
+            //   blurOverride: { mode, size, passes } (mode: "performance",
+            //   "full" ou "off"; o enabled de antes ainda é lido: false = "off")
             property var transparencyOverride: null
             property var blurOverride: null
+            // Desfoque nas janelas (preferência do usuário, fora do tema: o
+            // "Restaurar padrões do tema" não mexe).
+            property bool blurWindows: true
             // Velocidade das animações; negativo = seguir o tema.
             property real animationScale: -1
             // Tempo padrão dos popups de notificação, em ms.

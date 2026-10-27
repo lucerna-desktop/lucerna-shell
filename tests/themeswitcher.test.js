@@ -193,4 +193,52 @@ function run(t) {
         t.check(rule.includes("no_anim = true"), "sem animação");
         t.check(rule.includes('"^lucerna-(panel-bar|frame-.*)$"'), "a barra (a forma) e os painéis que saem da moldura");
     });
+
+    t.test("themeswitcher: desempenho é desfoque com xray", () => {
+        const r = S.blurLua("performance", true);
+        t.check(r.startsWith("hl.layer_rule(") && r.includes('"^lucerna-panel-.*"'), "regra de camada nos painéis");
+        t.check(r.includes("blur = true") && r.includes("xray = true") && r.includes("ignore_alpha = 0.45"), r);
+        t.check(S.blurLua("full", true).includes("blur = true") && S.blurLua("full", true).includes("xray = false"), "completo sem xray");
+        t.check(S.blurLua("off", true).includes("blur = false"), "desligado");
+    });
+
+    t.test("themeswitcher: sem transparência, sem desfoque", () => {
+        t.check(S.blurLua("performance", false).includes("blur = false"));
+        t.check(S.blurLua("full", false).includes("blur = false"));
+    });
+
+    t.test("themeswitcher: a config do desfoque garante vfr, otimizações e popups", () => {
+        const c = S.blurConfigLua(12, 1);
+        for (const part of ["size = 12", "passes = 1", "new_optimizations = true", "popups = false", "debug = { vfr = true }"])
+            t.check(c.includes(part), part);
+        t.check(!c.includes("misc"), "misc:vfr não existe no 0.56");
+        t.check(!c.includes("enabled"), "nunca desliga o desfoque do Hyprland");
+    });
+
+    t.test("themeswitcher: janelas sem desfoque nunca desfazem regra do usuário", () => {
+        const w = S.windowBlurLua();
+        t.check(w.startsWith("hl.window_rule(") && w.includes("no_blur = true") && w.includes('class = ".*"'), w);
+        t.check(!w.includes("no_blur = false"));
+    });
+
+    t.test("themeswitcher: religar o desfoque das janelas recarrega, desligar manda a regra", () => {
+        t.eq(S.windowRuleAction(S.windowBlurLua(), false), "eval", "desligar");
+        t.eq(S.windowRuleAction("", true), "reload", "religar depois de enviada");
+        t.eq(S.windowRuleAction("", false), "", "nada enviado, nada a desfazer");
+    });
+
+    t.test("themeswitcher: o reload reenvia as regras do desfoque", () => {
+        const windows0 = C.blurWindows;
+        try {
+            C.blurWindows = false;
+            const sent = S.rules(true);
+            for (const lua of [S.blurLua(T.blur.mode, T.transparency.enabled), S.blurConfigLua(T.blur.size, T.blur.passes), S.windowBlurLua(), S.noAnimLua()])
+                t.check(sent.includes(lua), lua);
+            C.blurWindows = true;
+            t.check(!S.rules(true).includes(S.windowBlurLua()), "janelas com desfoque: sem a regra");
+            t.eq(S.rules(false), [], "sem Lua, nada");
+        } finally {
+            C.blurWindows = windows0;
+        }
+    });
 }

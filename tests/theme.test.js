@@ -69,12 +69,58 @@ function run(t) {
     });
 
     t.test("theme: desfoque ajustado pelo usuário", () => {
-        t.eq([T.blur.size, T.blur.passes], [6, 2]);
+        t.eq([T.blur.size, T.blur.passes], [8, 2]);
         T.setBlur("size", 10);
         t.eq(T.blur.size, 10);
         t.check(T.blur.customized, "ajuste do usuário");
         T.resetGlass();
-        t.eq(T.blur.size, 6);
+        t.eq(T.blur.size, 8);
+    });
+
+    t.test("theme: nível do desfoque, do tema e do usuário", () => {
+        try {
+            t.eq([T.blur.mode, T.blur.enabled], ["performance", true], "padrão");
+            T.setBlurMode("full");
+            t.eq([T.blur.mode, T.blur.customized], ["full", true]);
+            T.setBlurMode("off");
+            t.eq([T.blur.mode, T.blur.enabled], ["off", false]);
+            T.setBlurMode("performance");
+            t.eq([T.blur.mode, T.blur.customized, C.blurOverride], ["performance", false, null], "o nível do tema não é ajuste");
+            T.setBlur("size", 10);
+            T.setBlurMode("full");
+            T.setBlurMode("performance");
+            t.eq(C.blurOverride, { size: 10 }, "volta ao do tema sem perder o size");
+        } finally {
+            T.resetGlass();
+        }
+    });
+
+    t.test("theme: o enabled antigo vira o nível desligado", () => {
+        t.eq(T.modeFrom({ enabled: false, size: 10 }, {}), "off");
+        t.eq(T.modeFrom({ enabled: true }, { blurMode: "full" }), "full");
+        t.eq(T.modeFrom({}, { blur: false }), "off");
+        t.eq(T.modeFrom({ mode: "full", enabled: false }, {}), "full", "o mode novo vence");
+        t.eq(T.modeFrom({ mode: "xray" }, { blurMode: "nada" }), "performance", "valores desconhecidos caem no padrão");
+        t.eq(T.modeFrom({}, {}), "performance");
+        try {
+            C.blurOverride = { enabled: false, size: 10 };
+            t.eq([T.blur.mode, T.blur.enabled, T.blur.size], ["off", false, 10], "config antigo");
+            T.setBlurMode("full");
+            t.eq([C.blurOverride.mode, C.blurOverride.size, T.blur.enabled], ["full", 10, true], "o nível novo não perde o size");
+        } finally {
+            T.resetGlass();
+        }
+    });
+
+    t.test("theme: nível desconhecido não muda nada", () => {
+        try {
+            T.setBlurMode("full");
+            T.setBlurMode("xray");
+            T.setBlurMode("");
+            t.eq(T.blur.mode, "full");
+        } finally {
+            T.resetGlass();
+        }
     });
 
     t.test("theme: modo leve encurta as animações e tira o vidro", () => {

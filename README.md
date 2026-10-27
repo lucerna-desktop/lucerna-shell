@@ -127,7 +127,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 | **Teclado** | Layouts (até quatro, com variante e atalho para trocar), repetição, Num Lock, teclas especiais (Caps Lock, Compose, trocar Alt e Super) e qualquer opção do xkb, com busca. Também **teclas remapeadas** e **teclas extras e atalhos**. |
 | **Área de transferência** | Guardar o histórico, quantos itens, manter ao reiniciar, colar ao escolher e limpar (com ou sem os fixados). |
 | **Captura de tela** | Copiar a foto, cursor, quadros por segundo e som da gravação, e as pastas. |
-| **Transparência e desfoque** | Opacidade dos painéis e dos cartões e intensidade do desfoque, por cima do tema. |
+| **Transparência e desfoque** | Opacidade dos painéis e dos cartões; o nível do desfoque (Desempenho, que desfoca só o papel de parede atrás dos painéis; Completo; Desligado), o desfoque das janelas e a intensidade, por cima do tema. |
 | **Notificações** | Não perturbe e tempo na tela. |
 | **Painéis** | Se o painel superior abre junto das configurações. |
 | **Launcher** | Estilo, buscador da web, favoritos (ordem e remoção), apps ocultos e histórico de uso. |
@@ -210,6 +210,7 @@ Tudo pode ser chamado de fora com `qs -c lucerna ipc call <alvo> <função> [arg
 | `launcher` | `open <categoria> <busca>` (`apps`, `files`, `documents`, `images`, `music`, `videos`, `web`; a busca pode ser `""`), `toggle` |
 | `session` | `lock`, `isLocked` |
 | `theme` | `set <id>`, `get`, `list` |
+| `blur` | `set <performance\|full\|off>` (o nível do desfoque; outro valor não muda nada), `get` |
 | `brightness` | `up`, `down`, `set <0-100>` (a tela em foco), `setFor <id> <0-100>`, `list` (as telas e os ids: `backlight`, `ddc:<conector>`, ex.: `ddc:HDMI-A-1`) |
 | `monitors` | `identify` |
 | `overview` | `toggle` |
@@ -226,7 +227,7 @@ Tudo pode ser chamado de fora com `qs -c lucerna ipc call <alvo> <função> [arg
 Cada arquivo em `themes/*.json` é um tema, e o nome do arquivo é o id. Os temas embutidos são gerados por `dev/themes.py` a partir das paletas (o JSON e o papel estático). Para criar um, acrescente a paleta ao script, ou copie o `themes/catppuccin-mocha.json` (o padrão) e mude as cores e o wallpaper: ele aparece no seletor na hora. Além de cores, fontes, raios e espaçamentos, o tema define:
 
 - `transparency`: `enabled`, `base` (opacidade dos painéis) e `layers` (dos cartões dentro deles).
-- `hyprland`: bordas, arredondamento e intensidade do desfoque (`blurSize`, `blurPasses`), aplicados via `hyprctl eval`.
+- `hyprland`: bordas, arredondamento, intensidade do desfoque (`blurSize`, `blurPasses`) e, opcional, o nível (`blurMode`: `performance`, `full` ou `off`), aplicados via `hyprctl eval`.
 - `wallpaper`: a imagem (`"wallpapers/nord.jpg"`) ou `{ "static": ..., "shader": "shaders/neve.qsb" }` (a taxa de quadros é do usuário, 30 ou 60). Os efeitos ficam em `themes/shaders/`, com a fonte GLSL ao lado do `.qsb` compilado. `dev/shaders.sh` recompila todos, e isso requer o `qsb`, do pacote `qt6-shadertools`. Todo efeito recebe os mesmos uniforms (`time`, `resolution`, `base`, `surface`, `accent`, `text`), então qualquer tema pode usar qualquer efeito, e um efeito novo entra no catálogo em `themes/shaders/effects.json`.
 - `animation.scale`: velocidade geral das animações (1 = padrão, 0 = desligadas).
 - `fonts`: fontes que o tema traz em `themes/fonts/`, carregadas pelo shell sem instalar nada no sistema. Todos os temas embutidos trazem a Rubik, sob licença OFL.
@@ -317,6 +318,8 @@ dev/ci.sh shell lint   # um bash no container de um check, com o repositório em
 ```
 
 A saída fica em `ci-out/<check>/`. Como escrever um teste e o que a cobertura exige está no [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+Para comparar o custo dos níveis do desfoque na sua sessão Hyprland (CPU do Hyprland e do `qs` e, se der para ler, da GPU, com o painel superior aberto em cada nível): `dev/bench-blur.sh 20` (segundos por nível; no fim, volta o nível que estava).
 
 ## Créditos
 
