@@ -4,7 +4,10 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.core.config
+import qs.core.frame
+import qs.core.panels
 import qs.core.theme
+import qs.core.widgets
 import qs.services
 
 // Papel de parede de cada monitor: de onde vem (o tema ativo ou o de outro
@@ -65,14 +68,32 @@ Singleton {
     // Se o animado deve rodar agora. Pausado, o último quadro fica na tela e o
     // custo cai a zero (nada redesenha). Tela bloqueada, app em tela cheia ou
     // tela apagada pausam; no modo estrito, qualquer janela no workspace também.
+    // Também pausa sob um painel desfocado (blurCovers).
     function shouldAnimate(screen: var): bool {
         if (!showsEffect(screen) || Session.locked)
+            return false;
+        if (blurCovers(screen, ThemeManager.transparency.enabled && ThemeManager.blur.enabled, Panels.surfaces.filter(w => w instanceof OverlayPanel), Frame.windows))
             return false;
         if (Hypr.hasFullscreen(screen) || Hypr.isDpmsOff(screen))
             return false;
         if (Config.wallpaperStrict && !Hypr.isScreenEmpty(screen))
             return false;
         return true;
+    }
+
+    // Uma camada desfocada grande cobre a tela: um painel aberto (surfaces, com
+    // `screen`) ou a janela da forma da moldura à mostra com algum pedaço além
+    // da pílula da barra (windows, com `targetScreen` e `parts`). Só a pílula
+    // não conta: com a barra na área de trabalho vazia (barOnEmpty), o papel
+    // nunca andaria. Pausa, não baixa o FPS: cada quadro do papel suja o
+    // fundo que o Hyprland guarda para o desfoque (o do xray) e o refaz na
+    // tela inteira; parado, o custo é zero. Os popups de notificação e as
+    // janelas de monitores não entram (pequenos e passageiros: o papel
+    // piscaria).
+    function blurCovers(screen: var, blurOn: bool, surfaces: var, windows: var): bool {
+        if (!blurOn)
+            return false;
+        return surfaces.some(w => w.screen === screen && w.visible) || windows.some(w => w.targetScreen === screen && w.visible && (w.parts ?? []).some(p => p.role !== "pill"));
     }
 
     // Vídeos: cada tela toca a versão feita para ela (resolução, proporção,
