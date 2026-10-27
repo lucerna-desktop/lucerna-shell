@@ -208,6 +208,20 @@ function run(t) {
         t.eq(F.morphOn("A"), 1);
     });
 
+    // O cartão (canto de raio rc, a `m` da borda) fica dentro do buraco da
+    // moldura (cantos de raio `radius`, a `thickness` da borda).
+    t.test("frame: os popups ficam fora do arco do canto da moldura", () => {
+        const inside = (m, rc) => {
+            const hole = F.thickness + F.radius, card = m + rc;
+            return m >= F.thickness && (card >= hole || Math.SQRT2 * (hole - card) + rc <= F.radius + 1e-9);
+        };
+        const margin = F.thickness + t.ThemeManager.spacing.small;
+        t.check(margin >= F.cornerClear, "a margem dos popups passa da mínima");
+        for (let rc = 0; rc <= F.radius; rc += 2)
+            t.check(inside(F.cornerClear, rc) && inside(margin, rc), "canto de raio " + rc);
+        t.check(!inside(t.ThemeManager.spacing.small, 0), "a margem antiga (só o espaço) entrava no arco");
+    });
+
     t.test("frame: o conteúdo da barra esmaece no começo da transformação", () => {
         t.eq(F.barContentOpacity(0), 1, "barra inteira");
         t.near(F.barContentOpacity(0.2), 0.5, 1e-9, "na metade do esmaecer");

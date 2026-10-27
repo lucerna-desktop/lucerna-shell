@@ -32,6 +32,10 @@ Singleton {
     // Até onde o arco de uma união chega da beira (a suavização e um pixel de
     // borda): o shader descarta além disso, e as faixas têm essa folga.
     readonly property real reach: smoothing + 2
+    // A margem mínima de um cartão solto no canto da tela (os popups) para
+    // ficar fora do arco do canto de dentro da moldura, com qualquer raio de
+    // canto no cartão (o pior é o canto reto, na diagonal do arco).
+    readonly property real cornerClear: thickness + radius * (1 - Math.SQRT1_2)
     // O conteúdo de um painel entra quando a forma dele passa disto: a forma
     // e o conteúdo ficam em janelas diferentes e podem chegar à tela com um
     // quadro de diferença; entrando tarde, a forma já está à frente dele.
