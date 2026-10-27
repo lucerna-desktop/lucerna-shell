@@ -6,185 +6,97 @@ import qs.core.theme
 import qs.core.widgets
 import qs.features.dashboard.state
 
-// Aba Clima: agora, próximas horas e próximos dias. Sem cidade definida, pede uma.
+// Aba Clima, compacta, na altura comum das abas: um card do agora (o tempo e a
+// temperatura; a cidade, o dia, o aviso e o sol; umidade, sensação e vento) e
+// os sete dias embaixo. A cidade se escolhe nas configurações; sem o
+// lucernad, só o motivo.
 Item {
     id: root
 
-    property bool editing: false
+    readonly property int mode: !WeatherState.available ? 0 : !WeatherState.hasLocation ? 1 : 2
 
-    implicitHeight: 330
+    implicitHeight: mode === 0 ? unavailable.implicitHeight : mode === 1 ? noCity.implicitHeight : DashboardState.pageHeight
 
-    function startEditing(): void {
-        editing = true;
-        search.text = "";
-        search.forceActiveFocus();
+    // Sem o lucernad (ou com o módulo de rede fora): a forma com o motivo.
+    EmptyState {
+        id: unavailable
+
+        visible: root.mode === 0
+        icon: Icons.weather
+        text: WeatherState.notice
     }
 
-    function submit(): void {
-        if (search.text.trim()) {
-            WeatherState.search(search.text);
-            editing = false;
-        }
-    }
-
-    Connections {
-        target: WeatherState
-
-        function onPlaceChanged() {
-            root.editing = false;
-        }
-    }
-
-    // Sem cidade, o campo de busca já recebe o teclado quando a aba aparece.
-    readonly property bool showing: DashboardState.isShowing("weather")
-    onShowingChanged: {
-        if (showing && !WeatherState.hasLocation)
-            search.forceActiveFocus();
-    }
-
-    // Campo de busca da cidade: aparece sem cidade definida ou ao editar.
+    // Sem cidade: o convite para as configurações, onde fica a busca.
     Column {
-        anchors.centerIn: parent
-        visible: !WeatherState.hasLocation || root.editing
+        id: noCity
+
+        visible: root.mode === 1
+        width: parent.width
+        bottomPadding: ThemeManager.spacing.large
         spacing: ThemeManager.spacing.normal
-        z: 2
 
-        Icon {
-            anchors.horizontalCenter: parent.horizontalCenter
+        EmptyState {
             icon: Icons.location
-            filled: true
-            size: 44
-            color: ThemeManager.colors.accent
+            text: "Escolha a cidade nas configurações"
         }
 
-        Txt {
+        Clickable {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Qual é a sua cidade?"
-            font.pixelSize: ThemeManager.font.large
-        }
+            implicitWidth: openRow.implicitWidth + ThemeManager.spacing.large * 2
+            implicitHeight: 44
+            radius: height / 2
+            pressScale: 0.96
+            active: true
+            onClicked: WeatherState.openSettings()
 
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: 340
-            height: 44
-            radius: 22
-            color: ThemeManager.colors.surface
-            border.width: search.activeFocus ? 2 : ThemeManager.outlines ? 1 : 0
-            border.color: search.activeFocus ? ThemeManager.colors.accent : ThemeManager.colors.border
+            Row {
+                id: openRow
 
-            Behavior on border.color { ColorAnim {} }
+                anchors.centerIn: parent
+                spacing: ThemeManager.spacing.small
 
-            Icon {
-                id: searchIcon
-
-                anchors.left: parent.left
-                anchors.leftMargin: ThemeManager.spacing.normal + 2
-                anchors.verticalCenter: parent.verticalCenter
-                icon: Icons.magnify
-                size: 20
-                color: ThemeManager.colors.textMuted
-            }
-
-            TextInput {
-                id: search
-
-                anchors {
-                    left: searchIcon.right
-                    right: parent.right
-                    leftMargin: ThemeManager.spacing.small
-                    rightMargin: ThemeManager.spacing.large
-                    verticalCenter: parent.verticalCenter
-                }
-                color: ThemeManager.colors.text
-                font.family: ThemeManager.font.sans
-                font.variableAxes: ThemeManager.fontAxes(Font.Normal)
-                font.pixelSize: ThemeManager.font.normal
-                clip: true
-                onAccepted: root.submit()
-                Keys.onEscapePressed: event => {
-                    if (root.editing && WeatherState.hasLocation) {
-                        root.editing = false;
-                        event.accepted = true;
-                    } else {
-                        event.accepted = false;
-                    }
+                Icon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon: Icons.settings
+                    size: 20
+                    color: ThemeManager.colors.accentText
                 }
 
                 Txt {
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: !search.text
-                    text: "Ex.: Recife, Curitiba, Lisboa"
-                    faint: true
+                    text: "Abrir configurações"
+                    color: ThemeManager.colors.accentText
+                    font.weight: Font.DemiBold
                 }
             }
         }
-
-        Txt {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: text !== ""
-            text: WeatherState.loading ? "Procurando…" : WeatherState.error
-            color: WeatherState.error ? ThemeManager.colors.danger : ThemeManager.colors.textMuted
-            font.pixelSize: ThemeManager.font.small
-        }
-
-        Txt {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: WeatherState.offline ? "Modo offline ligado: a busca não funciona" : "Previsão da Open-Meteo"
-            faint: true
-            font.pixelSize: ThemeManager.font.small
-        }
     }
 
-    RowLayout {
-        anchors.fill: parent
-        visible: WeatherState.hasLocation && !root.editing
+    ColumnLayout {
+        id: layout
+
+        visible: root.mode === 2
+        width: parent.width
+        // A altura comum das abas: o card do agora em cima, os dias no resto.
+        height: DashboardState.pageHeight
         spacing: ThemeManager.spacing.normal
 
-        // Agora
+        // (1) O agora: o tempo e a temperatura; a cidade, o dia, o aviso e o
+        // sol; umidade, sensação e vento.
         Surface {
-            Layout.preferredWidth: 320
-            Layout.fillHeight: true
+            Layout.fillWidth: true
+            Layout.preferredHeight: 140
+            radius: ThemeManager.radius.large
 
-            Column {
+            RowLayout {
                 anchors.fill: parent
-                anchors.margins: ThemeManager.spacing.normal + 2
-                spacing: ThemeManager.spacing.small
-
-                // O título (a cidade) no padrão dos outros cards, com editar e atualizar.
-                Row {
-                    id: placeRow
-
-                    width: parent.width
-                    spacing: 4
-
-                    CardTitle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: placeRow.width - editButton.width - refreshButton.width - placeRow.spacing * 2
-                        icon: Icons.location
-                        text: WeatherState.place
-                    }
-
-                    IconButton {
-                        id: editButton
-
-                        anchors.verticalCenter: parent.verticalCenter
-                        icon: Icons.edit
-                        iconSize: 16
-                        onClicked: root.startEditing()
-                    }
-
-                    IconButton {
-                        id: refreshButton
-
-                        anchors.verticalCenter: parent.verticalCenter
-                        icon: Icons.refresh
-                        iconSize: 16
-                        onClicked: WeatherState.refresh()
-                    }
-                }
+                anchors.leftMargin: ThemeManager.spacing.large + ThemeManager.spacing.tiny
+                anchors.rightMargin: ThemeManager.spacing.large + ThemeManager.spacing.tiny
+                spacing: ThemeManager.spacing.large + ThemeManager.spacing.small
 
                 Row {
-                    spacing: ThemeManager.spacing.normal
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: ThemeManager.spacing.large - ThemeManager.spacing.tiny
 
                     Icon {
                         anchors.verticalCenter: parent.verticalCenter
@@ -199,234 +111,207 @@ Item {
 
                         Txt {
                             text: WeatherState.temp
-                            mono: true
-                            font.pixelSize: ThemeManager.font.huge + 8
+                            font.pixelSize: ThemeManager.font.huge + 4
                             font.weight: Font.Medium
                         }
 
                         Txt {
+                            leftPadding: 2
                             text: WeatherState.condition
+                            muted: true
+                        }
+                    }
+                }
+
+                Column {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: ThemeManager.spacing.small + 2
+
+                    Column {
+                        width: parent.width
+                        spacing: 2
+
+                        Txt {
+                            width: parent.width
+                            text: WeatherState.city
+                            font.pixelSize: ThemeManager.font.large + 4
                             font.weight: Font.DemiBold
                         }
 
                         Txt {
-                            text: WeatherState.feels
+                            width: parent.width
+                            text: WeatherState.today
                             muted: true
-                            font.pixelSize: ThemeManager.font.small + 1
+                            font.pixelSize: ThemeManager.font.small
+                        }
+
+                        // O aviso (ou a hora da previsão velha), quando há.
+                        Txt {
+                            width: parent.width
+                            visible: text !== ""
+                            text: WeatherState.footnote
+                            faint: true
+                            font.pixelSize: ThemeManager.font.small
+                        }
+                    }
+
+                    Row {
+                        spacing: ThemeManager.spacing.large - 2
+
+                        SunStat {
+                            icon: Icons.sunrise
+                            value: WeatherState.sunrise
+                        }
+
+                        SunStat {
+                            icon: Icons.sunset
+                            value: WeatherState.sunset
                         }
                     }
                 }
 
-                Item {
-                    width: 1
-                    height: ThemeManager.spacing.small
-                }
+                Column {
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredWidth: 170
+                    spacing: ThemeManager.spacing.small
 
-                Row {
-                    width: parent.width
-
-                    Repeater {
-                        model: [
-                            { icon: Icons.humidity, value: WeatherState.humidity, label: "Umidade" },
-                            { icon: Icons.wind, value: WeatherState.wind, label: "Vento" },
-                            { icon: Icons.rain, value: WeatherState.rainChance, label: "Chuva" }
-                        ]
-
-                        delegate: Column {
-                            id: stat
-
-                            required property var modelData
-
-                            width: parent.width / 3
-                            spacing: 2
-
-                            Icon {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                icon: stat.modelData.icon
-                                size: 22
-                                color: ThemeManager.colors.accent
-                            }
-
-                            Txt {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: stat.modelData.value
-                                mono: true
-                                font.weight: Font.DemiBold
-                            }
-
-                            Txt {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: stat.modelData.label
-                                faint: true
-                                font.pixelSize: ThemeManager.font.small
-                            }
-                        }
+                    DetailRow {
+                        icon: Icons.humidity
+                        label: "Umidade"
+                        value: WeatherState.humidity
                     }
-                }
 
-                Txt {
-                    text: WeatherState.offline ? "Modo offline: sem atualização" : WeatherState.loading ? "Atualizando…" : (WeatherState.error || WeatherState.updated)
-                    color: WeatherState.error && !WeatherState.offline ? ThemeManager.colors.danger : ThemeManager.colors.textFaint
-                    font.pixelSize: ThemeManager.font.small
+                    DetailRow {
+                        icon: Icons.temperature
+                        label: "Sensação"
+                        value: WeatherState.feels
+                    }
+
+                    DetailRow {
+                        icon: Icons.wind
+                        label: "Vento"
+                        value: WeatherState.wind
+                    }
                 }
             }
         }
 
-        ColumnLayout {
+        // (2) Os sete dias, no resto da altura.
+        RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: ThemeManager.spacing.normal
+            visible: WeatherState.days.length > 0
+            spacing: ThemeManager.spacing.small
 
-            // Próximas horas
-            Surface {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 112
+            Repeater {
+                model: WeatherState.days
 
-                Row {
-                    anchors.fill: parent
-                    anchors.margins: ThemeManager.spacing.normal + 2
+                delegate: Surface {
+                    id: day
 
-                    Repeater {
-                        model: WeatherState.hourly
+                    required property var modelData
 
-                        delegate: Column {
-                            id: hour
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 1
+                    radius: ThemeManager.radius.large + ThemeManager.radius.small
 
-                            required property var modelData
+                    Column {
+                        anchors.centerIn: parent
+                        width: parent.width - ThemeManager.spacing.small
+                        spacing: ThemeManager.spacing.tiny + 1
 
-                            width: parent.width / Math.max(1, WeatherState.hourly.length)
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 4
-
-                            Txt {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: hour.modelData.time
-                                faint: true
-                                font.pixelSize: ThemeManager.font.small
-                            }
-
-                            Icon {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                icon: hour.modelData.icon
-                                size: 22
-                                color: ThemeManager.colors.textMuted
-                            }
-
-                            Txt {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: hour.modelData.temp
-                                mono: true
-                                font.pixelSize: ThemeManager.font.small + 1
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Próximos dias
-            Surface {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                Column {
-                    anchors.fill: parent
-                    anchors.margins: ThemeManager.spacing.normal + 2
-                    spacing: 2
-
-                    Repeater {
-                        model: WeatherState.daily
-
-                        delegate: Item {
-                            id: day
-
-                            required property var modelData
-
+                        Txt {
                             width: parent.width
-                            height: 34
+                            horizontalAlignment: Text.AlignHCenter
+                            text: day.modelData.label
+                            color: ThemeManager.colors.accent
+                            font.weight: Font.DemiBold
+                        }
 
-                            Txt {
-                                id: dayName
+                        Txt {
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            text: day.modelData.date
+                            opacity: 0.7
+                            font.pixelSize: ThemeManager.font.small
+                        }
 
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 56
-                                text: day.modelData.day
-                                font.weight: Font.DemiBold
-                            }
+                        Icon {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            icon: day.modelData.icon
+                            filled: true
+                            size: 28
+                        }
 
-                            Icon {
-                                id: dayIcon
-
-                                anchors.left: dayName.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                icon: day.modelData.icon
-                                size: 22
-                                color: ThemeManager.colors.accent
-                            }
-
-                            Txt {
-                                id: rain
-
-                                anchors.left: dayIcon.right
-                                anchors.leftMargin: 4
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 40
-                                text: day.modelData.rain
-                                color: ThemeManager.colors.accent
-                                font.pixelSize: ThemeManager.font.small
-                            }
-
-                            Txt {
-                                id: minText
-
-                                anchors.left: rain.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 36
-                                horizontalAlignment: Text.AlignRight
-                                text: day.modelData.min
-                                mono: true
-                                muted: true
-                            }
-
-                            // Faixa min–max na escala da semana.
-                            Rectangle {
-                                id: track
-
-                                anchors.left: minText.right
-                                anchors.right: maxText.left
-                                anchors.margins: ThemeManager.spacing.normal
-                                anchors.verticalCenter: parent.verticalCenter
-                                height: 6
-                                radius: 3
-                                color: ThemeManager.colors.track
-
-                                Rectangle {
-                                    x: day.modelData.from * parent.width
-                                    width: Math.max(parent.height, (day.modelData.to - day.modelData.from) * parent.width)
-                                    height: parent.height
-                                    radius: 3
-                                    gradient: Gradient {
-                                        orientation: Gradient.Horizontal
-
-                                        GradientStop { position: 0; color: ThemeManager.alpha(ThemeManager.colors.accent, 0.55) }
-                                        GradientStop { position: 1; color: ThemeManager.colors.accent }
-                                    }
-                                }
-                            }
-
-                            Txt {
-                                id: maxText
-
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 36
-                                horizontalAlignment: Text.AlignRight
-                                text: day.modelData.max
-                                mono: true
-                            }
+                        Txt {
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            text: day.modelData.range
+                            font.pixelSize: ThemeManager.font.small
+                            font.weight: Font.DemiBold
                         }
                     }
                 }
             }
+        }
+
+        // Sem os dias ainda: o espaço fica, para a altura não pular.
+        Item {
+            Layout.fillHeight: true
+            visible: WeatherState.days.length === 0
+        }
+    }
+
+    component SunStat: Row {
+        id: sun
+
+        property string icon
+        property string value
+
+        spacing: ThemeManager.spacing.small - 2
+
+        Icon {
+            anchors.verticalCenter: parent.verticalCenter
+            icon: sun.icon
+            size: 18
+            color: ThemeManager.colors.accent
+        }
+
+        Txt {
+            anchors.verticalCenter: parent.verticalCenter
+            text: sun.value
+            font.pixelSize: ThemeManager.font.small + 1
+        }
+    }
+
+    component DetailRow: RowLayout {
+        id: detail
+
+        property string icon
+        property string label
+        property string value
+
+        width: parent?.width ?? 0
+        spacing: ThemeManager.spacing.small + 2
+
+        Icon {
+            icon: detail.icon
+            size: 20
+            color: ThemeManager.colors.accent
+        }
+
+        Txt {
+            Layout.fillWidth: true
+            text: detail.label
+            muted: true
+            font.pixelSize: ThemeManager.font.small + 1
+        }
+
+        Txt {
+            text: detail.value
+            font.weight: Font.DemiBold
         }
     }
 }

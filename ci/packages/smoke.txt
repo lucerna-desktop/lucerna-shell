@@ -24,8 +24,10 @@ libpipewire
 clang
 pkgconf
 # O player de teste da fumaça: PipeWire e WirePlumber isolados, com um sink
-# nulo, e o mpv com o MPRIS.
+# nulo, e o mpv com o MPRIS. O ffmpeg gera o arquivo de ruído com título e
+# artista que o mpv toca (vem com o mpv, mas a fumaça o chama direto).
 pipewire
 wireplumber
 mpv
 mpv-mpris
+ffmpeg

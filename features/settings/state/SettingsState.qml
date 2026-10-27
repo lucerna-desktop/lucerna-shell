@@ -44,10 +44,43 @@ Singleton {
         { id: "dashboard", icon: Icons.dashboard, label: "Painel superior", description: "Abas, cartões, clima e privacidade" },
         { id: "power", icon: Icons.bolt, label: "Energia e bateria", description: "Avisos, perfil e modo leve" },
         { id: "shortcuts", icon: Icons.keyboard, label: "Atalhos", description: "As teclas do shell" },
+        { id: "credits", icon: Icons.credits, label: "Créditos", description: "Inspiração, dados e base" },
         { id: "about", icon: Icons.info, label: "Sobre", description: "Versões e sistema" }
     ]
     readonly property int currentIndex: Math.max(0, topics.findIndex(t => t.id === Config.settingsTopic))
     readonly property var current: topics[currentIndex]
+
+    // Créditos: quem inspirou, de onde vêm os dados e o que o Lucerna usa.
+    readonly property var credits: [
+        {
+            title: "Inspiração",
+            items: [
+                { name: "Caelestia Shell", detail: "O painel superior, a aba Clima e as curvas de animação do Material 3; GPL-3.0", url: "https://github.com/caelestia-dots/shell" }
+            ]
+        },
+        {
+            title: "Dados",
+            items: [
+                { name: "Open-Meteo", detail: "Previsão do tempo e busca de cidade; dados sob a licença CC BY 4.0", url: "https://open-meteo.com/" },
+                { name: "LRCLIB", detail: "Letras sincronizadas", url: "https://lrclib.net/" },
+                { name: "Vagalume", detail: "Letras, só com a chave de quem usa", url: "https://www.vagalume.com.br/" }
+            ]
+        },
+        {
+            title: "Base",
+            items: [
+                { name: "Quickshell", detail: "O toolkit em QML em que o shell é feito", url: "https://quickshell.org/" },
+                { name: "Hyprland", detail: "O compositor Wayland", url: "https://hyprland.org/" },
+                { name: "Material Symbols", detail: "A fonte dos ícones, do Google; Apache 2.0", url: "https://fonts.google.com/icons" }
+            ]
+        }
+    ]
+
+    // Abre o link no navegador; só https.
+    function openLink(url: string): void {
+        if (url.startsWith("https://"))
+            Qt.openUrlExternally(url);
+    }
 
     function close(): void {
         Panels.dismiss("settings");
@@ -224,16 +257,39 @@ Singleton {
     }
 
     readonly property string weatherPlace: Config.weatherLocation?.name ?? ""
-    readonly property bool weatherLoading: Weather.loading
-    readonly property string weatherError: Weather.error
+    readonly property var cityResults: Weather.results
+    readonly property bool citySearching: Weather.searching
+    readonly property string citySearchError: Weather.searchError
     readonly property string temperatureUnit: Config.temperatureUnit
     readonly property string windUnit: Config.windUnit
     readonly property int weatherRefresh: Config.weatherRefresh
 
-    // A busca emite `located`, que o painel superior salva na config.
     function searchCity(name: string): void {
         Weather.search(name);
     }
+
+    // A escolha emite `located`, que o DashboardState salva na config.
+    function chooseCity(index: int): void {
+        Weather.choose(index);
+    }
+
+    function refreshWeather(): void {
+        Weather.refresh();
+    }
+
+    readonly property string vagalumeKey: Config.vagalumeKey
+
+    // Grava a chave do Vagalume (aparada; vazia apaga) e devolve o erro, ou "".
+    function setVagalumeKey(key: string): string {
+        const value = key.trim();
+        if (value !== "" && !/^[A-Za-z0-9_-]{1,128}$/.test(value))
+            return "A chave só tem letras, números, - e _ (até 128).";
+        Config.vagalumeKey = value;
+        return "";
+    }
+
+    // Vazio com o módulo de rede funcionando; senão, o porquê.
+    readonly property string webNote: Web.unavailableNote
 
     function setTemperatureUnit(unit: string): void {
         Config.temperatureUnit = unit;

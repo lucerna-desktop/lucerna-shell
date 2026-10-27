@@ -7,6 +7,7 @@ Clickable {
 
     property alias icon: glyph.icon
     property alias iconSize: glyph.size
+    property alias iconWeight: glyph.weight
     property alias label: caption.text
     property color foreground: active ? ThemeManager.colors.accentText : ThemeManager.colors.text
 

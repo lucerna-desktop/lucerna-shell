@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 # Teste de fumaça: sobe o sway headless (o Hyprland não sobe sem GPU), um
 # D-Bus de sessão, um PipeWire e um WirePlumber próprios (o som isolado, com o
-# sink nulo de ci/audio/), um mpv tocando ruído nele (o player MPRIS) e o
-# lucernad (dev/lucernad.sh, compilado no ci/setup.sh), roda o shell
+# sink nulo de ci/audio/), um mpv tocando nele um arquivo de ruído com título e
+# artista (o player MPRIS; o arquivo é gerado pelo ffmpeg), o servidor falso de
+# letras e clima (ci/web-fake.py, em 127.0.0.1) e o lucernad (dev/lucernad.sh,
+# compilado no ci/setup.sh, com o LUCERNAD_WEB_BASE apontando para o servidor
+# falso: nada vai à internet), roda o shell
 # instrumentado numa cópia do repositório (copy_repo, do ci/lib.sh), abre cada
 # painel por IPC, confere o `panels get`, tira uma captura de cada estado e
 # reprova com aviso ou erro fora do ci/tolerated.txt. Duas fases do lucernad:
 # com ele, o shell precisa conectar ("lucerna: conectado ao lucernad" no log em
 # 10 s); depois do último passo, ele é parado ("lucernad fora"), o shell precisa
-# notar ("lucerna: sem conexão com o lucernad" em 10 s) e as abas Desempenho e
-# Painel são abertas e capturadas de novo, com o "indisponível". Antes disso, a
+# notar ("lucerna: sem conexão com o lucernad" em 10 s) e as abas Desempenho,
+# Painel e Clima são abertas e capturadas de novo, com o "indisponível". Antes disso, a
 # fase "espectro": com a aba Mídia aberta, o lucernad precisa capturar o mpv,
 # as bandas precisam mexer, e com o painel fechado o fluxo de captura some.
 # E a fase "área de transferência", antes do painel dela: o lucernad sobe sem
@@ -26,8 +29,16 @@
 # brilho` precisa mostrar a `backlight` em 50% (5 s), a tecla `brightness up`
 # precisa levar o arquivo da árvore a 550 (2 s, com a captura do OSD) e dez
 # teclas seguidas, a 1000 (2 s, a rajada juntada no limite); a central é
-# capturada com o slider. Na fase "lucernad fora", a página Tela e ociosidade
-# das configurações também é capturada, com o brilho "Indisponível".
+# capturada com o slider. Depois do brilho, a fase "rede": a busca de cidade
+# "Cacau" pelo IPC weather (o servidor falso responde três cidades) e a escolha
+# da primeira, que precisa ser "Cacaulândia, Rondônia, BR" (5 s); com a aba
+# Clima aberta, o web.weather do `lucernad --json status` precisa chegar a
+# ready com 7 dias (5 s, com a captura); com a aba Mídia aberta, o web.lyrics
+# precisa trazer a letra da faixa do mpv (found, lrclib, 4 linhas, em 5 s, com
+# a captura); e o log do servidor falso precisa ter ao menos um pedido de cada
+# fonte (LRCLIB, previsão, busca de cidade). Na fase "lucernad fora", a página
+# Tela e ociosidade das configurações também é capturada, com o brilho
+# "Indisponível", e a aba Clima, com o "Indisponível".
 # O som nunca alcança um alto-falante: o PipeWire da fumaça é próprio, sem os
 # monitores de hardware, e o mpv toca só no sink nulo. A unidade roda de novo
 # numa cópia separada (unit_suites e unit_run, do ci/lib.sh), e a cobertura de
@@ -43,7 +54,12 @@
 # sem miniatura, senha que entra, busca sem o texto ou sem o trecho, colar de
 # volta que não devolve o texto), o brilho (lucernad sem o aviso da árvore de
 # teste no log, a tela falsa que não aparece em 50% em 5 s, a tecla que não
-# leva o arquivo a 550 ou a rajada que não chega a 1000, cada uma em 2 s), `ipc call`
+# leva o arquivo a 550 ou a rajada que não chega a 1000, cada uma em 2 s), a rede
+# (o servidor falso que não grava o porto em 10 s, o lucernad sem o aviso "a rede é
+# de teste" no log, a cidade escolhida diferente de "Cacaulândia, Rondônia, BR",
+# a previsão que não chega a ready com 7 dias, a letra que não chega a found da
+# lrclib com 4 linhas, cada uma em 5 s, ou o log do servidor falso sem um pedido
+# de cada fonte), `ipc call`
 # com código diferente de 0, `panels get` diferente do esperado, painel que não
 # fecha, shell que cai (inclusive no repouso de 5 s depois do último passo),
 # shell que não encerra limpo com `qs kill` (código 0 em 10 s), aviso ou erro
@@ -52,7 +68,8 @@
 # 10 s (timeout, com o fim do shell.log na saída).
 #
 # Só encerra os próprios processos (os grupos do shell, dos lucernad-selecao,
-# do mpv, do lucernad, do WirePlumber, do PipeWire, do D-Bus e do sway, por PID), nunca por nome:
+# do mpv, do lucernad, do servidor falso, do WirePlumber, do PipeWire, do D-Bus e
+# do sway, por PID), nunca por nome:
 # rodada fora do container, não derruba a sessão do usuário.
 #
 # O que a fumaça não confere por IPC: a aba do painel superior, a página da
@@ -61,7 +78,7 @@
 # que não abre só aparece como erro no log (o logcheck) e na captura.
 #
 # Saída em $CI_OUT: shell.log, sway.log, dbus.log, pipewire.log,
-# wireplumber.log, mpv.log, lucernad.log, kill.log, unit-smoke.log, shots/NN-<passo>.png,
+# wireplumber.log, mpv.log, web-fake.log, lucernad.log, kill.log, unit-smoke.log, shots/NN-<passo>.png,
 # coverage.md e summary.md (tabela passo, esperado, veio).
 set -euo pipefail
 
@@ -73,7 +90,8 @@ out=${CI_OUT:-$repo/ci-out}
 mkdir -p "$out/shots"
 out=$(cd "$out" && pwd)
 work=$(mktemp -d)
-# O sway, o D-Bus, o PipeWire, o WirePlumber, o mpv, o lucernad e o shell
+# O sway, o D-Bus, o PipeWire, o WirePlumber, o mpv, o servidor falso, o
+# lucernad e o shell
 # rodam cada um no próprio grupo de processos (setsid), e só esses grupos são
 # encerrados: nada é morto por nome, para a fumaça rodada fora do container
 # nunca derrubar o shell, o sway ou o som de verdade do usuário.
@@ -83,6 +101,7 @@ pipewire_pid=""
 wireplumber_pid=""
 mpv_pid=""
 lucernad_pid=""
+web_pid=""
 selecao_pids=()
 qs_pid=""
 shell_pid=""
@@ -115,6 +134,7 @@ cleanup() {
     done
     stop_group "$mpv_pid"
     stop_group "$lucernad_pid"
+    stop_group "$web_pid"
     stop_group "$wireplumber_pid"
     stop_group "$pipewire_pid"
     stop_group "$dbus_pid"
@@ -236,12 +256,16 @@ if [ "$sink" = 0 ]; then
 fi
 row "som isolado" "sink nulo em 10 s" "lucerna-nulo"
 
-# O player: o mpv tocando ruído rosa sem fim, só no sink nulo, com o MPRIS do
-# mpv-mpris no barramento da fumaça. O nome leva o sufixo da instância
-# (org.mpris.MediaPlayer2.mpv.instance-<id>, do mpv-mpris novo): a fumaça
-# guarda o nome que veio.
+# O player: o mpv tocando sem fim 20 s de ruído rosa com título e artista (a
+# faixa que o servidor falso conhece: o lucernad não busca letra de faixa sem
+# artista), só no sink nulo, com o MPRIS do mpv-mpris no barramento da fumaça.
+# O nome leva o sufixo da instância (org.mpris.MediaPlayer2.mpv.instance-<id>,
+# do mpv-mpris novo): a fumaça guarda o nome que veio.
+ffmpeg -loglevel error -f lavfi -i anoisesrc=color=pink:amplitude=0.5 -t 20 \
+    -metadata title="Canção da Fumaça" -metadata artist="Lucerna" "$work/fumaca.ogg" \
+    || fail "o ffmpeg não gerou o arquivo de ruído com as etiquetas ($work/fumaca.ogg)"
 setsid mpv --no-video --vo=null --no-terminal --ao=pipewire --audio-device=pipewire/lucerna-nulo \
-    --loop-file=inf "av://lavfi:anoisesrc=color=pink:amplitude=0.5" > "$out/mpv.log" 2>&1 &
+    --loop-file=inf "$work/fumaca.ogg" > "$out/mpv.log" 2>&1 &
 mpv_pid=$!
 mpris=""
 for _ in $(seq 50); do
@@ -264,11 +288,28 @@ row "player de teste" "org.mpris.MediaPlayer2.mpv* em 10 s" "$mpris"
 # O brilho é o de uma árvore falsa (LUCERNAD_POWER_ROOT, criada pelo
 # ci/power-root.sh): a fumaça rodada fora do container nunca toca o brilho de
 # verdade.
+# O servidor falso de letras e clima (ci/web-fake.py), no próprio grupo: grava
+# o porto livre que pegou em 127.0.0.1, e o lucernad vai a ele pelo
+# LUCERNAD_WEB_BASE (nunca às fontes de verdade).
+setsid python3 -I "$repo/ci/web-fake.py" "$work/web-porto" > "$out/web-fake.log" 2>&1 &
+web_pid=$!
+for _ in $(seq 50); do
+    [ -s "$work/web-porto" ] && break
+    kill -0 "$web_pid" 2> /dev/null || break
+    sleep 0.2
+done
+if [ ! -s "$work/web-porto" ]; then
+    row "servidor falso de letras e clima" "porto em 10 s" "(não veio)"
+    fail "o ci/web-fake.py não gravou o porto em 10 s (veja web-fake.log)"
+fi
+web_base="http://127.0.0.1:$(cat "$work/web-porto")"
+row "servidor falso de letras e clima" "porto em 10 s" "$web_base"
+
 lucernad_sock="$XDG_RUNTIME_DIR/lucerna/lucernad.sock"
 power_root="$XDG_RUNTIME_DIR/power"
 bash "$repo/ci/power-root.sh" "$power_root" || fail "o ci/power-root.sh não criou a árvore falsa do brilho em $power_root"
 power_file="$power_root/sys/class/backlight/lucerna_teste/brightness"
-LUCERNAD_POWER_ROOT=$power_root LUCERNA_IDLE_TIMEOUT_MS=600000 setsid env -u WAYLAND_DISPLAY lucernad serve > "$out/lucernad.log" 2>&1 &
+LUCERNAD_WEB_BASE=$web_base LUCERNAD_POWER_ROOT=$power_root LUCERNA_IDLE_TIMEOUT_MS=600000 setsid env -u WAYLAND_DISPLAY lucernad serve > "$out/lucernad.log" 2>&1 &
 lucernad_pid=$!
 for _ in $(seq 50); do
     [ -S "$lucernad_sock" ] && break
@@ -283,6 +324,9 @@ row "lucernad" "socket em 10 s" "lucerna/lucernad.sock"
 grep -qF "LUCERNAD_POWER_ROOT=$power_root: o brilho é de teste" "$out/lucernad.log" \
     || fail "o lucernad não avisou que o brilho é o da árvore de teste ($power_root; veja lucernad.log)"
 row "lucernad" "brilho da árvore de teste" "LUCERNAD_POWER_ROOT=power"
+grep -qF "LUCERNAD_WEB_BASE=$web_base: a rede é de teste" "$out/lucernad.log" \
+    || fail "o lucernad não avisou que a rede é de teste ($web_base; veja lucernad.log)"
+row "lucernad" "rede de teste" "LUCERNAD_WEB_BASE=$web_base"
 
 # O shell grava o próprio PID (o bash do meio dá lugar ao qs com exec, e o
 # grupo é o dele): é por ele que a fumaça confere que o shell continua vivo e o
@@ -441,7 +485,7 @@ step central notifications toggle
 step central panels open central
 step central panels toggle central
 for topic in appearance wallpaper displays idle nightlight launcher clipboard capture mouse keyboard glass \
-    notifications panels bar dashboard power shortcuts about; do
+    notifications panels bar dashboard power shortcuts credits about; do
     step settings settings open "$topic"
 done
 step themes panels open themes
@@ -581,8 +625,75 @@ sleep 1
 shot "$out/shots/$(printf '%02d' "$n")-central-brilho.png" || fail "o grim não capturou a central com o brilho: $(why $?)"
 ipc panels close > /dev/null || fail "ipc call panels close falhou: $(why $?)"
 
+# Fase "rede". web_state <tópico>: o resumo do web.weather ("<state> <dias>
+# dias") ou do web.lyrics ("<state> <source> <linhas> linhas") no `lucernad
+# --json status`, de uma leitura só (vazio se o daemon não responder).
+web_state() {
+    timeout "$CMD_TIMEOUT" lucernad --json status 2> /dev/null | python3 -c '
+import json, sys
+topic = sys.argv[1]
+for line in sys.stdin:
+    try:
+        state = json.loads(line)
+    except ValueError:
+        continue
+    data = state.get(topic) if isinstance(state, dict) else None
+    if isinstance(data, dict):
+        if topic == "web.weather":
+            print(data.get("state"), len(data.get("daily") or []), "dias")
+        else:
+            print(data.get("state"), data.get("source") or "-", len(data.get("lines") or []), "linhas")
+        break
+' "$1" || true
+}
+# wait_web <tópico> <esperado>: espera até 5 s o web_state chegar ao esperado;
+# o último fica em $web.
+wait_web() {
+    for _ in $(seq 25); do
+        web=$(web_state "$1")
+        [ "$web" = "$2" ] && return 0
+        sleep 0.2
+    done
+    return 1
+}
+ipc weather search Cacau > /dev/null || fail "ipc call weather search Cacau falhou: $(why $?)"
+city=""
+for _ in $(seq 25); do
+    city=$(ipc weather choose 0) || fail "ipc call weather choose 0 falhou: $(why $?)"
+    [ -n "$city" ] && break
+    sleep 0.2
+done
+row "rede" "cidade escolhida em 5 s" "${city:-(nenhuma)}"
+[ "$city" = "Cacaulândia, Rondônia, BR" ] \
+    || fail "depois do ipc call weather search Cacau, o weather choose 0 não devolveu \"Cacaulândia, Rondônia, BR\" em 5 s (veio \"$city\"; veja web-fake.log e lucernad.log)"
+# A previsão só é buscada com assinante: a aba Clima aberta assina o web.weather.
+n=$((n + 1))
+ipc dashboard open weather > /dev/null || fail "ipc call dashboard open weather falhou: $(why $?)"
+wait_web web.weather "ready 7 dias" || true
+row "rede" "previsão em 5 s" "${web:-(sem resposta)}"
+[ "$web" = "ready 7 dias" ] || fail "com a aba Clima aberta, o web.weather não chegou a ready com 7 dias em 5 s (veio \"$web\"; veja web-fake.log e lucernad.log)"
+sleep 1
+alive || fail "o shell caiu com a aba Clima aberta"
+shot "$out/shots/$(printf '%02d' "$n")-clima.png" || fail "o grim não capturou a aba Clima: $(why $?)"
+ipc panels close > /dev/null || fail "ipc call panels close falhou: $(why $?)"
+# A letra só é buscada com assinante: a aba Mídia aberta assina o web.lyrics.
+n=$((n + 1))
+ipc dashboard open media > /dev/null || fail "ipc call dashboard open media falhou: $(why $?)"
+wait_web web.lyrics "found lrclib 4 linhas" || true
+row "rede" "letra em 5 s" "${web:-(sem resposta)}"
+[ "$web" = "found lrclib 4 linhas" ] || fail "com a aba Mídia aberta, o web.lyrics não chegou a found da lrclib com 4 linhas em 5 s (veio \"$web\"; veja web-fake.log e lucernad.log)"
+sleep 1
+alive || fail "o shell caiu com a letra na aba Mídia"
+shot "$out/shots/$(printf '%02d' "$n")-letra.png" || fail "o grim não capturou a letra: $(why $?)"
+ipc panels close > /dev/null || fail "ipc call panels close falhou: $(why $?)"
+for source in "/lrclib/api/get?" "/forecast/v1/forecast?" "/geocoding/v1/search?"; do
+    grep -qF "\"GET $source" "$out/web-fake.log" \
+        || fail "o log do servidor falso não tem nenhum pedido GET $source (veja web-fake.log)"
+done
+row "rede" "um pedido de cada fonte no servidor falso" "$(grep -c '"GET ' "$out/web-fake.log") pedido(s)"
+
 # Fase "lucernad fora": o daemon para, o shell nota e as abas que leem dele
-# mostram o "indisponível" (as capturas desses três passos).
+# mostram o "indisponível" (as capturas desses quatro passos).
 stop_group "$lucernad_pid"
 lucernad_pid=""
 if ! wait_log "lucerna: sem conexão com o lucernad"; then
@@ -592,6 +703,7 @@ fi
 row "lucernad fora" "o shell nota em 10 s" "lucerna: sem conexão com o lucernad"
 step dashboard dashboard open performance
 step dashboard dashboard open overview
+step dashboard dashboard open weather
 step settings settings open idle
 
 # Repouso: o shell fica parado alguns segundos depois do último passo, para o

@@ -34,17 +34,25 @@ Singleton {
 
     // Letra
     readonly property bool lyricsEnabled: Config.lyricsEnabled
-    readonly property bool offline: Config.offline
     readonly property var lyrics: Lyrics.lines
     readonly property bool lyricsLoading: Lyrics.loading
     readonly property bool lyricsSynced: Lyrics.synced
     readonly property int currentLine: Lyrics.lineAt(Media.position + 0.3)
 
-    // Busca a letra quando a faixa muda e a aba está visível.
-    readonly property string trackKey: DashboardState.isShowing("media") && Lyrics.enabled ? `${Media.artist}|${Media.title}` : ""
-    onTrackKeyChanged: {
-        if (trackKey)
-            Lyrics.request(Media.title, Media.artist, Media.album, Media.length);
+    // O aviso no lugar da letra (vazio com linhas).
+    readonly property string lyricsNote: {
+        if (lyrics.length > 0)
+            return "";
+        if (Config.offline)
+            return "Modo offline: a letra não é buscada";
+        if (!Web.available)
+            return Web.unavailableNote;
+        // Logo depois de conectar, antes da primeira publicação: sem piscar "Sem letra".
+        if (Lyrics.loading || Lyrics.state === "")
+            return "Procurando a letra…";
+        if (Lyrics.error !== "")
+            return Lyrics.error;
+        return "Sem letra";
     }
 
     function togglePlaying(): void {

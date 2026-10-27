@@ -9,22 +9,29 @@ import qs.core.theme
 import qs.core.widgets
 import qs.features.dashboard.state
 
-// Aba Painel: usuário, relógio e clima, calendário, recursos e mídia.
+// Aba Painel: usuário, relógio e clima, calendário, recursos e mídia; embaixo,
+// a barra de ações rápidas. Na altura comum das abas (DashboardState.pageHeight).
 Item {
     id: root
 
     readonly property bool onScreen: DashboardState.isShowing("overview")
     // Os cards de cima das colunas esquerda (usuário) e direita (sistema) têm a mesma altura.
-    readonly property int topCardHeight: 132
+    readonly property int topCardHeight: 126
     // Margem interna dos cards, a mesma das outras abas.
     readonly property int cardMargin: ThemeManager.spacing.normal + 2
     // O clima só entra com dados (ou o aviso do modo offline); senão o relógio fica sozinho.
     readonly property bool weatherOn: OverviewState.shows("weather") && (OverviewState.hasWeather || Config.offline)
 
-    implicitHeight: layout.visibleChildren.length ? layout.implicitHeight : 120
+    // A barra de ações rápidas: a altura dela e o espaço normal até os cards.
+    readonly property int barHeight: 32
+    // Margem vertical do calendário, menor que a dos outros cards: os cards de
+    // cima cabem na altura comum junto da barra.
+    readonly property int calendarMargin: ThemeManager.spacing.small
+
+    implicitHeight: DashboardState.pageHeight
 
     Txt {
-        anchors.centerIn: parent
+        anchors.centerIn: layout
         visible: !layout.visibleChildren.length
         text: "Todos os cartões estão escondidos (Configurações → Painel superior)"
         faint: true
@@ -34,6 +41,7 @@ Item {
         id: layout
 
         width: parent.width
+        height: parent.height - root.barHeight - ThemeManager.spacing.normal
         spacing: ThemeManager.spacing.normal
 
         // Coluna 1: usuário + relógio (e clima)
@@ -327,7 +335,7 @@ Item {
             id: calendarCard
 
             Layout.preferredWidth: 300
-            Layout.preferredHeight: calendar.implicitHeight + 2 * root.cardMargin
+            Layout.preferredHeight: calendar.implicitHeight + 2 * root.calendarMargin
             Layout.fillHeight: true
             Layout.fillWidth: !column3.visible
             visible: OverviewState.shows("calendar")
@@ -336,7 +344,10 @@ Item {
                 id: calendar
 
                 anchors.fill: parent
-                anchors.margins: root.cardMargin
+                anchors.leftMargin: root.cardMargin
+                anchors.rightMargin: root.cardMargin
+                anchors.topMargin: root.calendarMargin
+                anchors.bottomMargin: root.calendarMargin
             }
         }
 
@@ -452,6 +463,134 @@ Item {
                     onScreen: root.onScreen
                 }
             }
+        }
+    }
+
+    // Barra de ações rápidas: à esquerda, ações de um clique; à direita, chaves
+    // acesas na cor de destaque quando ligadas. Os apps integrados ao Lucerna
+    // entram aqui (à esquerda, depois das ações) quando existirem.
+    Surface {
+        id: bar
+
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: root.barHeight
+
+        Row {
+            anchors.left: parent.left
+            anchors.leftMargin: ThemeManager.spacing.small
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: ThemeManager.spacing.tiny
+
+            Repeater {
+                model: OverviewState.quickActions
+
+                delegate: QuickButton {
+                    required property var modelData
+
+                    icon: modelData.icon
+                    hint: modelData.label
+                    active: modelData.active
+                    onClicked: OverviewState.runAction(modelData.id)
+                }
+            }
+        }
+
+        Row {
+            anchors.right: parent.right
+            anchors.rightMargin: ThemeManager.spacing.small
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: ThemeManager.spacing.tiny
+
+            Repeater {
+                model: OverviewState.quickToggles
+
+                delegate: QuickButton {
+                    required property var modelData
+
+                    icon: modelData.icon
+                    hint: modelData.label
+                    checkable: true
+                    usable: modelData.enabled
+                    active: modelData.on
+                    onClicked: {
+                        if (usable)
+                            OverviewState.toggle(modelData.id);
+                    }
+                }
+            }
+        }
+    }
+
+    // Um botão da barra: ícone de 18 px, com nome e papel acessíveis e dica ao
+    // passar o mouse. Sem foco de teclado: o painel usa o Tab para trocar de
+    // aba, então o teclado não chega aqui (as ações têm atalho próprio). Um
+    // fundo leve, no raio do tema, no hover. `usable` falso: apagado e sem
+    // clique, mas ainda com a dica (que diz por quê).
+    component QuickButton: IconButton {
+        id: quick
+
+        required property string hint
+        property bool checkable: false
+        property bool usable: true
+
+        iconSize: 18
+        iconWeight: 500
+        height: 26
+        width: 30
+        radius: ThemeManager.radius.small
+        hoverVeil: false
+        opacity: usable ? 1 : 0.4
+        color: active ? activeColor : usable && hovered ? ThemeManager.alpha(ThemeManager.colors.text, 0.12) : "transparent"
+        Accessible.role: checkable ? Accessible.CheckBox : Accessible.Button
+        Accessible.name: hint
+        Accessible.checkable: checkable
+        Accessible.checked: checkable && active
+        Accessible.onPressAction: clicked(null)
+        Accessible.onToggleAction: clicked(null)
+        onHoveredChanged: tip.target = hovered ? quick : (tip.target === quick ? null : tip.target)
+    }
+
+    // A dica do botão sob o mouse, logo acima da barra (meio segundo depois).
+    Rectangle {
+        id: tip
+
+        property Item target: null
+        readonly property real targetCenter: target ? target.mapToItem(root, target.width / 2, 0).x : 0
+
+        z: 10
+        visible: target !== null && tipDelay.done
+        x: Math.max(0, Math.min(root.width - width, targetCenter - width / 2))
+        y: bar.y - height - ThemeManager.spacing.tiny
+        width: tipText.implicitWidth + 2 * ThemeManager.spacing.small
+        height: tipText.implicitHeight + ThemeManager.spacing.tiny * 2
+        radius: ThemeManager.radius.small
+        color: ThemeManager.colors.raised
+        border.color: ThemeManager.colors.border
+        border.width: 1
+
+        onTargetChanged: {
+            tipDelay.done = false;
+            if (target)
+                tipDelay.restart();
+        }
+
+        Timer {
+            id: tipDelay
+
+            property bool done: false
+
+            interval: 500
+            onTriggered: done = true
+        }
+
+        Txt {
+            id: tipText
+
+            anchors.centerIn: parent
+            text: tip.target ? (tip.target as QuickButton).hint : ""
+            font.pixelSize: ThemeManager.font.small
         }
     }
 }

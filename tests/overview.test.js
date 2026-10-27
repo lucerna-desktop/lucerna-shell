@@ -1,5 +1,6 @@
 // Testes de features/dashboard/state/OverviewState: as células do calendário
-// (domingos, hoje, dias de outros meses) e o cabeçalho da semana.
+// (domingos, hoje, dias de outros meses), o cabeçalho da semana e a barra de
+// ações rápidas (as ações, as chaves e o que cada uma faz).
 function run(t) {
     const O = t.OverviewState;
     const cellsOf = (y, m, start, today) => O.monthCells(new Date(y, m, 1), start, today ?? new Date(2000, 0, 1));
@@ -71,5 +72,96 @@ function run(t) {
         const mon = O.weekdayCells(1);
         t.eq(mon.map(d => d.sunday), [false, false, false, false, false, false, true], "domingo no índice 6");
         t.eq(mon.map(d => d.initial), ["S", "T", "Q", "Q", "S", "S", "D"]);
+    });
+
+    t.test("overview: ações rápidas, conforme o que existe", () => {
+        const all = O.actionsFor({ shot: true, record: true, recording: false });
+        t.eq(all.map(a => a.id), ["capture", "record", "clipboard", "themes", "overview"]);
+        t.check(all.every(a => a.label !== "" && a.icon !== "" && a.active === false), "rótulo, ícone e apagadas");
+        t.eq(O.actionsFor({ shot: false, record: false, recording: false }).map(a => a.id), ["clipboard", "themes", "overview"], "sem o grim e o wf-recorder, sem captura nem gravação");
+        const rec = O.actionsFor({ shot: true, record: true, recording: true }).find(a => a.id === "record");
+        t.eq([rec.label, rec.active], ["Parar a gravação", true], "gravando: o botão para, aceso");
+    });
+
+    t.test("overview: as ações abrem o painel delas no lugar do painel superior", () => {
+        const P = t.Panels;
+        const C = t.Config;
+        const opened0 = P.opened;
+        const mode0 = C.captureMode;
+        const target0 = C.captureTarget;
+        try {
+            for (const id of ["clipboard", "themes", "overview"]) {
+                P.opened = ["dashboard"];
+                O.runAction(id);
+                t.eq(P.opened, [id], id + " sozinho");
+            }
+            P.opened = ["dashboard"];
+            C.captureMode = "record";
+            C.captureTarget = "window";
+            O.runAction("capture");
+            t.eq([P.opened, C.captureMode, C.captureTarget], [["capture"], "shot", "area"], "a captura abre na seleção de área");
+            if (!t.Capture.recording) {
+                P.opened = ["dashboard"];
+                O.runAction("record");
+                t.eq([P.opened, C.captureMode], [["capture"], "record"], "a gravação abre no modo vídeo");
+            }
+            P.opened = ["dashboard"];
+            O.runAction("nada");
+            t.eq(P.opened, ["dashboard"], "id desconhecido não faz nada");
+        } finally {
+            P.opened = opened0;
+            C.captureMode = mode0;
+            C.captureTarget = target0;
+        }
+    });
+
+    t.test("overview: chaves acesas e apagadas", () => {
+        const C = t.Config;
+        const saved = [C.doNotDisturb, C.offline, C.idleInhibit, C.idleEnabled];
+        const toggle = id => O.togglesFor({ nightlight: true, awake: true }).find(x => x.id === id);
+        try {
+            C.doNotDisturb = false;
+            C.offline = false;
+            C.idleInhibit = false;
+            C.idleEnabled = true;
+            t.eq(O.togglesFor({ nightlight: true, awake: true }).map(x => x.id), ["nightlight", "dnd", "offline", "awake"]);
+            const bare = O.togglesFor({ nightlight: false, awake: false });
+            t.eq(bare.map(x => x.id), ["dnd", "offline", "awake"], "sem o hyprsunset a luz noturna some; a cafeína fica");
+            const off = bare.find(x => x.id === "awake");
+            t.eq([off.enabled, off.on], [false, false], "sem a ociosidade do shell, a cafeína apagada");
+            t.check(off.label.includes("ligue a ociosidade nas configurações"), "e a dica diz como ligar");
+            t.check(O.togglesFor({ nightlight: true, awake: true }).every(x => x.enabled), "com tudo, todas acionáveis");
+            t.eq(["dnd", "offline", "awake"].map(id => toggle(id).on), [false, false, false]);
+            for (const id of ["dnd", "offline", "awake"])
+                O.toggle(id);
+            t.eq([C.doNotDisturb, C.offline, C.idleInhibit], [true, true, true], "cada chave liga a sua preferência");
+            t.eq(["dnd", "offline", "awake"].map(id => toggle(id).on), [true, true, true], "acesas");
+            t.eq(O.quickToggles.find(x => x.id === "dnd")?.on, true, "a lista viva acompanha");
+            O.toggle("dnd");
+            t.eq(C.doNotDisturb, false, "e desliga de novo");
+            C.idleEnabled = false;
+            C.idleInhibit = false;
+            O.toggle("awake");
+            t.eq(C.idleInhibit, false, "sem a ociosidade do shell, a cafeína não liga");
+            t.eq(O.quickToggles.find(x => x.id === "awake")?.enabled, false, "a lista viva: apagada");
+        } finally {
+            [C.doNotDisturb, C.offline, C.idleInhibit, C.idleEnabled] = saved;
+        }
+    });
+
+    t.test("overview: a chave da luz noturna segue o horário", () => {
+        const C = t.Config;
+        const N = t.NightSchedule;
+        const saved = [C.nightLightEnabled, C.nightLightOverride];
+        try {
+            const before = N.on;
+            O.toggle("nightlight");
+            t.eq(N.on, !before, "inverte");
+            t.eq(O.togglesFor({ nightlight: true, awake: false })[0].on, N.on, "a chave mostra o estado");
+            O.toggle("nightlight");
+            t.eq(N.on, before, "e volta");
+        } finally {
+            [C.nightLightEnabled, C.nightLightOverride] = saved;
+        }
     });
 }

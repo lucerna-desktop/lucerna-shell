@@ -20,7 +20,13 @@ O que falta fazer, na ordem em que vamos seguir. Cada item vira um PR; ao termin
 14. [ ] **Instalação e distribuição:** script de instalação (link, trecho do `hyprland.lua`, atalhos padrão) e pacote no AUR. A verificação no CI já está feita: quatro checks obrigatórios (`ci/`, `dev/ci.sh`).
 15. [ ] **Lógica fora do shell (Rust).** Ver a seção "Separação da lógica" abaixo. Substitui o plano de plugins em C++ de `Lucerna — Plugins Próprios.md`, que precisa ser revisto à luz dela.
 16. [ ] **Equalizador de áudio**, com spec próprio: muda o som (filtro do PipeWire, `filter-chain`, ou controle do EasyEffects) e mostra o espectro ao vivo atrás das faixas, reaproveitando o módulo de espectro.
-17. [ ] **Temas com mais cores**, com spec próprio: o modelo de tema hoje tem um destaque só (`accent`, 152 usos) e usa 11 das 26 cores do Catppuccin. Ampliar para destaque primário, secundário e terciário (como o Caelestia) e mais papéis (informação/link, superfícies Mantle e Crust, variações para gráficos e estados), mapear os 13 temas nas paletas oficiais e revisar onde cada cor entra no shell. O ajuste rápido (o Catppuccin com o azul como destaque) já foi feito.
+17. [ ] **Temas com mais cores e o papel de parede como escolha**, com spec próprio (projeto aprovado em 2026-10-26). O modelo de tema hoje tem um destaque só (`accent`, 152 usos) e usa 11 das 26 cores do Catppuccin; o ajuste rápido (o Catppuccin com o azul como destaque) já foi feito (PR #51).
+    - **Modelo de cores ampliado**, no estilo do Material 3: primário, secundário e terciário, com os containers e as cores "sobre" cada um; níveis de superfície; estados (erro, sucesso, aviso, informação/link). Revisar onde cada cor entra no shell.
+    - **Temas prontos fiéis às paletas oficiais**, sem algoritmo (no Mocha: primário Blue, secundário Mauve, terciário Peach ou Teal, superfícies Base, Mantle, Crust e Surface 0–2).
+    - **O papel de parede vira a unidade de escolha:** o `Super+T` passa a ser o carrossel de papéis de parede e troca o fundo e as cores juntos. Cada papel de parede tem o tema definido pelo usuário (opcional) e o tema gerado pelo `lucernad` (Material 3 a partir da imagem, guardado pelo hash do arquivo; num vídeo, por um quadro). O Tab no carrossel alterna entre "seu tema" e "gerado", com a etiqueta no card.
+    - **A última escolha fica lembrada por papel de parede**; na primeira vez, os papéis de parede do Lucerna abrem no tema definido e os do usuário, no gerado.
+    - Vários papéis de parede por tema (os 13 temas viram papéis de parede prontos); claro/escuro global, com a opção "seguir o horário"; a variante do gerado global (padrão: tonal spot); pastas de papéis de parede; fonte, raios e efeitos vêm do tema definido, e o gerado usa os padrões do Lucerna.
+    - Antes de implementar, o usuário aprova a documentação final completa e um desenho estático das telas (o carrossel, a página Aparência etc.), como foi feito com a aba Clima.
 
 ## Separação da lógica (a definir melhor)
 
@@ -36,7 +42,7 @@ Módulos propostos, em ordem de prioridade:
 2. [x] **Sistema:** CPU, memória, rede, discos, temperaturas e GPU no lugar do parse em `services/SystemStats.qml`, do `gpu-status.sh`, do `drm-fdinfo.sh`, do `df` e do `lsblk`; NVIDIA pela NVML, sem `nvidia-smi` (feito em 2026-10-20: módulo `system` do `lucernad`).
 3. [x] **Área de transferência:** observador do Wayland, histórico com deduplicação e imagens (SQLite), no lugar do `wl-paste --watch`, do base64 decodificado em JS e do `clipboard.json` (feito em 2026-10-21: módulo `clipboard` do `lucernad`).
 4. [x] **Energia e brilho:** histórico do UPower e perfis de energia por D-Bus (hoje `busctl`), brilho interno e DDC/CI por biblioteca (hoje `brightnessctl` e `ddcutil`). (feito em 2026-10-22: módulo `power` do `lucernad`)
-5. [ ] **Rede externa:** letras (LRCLIB) e clima (Open-Meteo), com cache em disco (hoje sem cache).
+5. [x] **Rede externa:** letras (LRCLIB) e clima (Open-Meteo), com cache em disco (hoje sem cache). (feito em 2026-10-26: módulo `web` do `lucernad`)
 6. [ ] **Launcher:** índice de apps com pontuação, frecência de verdade (hoje só contagem), busca de arquivos (hoje `fd`/`find`) e metadados de apps (hoje `app-info.sh`).
 7. [ ] **Hyprland:** binds, entrada, keymap (hoje `xkbcli`) e monitores pelo socket IPC do Hyprland, no lugar do `hyprctl eval` e da geração de Lua.
 8. [ ] **Luz noturna:** gama direto pelo protocolo `wlr-gamma-control`, sem o `hyprsunset`.

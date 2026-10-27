@@ -75,6 +75,8 @@ Singleton {
     readonly property string musicOff: "music_off"
     readonly property string humidity: "humidity_percentage"
     readonly property string wind: "air"
+    readonly property string sunrise: "wb_twilight"
+    readonly property string sunset: "bedtime"
     readonly property string rain: "water_drop"
 
     // Central
@@ -167,6 +169,8 @@ Singleton {
     readonly property string toolbar: "toolbar"
     readonly property string keyboard: "keyboard_command_key"
     readonly property string info: "info"
+    readonly property string credits: "volunteer_activism"
+    readonly property string openExternal: "open_in_new"
     readonly property string restore: "settings_backup_restore"
     readonly property string timer: "timer"
     readonly property string soon: "auto_awesome"

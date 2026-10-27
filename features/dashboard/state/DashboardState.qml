@@ -16,6 +16,9 @@ Singleton {
     readonly property bool open: Panels.isOpen("dashboard")
     readonly property var screen: Hypr.focusedScreen
     readonly property real topOffset: Panels.topInset
+    // A altura comum das abas: o painel não pula ao trocar de aba. O
+    // Desempenho cabe nela com os anéis do disco e da memória de 109 px.
+    readonly property int pageHeight: 300
 
     // Todas as abas; `tabs` são as visíveis, na ordem escolhida nas configurações.
     readonly property var allTabs: [
@@ -106,22 +109,36 @@ Singleton {
         value: Config.showGpu
     }
 
-    Binding {
-        target: Weather
-        property: "online"
-        value: !Config.offline
-    }
-
-    Binding {
-        target: Weather
-        property: "refreshInterval"
-        value: Config.weatherRefresh * 60 * 1000
-    }
-
+    // Offline, a letra guardada continua aparecendo: o daemon é que não vai à rede.
     Binding {
         target: Lyrics
-        property: "enabled"
-        value: Config.lyricsEnabled && !Config.offline
+        property: "active"
+        value: root.isShowing("media") && Config.lyricsEnabled
+    }
+
+    // A configuração da rede externa, mandada ao lucernad pelo Web.
+    Binding {
+        target: Web
+        property: "offline"
+        value: Config.offline
+    }
+
+    Binding {
+        target: Web
+        property: "vagalumeKey"
+        value: Config.vagalumeKey
+    }
+
+    Binding {
+        target: Web
+        property: "location"
+        value: Config.weatherLocation
+    }
+
+    Binding {
+        target: Web
+        property: "refreshMinutes"
+        value: Config.weatherRefresh
     }
 
     Binding {
@@ -156,13 +173,7 @@ Singleton {
         value: root.isShowing("overview") || root.isShowing("weather")
     }
 
-    // A cidade do clima é salva na config e repassada ao serviço.
-    Binding {
-        target: Weather
-        property: "location"
-        value: Config.weatherLocation
-    }
-
+    // A cidade escolhida é salva na config; o Web a manda ao lucernad.
     Connections {
         target: Weather
 

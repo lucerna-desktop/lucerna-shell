@@ -27,9 +27,9 @@ Com um shell próprio, só roda o que foi escrito, e cada decisão visual e de c
 - **Hyprland 0.56 ou mais novo, com configuração em Lua** (`hyprland.lua`). O formato `.conf` sai na 0.57, e o modo Lua muda o IPC: `dispatch` passa a receber código Lua (`hl.dsp.focus({ workspace = 2 })`) e `keyword` é substituído por `eval`. O Lucerna fala só o dialeto Lua.
 - **Quickshell 0.3.1 ou mais novo**, que detecta o modo Lua do Hyprland (`Hyprland.usingLua`).
 - **Fonte de ícones:** `ttf-material-symbols-variable`, do repositório oficial do Arch. É a única dependência de pacote além do Hyprland, do Quickshell e do `lucernad`.
-- **Obrigatório: o `lucernad`**, o daemon do Lucerna, de onde vêm CPU, memória, rede, discos, temperatura e GPU, o espectro do som, o histórico da área de transferência, o brilho das telas (a integrada e os monitores externos por DDC/CI) e o histórico e os perfis de energia (sem ele, esses componentes mostram "indisponível" ou não aparecem).
+- **Obrigatório: o `lucernad`**, o daemon do Lucerna, de onde vêm CPU, memória, rede, discos, temperatura e GPU, o espectro do som, o histórico da área de transferência, o brilho das telas (a integrada e os monitores externos por DDC/CI), o histórico e os perfis de energia e as letras e o clima (sem ele, esses componentes mostram "indisponível" ou não aparecem).
 - Serviços do sistema usados quando presentes: PipeWire (áudio), UPower (bateria), NetworkManager (rede), o logind (brilho da tela integrada) e o power-profiles-daemon (perfis de energia), estes três pelo `lucernad`. Na falta de um deles, o componente correspondente simplesmente não aparece.
-- **Mínimo de dependências de terceiros:** o que o Qt e o Quickshell já oferecem vem primeiro (`XMLHttpRequest`, `QtQuick.Shapes`); as leituras do `/proc` e do `/sys` (CPU, memória, rede, discos, temperatura e GPU) vêm do `lucernad`. Quando algo crescer a ponto de pedir C++, a saída é um plugin próprio, em repositório separado, e não uma biblioteca externa. Os candidatos estão em [`Lucerna — Plugins Próprios.md`](<Lucerna — Plugins Próprios.md>).
+- **Mínimo de dependências de terceiros:** o que o Qt e o Quickshell já oferecem vem primeiro (`QtQuick.Shapes`); as leituras do `/proc` e do `/sys` (CPU, memória, rede, discos, temperatura e GPU) e as requisições à internet (letras e clima) vêm do `lucernad`. Quando algo crescer a ponto de pedir C++, a saída é um plugin próprio, em repositório separado, e não uma biblioteca externa. Os candidatos estão em [`Lucerna — Plugins Próprios.md`](<Lucerna — Plugins Próprios.md>).
 
 ## Identidade visual
 
@@ -124,8 +124,9 @@ lucerna-shell/
 │   ├── Lucernad.qml            # a conexão permanente com o lucernad
 │   ├── lucerna/LucernaClient.qml # cliente do protocolo do Lucerna (JSON-RPC num socket Unix)
 │   ├── Media.qml               # players MPRIS
-│   ├── Lyrics.qml              # letras sincronizadas (LRCLIB)
-│   ├── Weather.qml             # previsão (Open-Meteo)
+│   ├── Web.qml                 # o módulo web do lucernad: configuração, busca de cidade
+│   ├── Lyrics.qml              # adaptador do módulo web do lucernad (a letra)
+│   ├── Weather.qml             # adaptador do módulo web do lucernad (o clima)
 │   ├── Clipboard.qml           # adaptador do módulo clipboard do lucernad
 │   ├── Capture.qml             # captura (grim), gravação (wf-recorder) e janelas visíveis
 │   ├── NightLight.qml          # temperatura de cor pelo hyprsunset
@@ -200,12 +201,13 @@ Quem mudar o volume por fora (`wpctl`) também vê o OSD: o shell reage à mudan
 
 ## Serviços externos
 
-Dois recursos dependem de internet, e cada um só faz requisições enquanto a aba que o mostra está aberta:
+Dois recursos dependem de internet. Quem faz as requisições é o módulo `web` do `lucernad` (com cache em disco); o shell só manda a faixa e a configuração e mostra o que chega (`Lyrics`, `Weather` e `Web` são adaptadores). Cada busca só sai enquanto a aba que a mostra está aberta (o clima também pelo "Atualizar agora" das configurações):
 
 | Serviço | Uso | O que é enviado |
 | --- | --- | --- |
 | [Open-Meteo](https://open-meteo.com) | Previsão do tempo, busca de cidade | Nome da cidade digitada e as coordenadas dela |
 | [LRCLIB](https://lrclib.net) | Letras sincronizadas | Título, artista, álbum e duração da faixa |
+| [Vagalume](https://www.vagalume.com.br) | Letras, só com a chave do usuário | Título e artista da faixa |
 
 A localização não é descoberta pelo IP (o Caelestia usa o `ip-api.com` para isso): a cidade é digitada uma vez na aba Clima (ou nas configurações) e fica salva na config.
 

@@ -97,7 +97,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 | Parte | O que faz |
 | --- | --- |
 | **Barra** | Workspaces, hora e data, rede, som, bateria e notificações. Tem quatro estilos e pode ficar fixa ou esconder sozinha. Na área de trabalho vazia fica sempre à mostra, e aparece por um instante ao trocar de workspace. |
-| **Painel superior** | Visão geral (perfil, relógio, calendário, clima, recursos e mídia, com a capa num círculo e o espectro do som em volta, pelo `lucernad`), mídia com letra sincronizada (LRCLIB) e o espectro em volta da capa, desempenho (CPU, GPU, memória, disco e rede) e clima (Open-Meteo). Abas reordenáveis e opção de abrir ao parar o mouse na hora. |
+| **Painel superior** | Visão geral (perfil, relógio, calendário, clima, recursos e mídia, com a capa num círculo e o espectro do som em volta, pelo `lucernad`), mídia com letra sincronizada (LRCLIB) e o espectro em volta da capa, desempenho (CPU, GPU, memória, disco e rede) e clima (Open-Meteo, pelo `lucernad`): a cidade e o dia, o nascer e o pôr do sol, o agora e os próximos sete dias. Abas reordenáveis e opção de abrir ao parar o mouse na hora. |
 | **Central** | Dois painéis flutuantes na direita, independentes (`Super+A`, `Super+N`, os dois com `Super+C`, ou pelos ícones da barra): ações e notificações. As ações são tiles em duas colunas (Wi-Fi, Bluetooth, saída de áudio, bateria, microfone, luz noturna, não perturbe e não apagar a tela; cheios quando ligados), com uma página por recurso: a lista de redes, com senha; os dispositivos Bluetooth, para parear; as saídas e o volume de cada app com áudio aberto; o microfone e as entradas; a bateria (um card em forma de bateria, cheio até a carga), o perfil de energia (Economia, Equilibrado e Turbo), o consumo da última hora num gráfico e a bateria dos dispositivos Bluetooth. Embaixo, os sliders largos de volume e de brilho da tela em foco, com a porcentagem; a engrenagem abre as configurações. |
 | **Notificações** | Popups com ações, pausa no mouse e prazo ajustável, não perturbe e a lista na central. |
 | **Launcher** | Três estilos: compacto (busca e lista), completo (categorias de aplicativos, arquivos, documentos, imagens, músicas, vídeos e web, com favoritos, grade e detalhes: ações do app, descrição, versão e desenvolvedor) e tela cheia (gaveta de apps por categoria). Os apps mais abertos vêm primeiro, com os favoritos na frente. Em todos os estilos: clique direito num item para as opções, `Ctrl+F` fixa ou tira dos favoritos e `Ctrl+H` oculta; no compacto e na tela cheia, `/texto` busca arquivos e `?texto` pesquisa na web. A busca de arquivos usa o `fd` quando há, e, sem busca, mostra os recentes. |
@@ -149,7 +149,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
   - `grim` e `wf-recorder`: captura de tela e gravação
   - `fd`: busca de arquivos do launcher mais rápida (sem ele, usa o `find`)
   - `ffmpeg` e `qt6-multimedia-ffmpeg`: papel de parede em vídeo ou GIF. Para a GPU decodificar o vídeo, também o driver VA-API (`intel-media-driver` na Intel, `libva-mesa-driver` na AMD) e o `libva-utils`, que o shell usa para detectar o suporte.
-- Serviços na internet, só enquanto a aba correspondente está aberta, e desligáveis pelo modo offline: [Open-Meteo](https://open-meteo.com) (clima) e [LRCLIB](https://lrclib.net) (letras).
+- Serviços na internet, pedidos pelo `lucernad`, só enquanto a aba correspondente está aberta, e desligáveis pelo modo offline: [Open-Meteo](https://open-meteo.com) (clima), [LRCLIB](https://lrclib.net) (letras) e [Vagalume](https://www.vagalume.com.br) (letras, só com a chave do próprio usuário, nas configurações).
 
 O remapeamento de teclas usa o `xkbcli`, que vem com o libxkbcommon, dependência do próprio Hyprland.
 
@@ -318,7 +318,29 @@ A saída fica em `ci-out/<check>/`. Como escrever um teste e o que a cobertura e
 
 ## Créditos
 
-O painel superior (o dashboard que desce da barra, com as abas Painel, Mídia, Desempenho e Clima) foi inspirado no dashboard do [Caelestia Shell](https://github.com/caelestia-dots/shell), assim como as curvas e durações de animação do Material 3 em `ThemeManager.anim`. O código do Lucerna foi escrito do zero, com componentes, serviços e recursos próprios; do Caelestia vieram a ideia e a referência visual. Obrigado ao projeto e a quem contribui com ele.
+A página Créditos, nas Configurações, traz o mesmo conteúdo, com o link de cada item.
+
+**Inspiração**
+
+- [Caelestia Shell](https://github.com/caelestia-dots/shell): o painel superior (o dashboard que desce da barra, com as abas Painel, Mídia, Desempenho e Clima) e a aba Clima foram inspirados no dashboard dele, assim como as curvas e durações de animação do Material 3 em `ThemeManager.anim`; GPL-3.0. O código do Lucerna foi escrito do zero, com componentes, serviços e recursos próprios; do Caelestia vieram a ideia e a referência visual. Obrigado ao projeto e a quem contribui com ele.
+
+**Dados**
+
+- [Open-Meteo](https://open-meteo.com/): previsão do tempo e busca de cidade; dados sob a licença CC BY 4.0.
+- [LRCLIB](https://lrclib.net/): letras sincronizadas.
+- [Vagalume](https://www.vagalume.com.br/): letras, só com a chave de quem usa.
+
+**Base**
+
+- [Quickshell](https://quickshell.org/)
+- [Hyprland](https://hyprland.org/)
+- [Material Symbols](https://fonts.google.com/icons): a fonte dos ícones, do Google; Apache 2.0.
+
+### Aviso sobre o Vagalume
+
+Os termos da API do Vagalume pedem crédito, com link, junto do conteúdo, e dizem que a API não transfere o direito de exibir a letra. O Lucerna é de uso próprio: a chave é de cada usuário e usar o Vagalume é escolha dele. O Lucerna não traz chave nenhuma.
+
+O crédito existe, portanto, de forma indireta: para usar o Vagalume, a pessoa precisa obrigatoriamente entrar no site deles e gerar a própria chave em <https://auth.vagalume.com.br/settings/api/>, e é por essa chave dela que a letra chega. Se o Vagalume pedir, o rótulo com link junto da letra é acrescentado (o `lucernad` já manda a fonte e a página).
 
 ## Licença
 

@@ -145,12 +145,103 @@ Column {
         SettingRow {
             icon: Icons.lyrics
             title: "Letra sincronizada"
-            description: "Busca a letra na LRCLIB, que recebe o título, o artista e o álbum da faixa"
+            description: "Busca a letra na LRCLIB (e no Vagalume, com a sua chave), que recebem o título, o artista, o álbum e a duração da faixa"
             dimmed: SettingsState.offline
 
             Switch {
                 checked: SettingsState.lyrics
                 onToggled: on => SettingsState.setLyrics(on)
+            }
+        }
+
+        SettingRow {
+            wide: true
+            icon: Icons.lyrics
+            title: "Chave do Vagalume"
+            description: SettingsState.webNote !== "" ? SettingsState.webNote : "Opcional: com ela, a letra também é buscada no Vagalume"
+            dimmed: SettingsState.offline
+
+            Column {
+                width: parent.width
+                spacing: ThemeManager.spacing.small
+
+                Rectangle {
+                    width: parent.width
+                    height: 40
+                    radius: 20
+                    color: ThemeManager.alpha(ThemeManager.colors.text, 0.06)
+                    border.width: vagalume.activeFocus ? 2 : 0
+                    border.color: ThemeManager.colors.accent
+
+                    TextInput {
+                        id: vagalume
+
+                        anchors.fill: parent
+                        anchors.leftMargin: ThemeManager.spacing.normal + 2
+                        anchors.rightMargin: ThemeManager.spacing.normal
+                        verticalAlignment: TextInput.AlignVCenter
+                        echoMode: TextInput.Password
+                        color: ThemeManager.colors.text
+                        font.family: ThemeManager.font.sans
+                        font.variableAxes: ThemeManager.fontAxes(Font.Normal)
+                        font.pixelSize: ThemeManager.font.normal
+                        clip: true
+                        text: SettingsState.vagalumeKey
+                        // Grava depois de parar de digitar, no Enter, ao perder o foco ou
+                        // ao esconder a página (a chave colada não se perde); com texto
+                        // inválido, mostra o erro e repõe o valor salvo.
+                        function save(): void {
+                            saveTimer.stop();
+                            keyError.text = SettingsState.setVagalumeKey(text);
+                        }
+
+                        onTextEdited: saveTimer.restart()
+                        onEditingFinished: save()
+                        onActiveFocusChanged: {
+                            if (activeFocus)
+                                return;
+                            save();
+                            if (keyError.text !== "")
+                                text = SettingsState.vagalumeKey;
+                        }
+                        onVisibleChanged: {
+                            if (!visible && saveTimer.running)
+                                save();
+                        }
+
+                        Timer {
+                            id: saveTimer
+
+                            interval: 600
+                            onTriggered: vagalume.save()
+                        }
+
+                        Txt {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: !vagalume.text
+                            text: "Cole a chave aqui"
+                            faint: true
+                        }
+                    }
+                }
+
+                Txt {
+                    id: keyError
+
+                    width: parent.width
+                    visible: text !== ""
+                    color: ThemeManager.colors.danger
+                    font.pixelSize: ThemeManager.font.small + 1
+                    wrapMode: Text.Wrap
+                }
+
+                Txt {
+                    text: "<a href=\"https://auth.vagalume.com.br/settings/api/\">Criar uma chave</a>"
+                    textFormat: Text.StyledText
+                    linkColor: ThemeManager.colors.accent
+                    font.pixelSize: ThemeManager.font.small + 1
+                    onLinkActivated: link => Qt.openUrlExternally(link)
+                }
             }
         }
 
@@ -253,17 +344,46 @@ Column {
                         id: search
 
                         icon: Icons.magnify
-                        text: SettingsState.weatherLoading ? "Buscando…" : "Buscar"
+                        text: SettingsState.citySearching ? "Buscando…" : "Buscar"
                         enabled: !SettingsState.offline && city.text.trim() !== ""
                         onClicked: SettingsState.searchCity(city.text)
                     }
                 }
 
+                Repeater {
+                    model: SettingsState.cityResults
+
+                    delegate: Clickable {
+                        id: result
+
+                        required property int index
+                        required property var modelData
+
+                        width: parent.width
+                        height: 36
+                        onClicked: SettingsState.chooseCity(result.index)
+
+                        Txt {
+                            anchors.fill: parent
+                            anchors.leftMargin: ThemeManager.spacing.normal
+                            anchors.rightMargin: ThemeManager.spacing.normal
+                            text: result.modelData.label
+                        }
+                    }
+                }
+
                 Txt {
-                    visible: SettingsState.weatherError !== ""
-                    text: SettingsState.weatherError
+                    visible: SettingsState.citySearchError !== ""
+                    text: SettingsState.citySearchError
                     color: ThemeManager.colors.danger
                     font.pixelSize: ThemeManager.font.small + 1
+                }
+
+                TonalButton {
+                    icon: Icons.refresh
+                    text: "Atualizar agora"
+                    enabled: !SettingsState.offline && SettingsState.webNote === ""
+                    onClicked: SettingsState.refreshWeather()
                 }
             }
         }
@@ -326,7 +446,7 @@ Column {
         SettingRow {
             icon: "cloud_off"
             title: "Modo offline"
-            description: "Desliga tudo o que usa a internet: o clima (Open-Meteo) e as letras (LRCLIB). O resto do shell não sai da máquina"
+            description: "Desliga tudo o que usa a internet: o clima (Open-Meteo) e as letras (LRCLIB e Vagalume). O resto do shell não sai da máquina"
 
             Switch {
                 checked: SettingsState.offline
