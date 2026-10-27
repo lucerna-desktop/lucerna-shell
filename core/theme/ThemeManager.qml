@@ -227,7 +227,7 @@ Singleton {
         custom: Config.blurOverride ?? {}
         mode: root.modeFrom(custom, root.data.hyprland ?? {})
         enabled: mode !== "off"
-        size: custom.size ?? root.data.hyprland?.blurSize ?? 6
+        size: custom.size ?? root.data.hyprland?.blurSize ?? 8
         passes: custom.passes ?? root.data.hyprland?.blurPasses ?? 2
         customized: Object.keys(custom).length > 0
     }

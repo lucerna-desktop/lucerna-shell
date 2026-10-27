@@ -388,7 +388,7 @@ def theme_json(tid, t):
             "inactiveBorder": c["border"],
             "borderSize": 2,
             "rounding": 12,
-            "blurSize": 6,
+            "blurSize": 8,
             "blurPasses": 2,
         },
         "transparency": {"enabled": True, "base": 0.85, "layers": 0.45},

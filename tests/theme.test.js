@@ -69,12 +69,12 @@ function run(t) {
     });
 
     t.test("theme: desfoque ajustado pelo usuário", () => {
-        t.eq([T.blur.size, T.blur.passes], [6, 2]);
+        t.eq([T.blur.size, T.blur.passes], [8, 2]);
         T.setBlur("size", 10);
         t.eq(T.blur.size, 10);
         t.check(T.blur.customized, "ajuste do usuário");
         T.resetGlass();
-        t.eq(T.blur.size, 6);
+        t.eq(T.blur.size, 8);
     });
 
     t.test("theme: nível do desfoque, do tema e do usuário", () => {

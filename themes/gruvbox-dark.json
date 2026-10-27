@@ -54,7 +54,7 @@
         "inactiveBorder": "#665c54",
         "borderSize": 2,
         "rounding": 12,
-        "blurSize": 6,
+        "blurSize": 8,
         "blurPasses": 2
     },
     "transparency": {
