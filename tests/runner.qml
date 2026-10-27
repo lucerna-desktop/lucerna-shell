@@ -12,6 +12,7 @@ import Quickshell.Services.Notifications as QsNotifications
 import qs.core.carousel
 import qs.core.config
 import qs.core.format
+import qs.core.frame
 import qs.core.input
 import qs.core.launcher
 import qs.core.nightlight
@@ -25,6 +26,7 @@ import qs.features.central.state
 import qs.features.clipboard.state
 import qs.features.dashboard.state
 import qs.features.notifications.state
+import qs.features.osd.state
 import qs.features.settings.state
 import qs.features.themeSwitcher.state
 import qs.services
@@ -43,6 +45,7 @@ import "central.test.js" as CentralTest
 import "clipboard.test.js" as ClipboardTest
 import "clipboardstate.test.js" as ClipboardStateTest
 import "format.test.js" as FormatTest
+import "frame.test.js" as FrameTest
 import "input.test.js" as InputTest
 import "inputactions.test.js" as InputActionsTest
 import "lucernaclient.test.js" as LucernaClientTest
@@ -52,6 +55,7 @@ import "monitors.test.js" as MonitorsTest
 import "network.test.js" as NetworkTest
 import "nightschedule.test.js" as NightScheduleTest
 import "notifications.test.js" as NotificationsTest
+import "osd.test.js" as OsdTest
 import "overview.test.js" as OverviewTest
 import "panels.test.js" as PanelsTest
 import "performance.test.js" as PerformanceTest
@@ -90,6 +94,7 @@ ShellRoot {
         ["nightschedule", NightScheduleTest],
         ["theme", ThemeTest],
         ["panels", PanelsTest],
+        ["frame", FrameTest],
         ["bar", BarTest],
         ["central", CentralTest],
         ["overview", OverviewTest],
@@ -105,6 +110,7 @@ ShellRoot {
         ["videowallpapers", VideoWallpapersTest],
         ["lyrics", LyricsTest],
         ["notifications", NotificationsTest],
+        ["osd", OsdTest],
         ["network", NetworkTest],
         ["bluetooth", BluetoothTest],
         ["audio", AudioTest],
@@ -232,11 +238,13 @@ ShellRoot {
             get SearchEngines() { return SearchEngines; },
             get NightSchedule() { return NightSchedule; },
             get Panels() { return Panels; },
+            get Frame() { return Frame; },
             get BarState() { return BarState; },
             get CentralState() { return CentralState; },
             get ClipboardState() { return ClipboardState; },
             get ControlsState() { return ControlsState; },
             get NotificationsState() { return NotificationsState; },
+            get OsdState() { return OsdState; },
             get PowerState() { return PowerState; },
             get OverviewState() { return OverviewState; },
             get PerformanceState() { return PerformanceState; },

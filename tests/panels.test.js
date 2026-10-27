@@ -58,19 +58,6 @@ function run(t) {
         t.check(!P.anyOpen, "nada aberto");
     });
 
-    t.test("panels: colados ao topo, com a barra escondida sozinha", () => {
-        const T = t.ThemeManager;
-        const style0 = C.barStyle;
-        try {
-            for (const style of ["pill", "island", "strip"]) {
-                C.barStyle = style;
-                t.eq(P.topInset, T.spacing.small, `com a barra ${style}: só a folga`);
-            }
-        } finally {
-            C.barStyle = style0;
-        }
-    });
-
     // A central: [ações, notificações, entrada das ações, central no Panels].
     const central = () => [P.actionsOpen, P.notificationsOpen, P.centralEntry, P.isOpen("central")];
 
