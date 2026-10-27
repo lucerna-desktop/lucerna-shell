@@ -1,31 +1,34 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.core.frame
 import qs.core.theme
 import qs.core.widgets
 import qs.features.central.state
 
-// Central: dois painéis flutuantes na direita, sobre a área de trabalho, sem
-// escurecer a tela, que abrem e fecham cada um pelo seu estado: as Ações em
-// cima (na altura do conteúdo, até deixar o mínimo das Notificações, se elas
-// estiverem abertas) e as Notificações embaixo, na altura que sobra; sozinhas,
-// elas sobem para logo abaixo da barra. Cada painel entra deslizando da
+// Central: um bloco só que sai da borda direita da moldura, como a sidebar do
+// Caelestia, sobre a área de trabalho e sem escurecer a tela. Dentro dele, dois
+// painéis que abrem e fecham cada um pelo seu estado: as Ações em cima (na
+// altura do conteúdo, até deixar o mínimo das Notificações, se elas estiverem
+// abertas) e as Notificações embaixo, na altura que sobra, até a moldura de
+// baixo; sozinhas, elas sobem até a de cima. Cada painel entra deslizando da
 // direita (em cascata, se os dois abrem juntos) e sai mais rápido; as
-// Notificações sobem e descem junto com a entrada e a saída das Ações. Esc ou
-// o clique fora dos painéis fecham os dois.
+// Notificações sobem e descem junto com a entrada e a saída das Ações. O fundo
+// do bloco é um pedaço da forma da tela (Frame), do tamanho dos painéis à
+// mostra; o conteúdo de cada um entra quando ele passa de ~70%. A pílula fundida
+// continua clicável por cima. Esc ou o clique fora dos painéis fecham os dois.
 OverlayPanel {
     id: panel
 
     name: "central"
     open: CentralState.open
     screen: CentralState.screen
+    frameScreen: CentralState.screen
     dim: 0
-    // A barra continua clicável: o mesmo ícone fecha, outro troca a entrada.
-    keepBar: true
     onDismissed: CentralState.close()
 
-    // Distância das bordas da tela e entre os dois painéis.
-    readonly property real margin: ThemeManager.spacing.large
+    // Distância da borda direita e da de baixo (a moldura) e entre os dois painéis.
+    readonly property real margin: Frame.thickness
     readonly property real gap: ThemeManager.spacing.normal
     // Altura mínima das notificações.
     readonly property real inboxMin: 160
@@ -94,6 +97,28 @@ OverlayPanel {
         id: focusSink
     }
 
+    // O bloco: dos painéis à mostra até a borda direita. Encostado na moldura
+    // de cima (e na de baixo, com as Notificações até o fim), fica preso a ela
+    // também: o canto vira a junção côncava da forma, não um canto próprio.
+    readonly property var parts: [actions, inbox].filter(c => c.visible)
+
+    FrameBlob {
+        screen: CentralState.screen
+        framed: true
+        open: panel.open
+        progress: Math.max(actions.shown, inbox.shown)
+        rect: {
+            const parts = panel.parts;
+            if (!parts.length)
+                return Qt.rect(0, 0, 0, 0);
+            const x = Math.min(...parts.map(c => c.x));
+            const top = Math.min(...parts.map(c => c.y));
+            const bottom = Math.max(...parts.map(c => c.y + c.height));
+            const edge = (top <= CentralState.top + 0.5 ? "top-" : "") + Frame.edges.central + (bottom >= panel.areaHeight - panel.margin - 0.5 ? "-bottom" : "");
+            return Frame.attach(Qt.rect(x, top, panel.areaWidth - x, bottom - top), edge);
+        }
+    }
+
     // Por cima das Notificações: na saída das Ações, elas sobem por baixo.
     ActionsPanel {
         id: actions
@@ -101,9 +126,9 @@ OverlayPanel {
         z: 1
         order: 0
         margin: panel.margin
-        areaWidth: panel.width
+        areaWidth: panel.areaWidth
         y: CentralState.top
-        maxHeight: Math.max(0, panel.height - y - panel.margin - (CentralState.notificationsOpen ? panel.gap + panel.inboxMin : 0))
+        maxHeight: Math.max(0, panel.areaHeight - y - panel.margin - (CentralState.notificationsOpen ? panel.gap + panel.inboxMin : 0))
     }
 
     InboxPanel {
@@ -111,8 +136,8 @@ OverlayPanel {
 
         order: 1
         margin: panel.margin
-        areaWidth: panel.width
+        areaWidth: panel.areaWidth
         y: CentralState.top + panel.reserve * (actions.height + panel.gap)
-        height: Math.max(0, panel.height - y - panel.margin)
+        height: Math.max(0, panel.areaHeight - y - panel.margin)
     }
 }

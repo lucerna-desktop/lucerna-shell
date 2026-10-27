@@ -67,8 +67,8 @@ QMLLINT_ALLOWED = {
     "features/settings/ui/MonitorConfirm.qml": ("margins.top: 90",),
     "features/osd/ui/Osd.qml": ("margins.bottom: 72",),
     "features/notifications/ui/NotificationPopups.qml": (
-        "margins.top: ThemeManager.spacing.small",
-        "margins.right: ThemeManager.spacing.small",
+        "margins.top: Frame.thickness + ThemeManager.spacing.small",
+        "margins.right: Frame.thickness + ThemeManager.spacing.small",
     ),
 }
 QMLLINT_SUPPRESSION = re.compile(r"qmllint\s+(disable|enable)\b")
@@ -475,16 +475,27 @@ SHADER_HINT = (
 )
 
 
+# As pastas de shaders que o dev/shaders.sh compila (o mesmo caminho no repositório
+# e dentro da pasta que ele recebe).
+SHADER_DIRS = ("themes/shaders", "core/widgets/shaders")
+
+
 def check_generated_shaders(generated, root):
-    """Os .qsb gerados (em `generated`) contra os do repositório, e os .qsb órfãos."""
-    shaders = root / "themes" / "shaders"
-    if not any(generated.glob("*.qsb")):
-        return [("dev/shaders.sh", 1, "o gerador não produziu nenhum .qsb (sumiram os .frag, ou o qsb falhou calado)")]
-    out = compare_generated(generated, shaders, "*.qsb", SHADER_HINT, root)
-    for qsb in sorted(shaders.glob("*.qsb")):
-        if not qsb.with_suffix(".frag").exists():
-            where = qsb.relative_to(root).as_posix()
-            out.append((where, 1, f"órfão: não existe {qsb.stem}.frag; apague o .qsb ou devolva o .frag"))
+    """Os .qsb gerados (em `generated`, nas mesmas pastas do repositório)
+    contra os do repositório, e os .qsb órfãos."""
+    out = []
+    for folder in SHADER_DIRS:
+        shaders = root / folder
+        made = generated / folder
+        if not made.is_dir() or not any(made.glob("*.qsb")):
+            missing = f"o gerador não produziu nenhum .qsb em {folder} (sumiram os .frag, ou o qsb falhou calado)"
+            out.append(("dev/shaders.sh", 1, missing))
+            continue
+        out += compare_generated(made, shaders, "*.qsb", SHADER_HINT, root)
+        for qsb in sorted(shaders.glob("*.qsb")):
+            if not qsb.with_suffix(".frag").exists():
+                where = qsb.relative_to(root).as_posix()
+                out.append((where, 1, f"órfão: não existe {qsb.stem}.frag; apague o .qsb ou devolva o .frag"))
     return out
 
 
@@ -496,7 +507,7 @@ def check_generated_themes(generated, root):
 
 
 def check_shaders(root):
-    """Recompila themes/shaders/*.frag como o dev/shaders.sh e compara com os .qsb."""
+    """Recompila os .frag (SHADER_DIRS) como o dev/shaders.sh e compara com os .qsb."""
     with tempfile.TemporaryDirectory() as tmp:
         failed = run_generator(["bash", str(root / "dev" / "shaders.sh"), tmp], "dev/shaders.sh")
         return failed or check_generated_shaders(Path(tmp), root)

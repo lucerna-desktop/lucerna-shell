@@ -14,7 +14,7 @@ Barra, painel superior, central, launcher, notificações, tela de bloqueio e um
 - **Botões e teclas mapeáveis**: os botões extras do mouse e as teclas extras do teclado (F13–F24, macro, mídia) podem abrir painéis, controlar a mídia, trocar de workspace, **enviar um atalho de teclado** para a janela ou rodar um comando.
 - **Remapeamento real de teclas**, em qualquer programa e inclusive para modificadores (Caps Lock → Esc, Alt Gr → Super). O Lucerna gera o keymap, confere se ele compila e só então o entrega ao Hyprland.
 - **Monitores arrastando**: a disposição se monta num canvas com encaixe magnético. Cada monitor tem resolução, taxa, escala, rotação, espelhamento, VRR e 10 bits. Aplicar pede confirmação em todas as telas e, sem resposta em 15 s, volta ao anterior.
-- **Central em dois painéis**: ações (tiles de Wi-Fi, Bluetooth, saída de áudio, bateria, microfone e os liga/desliga, com uma página por recurso, e os sliders de volume e brilho) e notificações, flutuando à direita sobre a área de trabalho, cada um com o seu atalho, sozinhos ou juntos.
+- **Central em dois painéis**: ações (tiles de Wi-Fi, Bluetooth, saída de áudio, bateria, microfone e os liga/desliga, com uma página por recurso, e os sliders de volume e brilho) e notificações, num bloco que sai da borda direita, sobre a área de trabalho, cada um com o seu atalho, sozinhos ou juntos.
 - **Os dez temas mais populares**: Catppuccin Mocha, Tokyo Night, Gruvbox Dark, Rosé Pine, Nord, Everforest, Kanagawa, Dracula, Matte Black e Decay Green, e as versões claras Catppuccin Latte e Rosé Pine Dawn, nas paletas oficiais, trocáveis ao vivo.
 - **Papel de parede animado e leve**: cada tema tem um efeito em shader que combina com ele (aurora, bokeh, brasas, luar, neve, vaga-lumes, ondas, névoa, chuva digital), nas cores do tema, a 30 ou 60 fps e em meia resolução. Ele pausa sozinho com tela cheia, tela bloqueada ou tela apagada. Cada tema pode trocar o seu por outro efeito, por uma imagem sua ou por um **vídeo ou GIF**. O vídeo é convertido uma vez para a resolução da tela, sem tarjas, quadros repetidos nem áudio, e toca decodificado pela GPU.
 - **Vidro de verdade**: o desfoque atrás dos painéis é do próprio Hyprland, e o tema ajusta também as bordas das janelas.
@@ -24,13 +24,15 @@ Barra, painel superior, central, launcher, notificações, tela de bloqueio e um
 
 ### Área de trabalho
 
-A barra em faixa e as janelas com as bordas e o arredondamento que o tema aplica no Hyprland.
+A barra e as janelas com as bordas e o arredondamento que o tema aplica no Hyprland.
 
 ![Área de trabalho com a barra e duas janelas](docs/screenshots/desktop.jpg)
 
 ### Painel superior
 
-Visão geral, mídia com letra sincronizada, desempenho e clima. Desce de dentro da barra, e a altura acompanha a aba.
+Visão geral, mídia com letra sincronizada, desempenho e clima. É a própria barra transformada: a aba fundida à moldura se alarga e cresce para baixo, o conteúdo da barra esmaece e o topo da peça vira a fileira de abas; ao fechar, ela encolhe de volta para a barra. A altura acompanha a aba.
+
+Os painéis que saem das bordas (o painel superior, a central e o OSD) são uma peça só com a tela: ao abrir o painel superior ou a central, uma moldura fina aparece nos quatro lados com a barra fundida à borda de cima, e o painel incha da borda com a junção arredondada, como um líquido; ao fechar, tudo recolhe e a moldura some.
 
 | Mídia | Desempenho |
 | --- | --- |
@@ -40,7 +42,7 @@ Visão geral, mídia com letra sincronizada, desempenho e clima. Desce de dentro
 
 ### Central
 
-Ações em cima e notificações embaixo, na direita, sobre a área de trabalho. Cada painel abre e fecha sozinho (`Super+A` as ações, `Super+N` as notificações, e o sino da barra), e os dois podem ficar abertos juntos (`Super+C` abre o que falta, ou fecha os dois); sozinhas, as notificações sobem e ocupam a altura toda. Os tiles ligam e desligam no corpo e abrem a página do recurso na setinha. O ícone da barra escolhe a página das ações: o de rede abre a do Wi-Fi; o de som, a da saída de áudio; o de bateria, a da bateria; o mesmo ícone de novo fecha só as ações. `Esc` e o clique fora fecham os dois.
+Um bloco só que sai da borda direita, com as ações em cima e as notificações embaixo, sobre a área de trabalho. Cada painel abre e fecha sozinho (`Super+A` as ações, `Super+N` as notificações, e o sino da barra), e os dois podem ficar abertos juntos (`Super+C` abre o que falta, ou fecha os dois); sozinhas, as notificações sobem e ocupam a altura toda. Os tiles ligam e desligam no corpo e abrem a página do recurso na setinha. O ícone da barra escolhe a página das ações: o de rede abre a do Wi-Fi; o de som, a da saída de áudio; o de bateria, a da bateria; o mesmo ícone de novo fecha só as ações (a barra fica fundida à moldura e clicável com a central aberta). `Esc` e o clique fora fecham os dois.
 
 ![Central: ações e notificações](docs/screenshots/central.jpg)
 
@@ -52,9 +54,9 @@ Ações em cima e notificações embaixo, na direita, sobre a área de trabalho.
 | **Gruvbox Dark** | **Nord** |
 | ![Tema Gruvbox Dark](docs/screenshots/theme-gruvbox.jpg) | ![Tema Nord](docs/screenshots/theme-nord.jpg) |
 
-A barra tem quatro estilos: **faixa** (o padrão), **ilha** (só a hora, e expande com o mouse), **pílula** e **três ilhas**. Pode ficar fixa ou escondida até o mouse encostar no topo.
+A barra é uma aba fundida à borda de cima de uma moldura fina que aparece nos quatro lados da tela junto com ela. Fica escondida até o mouse encostar no topo; aí a moldura e a barra aparecem juntas, e recolhem juntas quando o mouse sai.
 
-![Os quatro estilos da barra](docs/screenshots/bars.png)
+![A barra fundida à moldura](docs/screenshots/bars.png)
 
 ### Papel de parede
 
@@ -96,9 +98,9 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 
 | Parte | O que faz |
 | --- | --- |
-| **Barra** | Workspaces, hora e data, rede, som, bateria e notificações. Tem quatro estilos e pode ficar fixa ou esconder sozinha. Na área de trabalho vazia fica sempre à mostra, e aparece por um instante ao trocar de workspace. |
+| **Barra** | Workspaces, hora e data, rede, som, bateria e notificações. Uma aba fundida à moldura da tela, que aparece com ela e se esconde sozinha. Na área de trabalho vazia fica sempre à mostra, e aparece por um instante ao trocar de workspace. |
 | **Painel superior** | Visão geral (perfil, relógio, calendário, clima, recursos e mídia, com a capa num círculo e o espectro do som em volta, pelo `lucernad`), mídia com letra sincronizada (LRCLIB) e o espectro em volta da capa, desempenho (CPU, GPU, memória, disco e rede) e clima (Open-Meteo, pelo `lucernad`): a cidade e o dia, o nascer e o pôr do sol, o agora e os próximos sete dias. Abas reordenáveis e opção de abrir ao parar o mouse na hora. |
-| **Central** | Dois painéis flutuantes na direita, independentes (`Super+A`, `Super+N`, os dois com `Super+C`, ou pelos ícones da barra): ações e notificações. As ações são tiles em duas colunas (Wi-Fi, Bluetooth, saída de áudio, bateria, microfone, luz noturna, não perturbe e não apagar a tela; cheios quando ligados), com uma página por recurso: a lista de redes, com senha; os dispositivos Bluetooth, para parear; as saídas e o volume de cada app com áudio aberto; o microfone e as entradas; a bateria (um card em forma de bateria, cheio até a carga), o perfil de energia (Economia, Equilibrado e Turbo), o consumo da última hora num gráfico e a bateria dos dispositivos Bluetooth. Embaixo, os sliders largos de volume e de brilho da tela em foco, com a porcentagem; a engrenagem abre as configurações. |
+| **Central** | Um bloco que sai da borda direita, com dois painéis independentes (`Super+A`, `Super+N`, os dois com `Super+C`, ou pelos ícones da barra): ações e notificações. As ações são tiles em duas colunas (Wi-Fi, Bluetooth, saída de áudio, bateria, microfone, luz noturna, não perturbe e não apagar a tela; cheios quando ligados), com uma página por recurso: a lista de redes, com senha; os dispositivos Bluetooth, para parear; as saídas e o volume de cada app com áudio aberto; o microfone e as entradas; a bateria (um card em forma de bateria, cheio até a carga), o perfil de energia (Economia, Equilibrado e Turbo), o consumo da última hora num gráfico e a bateria dos dispositivos Bluetooth. Embaixo, os sliders largos de volume e de brilho da tela em foco, com a porcentagem; a engrenagem abre as configurações. |
 | **Notificações** | Popups com ações, pausa no mouse e prazo ajustável, não perturbe e a lista na central. |
 | **Launcher** | Três estilos: compacto (busca e lista), completo (categorias de aplicativos, arquivos, documentos, imagens, músicas, vídeos e web, com favoritos, grade e detalhes: ações do app, descrição, versão e desenvolvedor) e tela cheia (gaveta de apps por categoria). Os apps mais abertos vêm primeiro, com os favoritos na frente. Em todos os estilos: clique direito num item para as opções, `Ctrl+F` fixa ou tira dos favoritos e `Ctrl+H` oculta; no compacto e na tela cheia, `/texto` busca arquivos e `?texto` pesquisa na web. A busca de arquivos usa o `fd` quando há, e, sem busca, mostra os recentes. |
 | **Área de transferência** | Histórico num painel próprio (`Super+V`), pelo `lucernad`: textos, imagens (com miniatura) e arquivos, busca com o trecho em negrito, filtro, fixar e apagar. Escolher copia e cola na janela em foco (Ctrl+Shift+V nos terminais). Senhas marcadas pelos gerenciadores ficam de fora. |
@@ -106,7 +108,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 | **Captura de tela** | Painel próprio (`Print`): foto ou vídeo, de uma área (arrastando, com alças), de uma janela (clicando) ou da tela, com espera, cursor e som. A foto vai para a pasta e para a área de transferência, com um aviso que abre o arquivo ou a pasta; a gravação (pela GPU quando dá) mostra o tempo na barra e para ao clicar. Também tela inteira (`Shift+Print`) e janela ativa (`Ctrl+Print`) direto. |
 | **Tela de bloqueio** | Relógio e senha (PAM). |
 | **Energia** | Menu (bloquear, suspender, sair, reiniciar, desligar). Avisos de bateria baixa e crítica, ação no nível crítico com prazo para cancelar, troca de perfil na tomada e modo leve na bateria. |
-| **OSD** | Volume e brilho. |
+| **OSD** | Volume e brilho, saindo da borda direita (não aparece com a central aberta, que já mostra os dois). |
 | **Ociosidade** | Escurece, desliga a tela, bloqueia e suspende depois de um tempo sem uso, com tempos próprios na tomada e na bateria, sem precisar do `hypridle`. Segura com mídia tocando, com app em tela cheia e com "Não apagar a tela" (nos tiles da central, para apresentações). |
 | **Luz noturna** | Tela mais quente à noite, do pôr ao nascer do sol (pela cidade do clima, calculado sem rede), num horário fixo ou sempre, entrando e saindo aos poucos. Nos tiles da central, liga ou desliga até a próxima virada. Usa o `hyprsunset`, que muda a cor no hardware, sem custo para a GPU. |
 | **Papel de parede** | Imagem com transição na troca e efeito animado por cima (shader, a 30 ou 60 fps, no ritmo da tela, e em meia resolução). Pausa com app em tela cheia, tela bloqueada ou tela apagada, e opcionalmente com qualquer janela aberta; no automático, fica parado na bateria. Modo e origem por monitor. |
@@ -129,7 +131,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 | **Notificações** | Não perturbe e tempo na tela. |
 | **Painéis** | Se o painel superior abre junto das configurações. |
 | **Launcher** | Estilo, buscador da web, favoritos (ordem e remoção), apps ocultos e histórico de uso. |
-| **Barra** | Estilo, esconder sozinha, mostrar na área vazia e ao trocar de workspace, data. |
+| **Barra** | Data, mostrar na área vazia e ao trocar de workspace. |
 | **Painel superior** | Abas, abrir e fechar pelo mouse, cartões, semana, letra, espectro da capa, intervalo do desempenho, GPU, cidade, unidades e **modo offline**. |
 | **Energia e bateria** | Porcentagem na barra, avisos, ação no nível crítico, perfil automático, economia abaixo de um nível e modo leve. |
 | **Atalhos** | As teclas do shell (painéis, bloqueio, som, mídia e brilho): trocar, acrescentar, tirar e voltar ao padrão. Avisa quando a tecla era de outro atalho, da aba Teclado ou do `hyprland.lua`. |

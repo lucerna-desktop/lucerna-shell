@@ -186,4 +186,11 @@ function run(t) {
             S.centerId = centerId0;
         }
     });
+
+    t.test("themeswitcher: os painéis da moldura sem o esmaecer de camada", () => {
+        const rule = S.noAnimLua();
+        t.check(rule.startsWith("hl.layer_rule("), "uma regra de camada");
+        t.check(rule.includes("no_anim = true"), "sem animação");
+        t.check(rule.includes('"^lucerna-(panel-bar|frame-.*)$"'), "a barra (a forma) e os painéis que saem da moldura");
+    });
 }

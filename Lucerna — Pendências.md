@@ -138,6 +138,21 @@ Adiadas na revisão do módulo `web` do `lucernad` (lucernad#17) e do shell (PR 
   - a barra de ações rápidas do Painel não tem navegação pelo teclado (o Tab do painel troca de aba); se fizer falta, as setas;
   - sem teste do `openLink` (só `https://`) da página Créditos nem do `openSettings` da aba Clima.
 
+## Sobras dos painéis da moldura
+
+Adiadas na revisão final da branch `feat/paineis-moldura` (a barra fundida à moldura e os painéis que saem das bordas).
+
+- [ ] **O conteúdo dos painéis na mesma janela da forma**, como o `ContentWindow` do Caelestia. Hoje a forma é desenhada na janela da barra e o conteúdo do painel superior e da central fica na janela de cada um: duas superfícies que redesenham a cada quadro. Por isso a central ainda gasta perto do dobro de CPU da `main` ao abrir, e a forma e o conteúdo podem chegar à tela com um quadro de diferença (atenuado: o conteúdo entra mais tarde e recuado da beira). Juntar resolve as duas coisas e a ordem das camadas; o preço é o teclado, que a janela da forma passaria a pegar conforme o painel aberto.
+- [ ] **A barra revelada pelo mouse custa mais que na `main`.** Com ela, a moldura aparece nos quatro lados, e a janela da forma ocupa a tela toda: o Hyprland desfoca a tela inteira a cada quadro da animação (na `main`, só o retângulo da pílula). Fica perto de 62 contra 67 FPS no container. Só se resolve dividindo a moldura em janelas por borda ou desligando o desfoque durante a animação.
+- [ ] **A borda da forma com escala fracionária:** a suavização é de 1 px lógico (`frame.frag`), e em 1,25 ou 1,5 a beira e o contorno do tema ficam um pouco borrados. Usar `fwidth` no lugar.
+- [ ] **O Esc na central aberta pelo atalho com uma janela focada por baixo.** A central não pega mais o teclado com exclusividade (para o clique na barra funcionar); conferir no Hyprland de verdade que o Esc ainda chega a ela.
+- [ ] **Depois de um `hyprctl reload`**, as regras do tema, do desfoque e da moldura são reenviadas pelo shell; conferir numa sessão de verdade (no container, o reload derruba a saída aninhada).
+- [ ] **A janela da forma volta à tela inteira quando o OSD acaba.** Com `parts` vazio, o `Frame.compactOn` dá falso, e a janela pede um resize de tela cheia só para os quadros do `lingering`. Manter o último `compact` enquanto não houver pedaços (ou tratar a lista vazia como compacta).
+- [ ] **O `lingering` da `BarWindow` depende da ordem entre o `onPartsChanged` e a binding do `visible`.** Hoje o handler vem antes, mas é frágil: derivar a condição de uma flag própria (`hadParts`), não do próprio `visible`.
+- [ ] **A junção da barra com a moldura fica com suavização 17, não 22.** O limite "metade do menor lado à mostra" vale também para a pílula de 34 px. Se o 22 for desejado na barra, isentar o `role === "pill"` do limite da suavização (ou limitar só o raio); se não, registrar no spec.
+- [ ] **O canto próprio da central reaparece na subida das Notificações.** O `top-` do bloco só entra com o topo a até 0,5 px da moldura; quando as Ações saem e o inbox sobe animado, o bloco fica solto e "estala" na junção ao chegar. Conferir a olho; se incomodar, interpolar a junção pela distância até a moldura (prender sem esticar o bloco).
+- [ ] **As capturas da documentação:** a `docs/screenshots/desktop.jpg` já mostra a barra fundida à moldura; a `hero.jpg` (e as dos painéis, se for o caso) ainda mostram a barra antiga.
+
 ## Depois
 
 - [ ] Aba Desempenho: um medidor de bateria em forma de pilha, só no notebook. Rascunhos de três encaixes (ao lado de CPU e GPU, em pé ao lado da Memória, faixa embaixo) em `.superpowers/brainstorm/436361-1792526405/content/bateria-desempenho.html`; o usuário quer planejar melhor antes.
@@ -176,6 +191,7 @@ No ambiente de teste não dá para simular cliques, e o Hyprland ignora teclado 
 - [ ] Launcher: navegação pelo teclado nos três estilos, `Ctrl+1…9` nas ações do app e o "Mais opções".
 - [ ] Painel superior: as setas do calendário (a bolha some em outro mês e volta no atual), o clique nos cards de GPU e de Disco trocando de GPU e de disco (com o esmaecimento), o "4,8 / 224 GiB" do `sda`, o clique numa linha da letra pulando para o trecho, a troca de player pelo ícone.
 - [ ] Aba Desempenho: a temperatura da RTX (lida pela NVML do `lucernad`, só com a placa em uso; o container de teste não tem a NVIDIA) e o uso da Intel pelo fdinfo do `lucernad` na máquina real.
+- [ ] Painéis da moldura: o clique de verdade na barra fundida (a fumaça e o roteiro usam um ponteiro virtual), a barra e a moldura em dois monitores (o painel abre no monitor com foco e sai da barra dele; com o painel superior, a central, o OSD ou um popup à mostra, passar o mouse para o outro monitor não os leva junto), e a barra se transformando no painel superior com o mouse de verdade (o conteúdo esmaecendo, sem clique perdido).
 - [ ] Central: os ícones da barra abrindo as ações na página certa e fechando no mesmo ícone (sem fechar as notificações), o sino abrindo e fechando só as notificações, e o foco voltando ao painel (o `Esc` fecha) depois de fechar as ações com a senha do Wi-Fi sendo digitada; os tiles (o corpo liga e desliga, a setinha abre a página), os sliders de volume e brilho e os volumes do microfone e de cada app; a troca de dispositivo, conectar a uma rede com senha, parear, os perfis de energia, a engrenagem e o "Limpar".
 
 ## Ambiente de teste

@@ -2,11 +2,13 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import qs.core.panels
 import qs.core.widgets
 import qs.services
 
 // Mostra o OSD quando o volume ou o brilho mudam, venha a mudança de onde vier
-// (atalho, outro app, a própria barra).
+// (atalho, outro app, a própria barra). Com a central aberta, não: ele sairia
+// da mesma borda, por cima dela, e os controles dela já mostram o valor.
 Singleton {
     id: root
 
@@ -15,7 +17,10 @@ Singleton {
     // Ignora os valores iniciais, lidos na partida.
     property bool armed: false
 
-    readonly property var screen: Hypr.focusedScreen
+    // Fica no monitor onde apareceu enquanto está à mostra (ver
+    // Panels.screenFor).
+    property var shownOn: null
+    readonly property var screen: Panels.screenFor(shownOn, Quickshell.screens, Hypr.focusedScreen)
     readonly property real value: kind === "volume" ? Audio.volume : Brightness.shownValue
     readonly property bool muted: kind === "volume" && Audio.muted
     readonly property int percent: Math.round(value * 100)
@@ -24,9 +29,11 @@ Singleton {
         : (muted || value === 0 ? Icons.volumeOff : value < 0.34 ? Icons.volumeLow : value < 0.67 ? Icons.volumeMedium : Icons.volumeHigh)
 
     function show(which: string): void {
-        if (!armed)
+        if (!armed || Panels.isOpen("central"))
             return;
         kind = which;
+        if (!shown)
+            shownOn = Hypr.focusedScreen;
         shown = true;
         hideTimer.restart();
     }

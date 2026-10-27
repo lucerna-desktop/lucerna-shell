@@ -144,7 +144,36 @@ Singleton {
         }
     }
 
-    Component.onCompleted: blurDelay.start()
+    // Os painéis que saem da moldura ("lucerna-frame-*") e a barra, que desenha
+    // a forma deles, não ganham o esmaecer de camada do Hyprland: a forma e o
+    // conteúdo entram juntos, sem a camada inteira começar transparente.
+    readonly property string frameRule: Hypr.usingLua ? noAnimLua() : ""
+
+    Component.onCompleted: {
+        blurDelay.start();
+        if (frameRule)
+            Hypr.evalLua(frameRule);
+    }
+
+    // Um `hyprctl reload` apaga as regras de camada e a config aplicadas por
+    // cima do hyprland.lua: manda tudo de novo.
+    Connections {
+        target: Hypr
+
+        function onConfigReloaded() {
+            root.reapply();
+        }
+    }
+
+    function reapply(): void {
+        for (const lua of [root.hyprlandConfig, root.blurRule, root.blurConfig, root.frameRule])
+            if (lua)
+                Hypr.evalLua(lua);
+    }
+
+    function noAnimLua(): string {
+        return `hl.layer_rule({ match = { namespace = "^lucerna-(panel-bar|frame-.*)$" }, no_anim = true })`;
+    }
 
     // Desfoque atrás dos painéis do shell ("lucerna-panel-*"). O ignore_alpha
     // restringe o desfoque aos pixels quase opacos: o véu escuro atrás dos

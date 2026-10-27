@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import qs.core.config
-import qs.core.theme
 
 // Ponte entre features: diz quais painéis estão abertos.
 //
@@ -46,6 +45,14 @@ Singleton {
         return companions.includes(name);
     }
 
+    // A tela de um painel que fica onde abriu: a da abertura (`openedOn`),
+    // enquanto ela estiver entre as telas (`screens`); senão, a com foco. O
+    // foco de monitor muda só com o mouse passando de um para o outro, e o
+    // painel não pode trocar de tela no meio da animação.
+    function screenFor(openedOn: var, screens: var, focused: var): var {
+        return openedOn && screens.includes(openedOn) ? openedOn : focused;
+    }
+
     function isPanel(name: string): bool {
         return names.includes(name);
     }
@@ -54,7 +61,14 @@ Singleton {
         return !isCompanion(name) && !bases.includes(name);
     }
 
+    // Um painel fechado vai abrir: avisa antes de `opened` mudar, para quem
+    // grava a tela da abertura (os painéis da moldura) já ter a nova quando
+    // o painel aparecer como aberto.
+    signal opening(string name)
+
     function open(name: string): void {
+        if (!isOpen(name))
+            opening(name);
         if (!isCompanion(name))
             opened = [name];
         else if (!opened.includes(name))
@@ -154,20 +168,6 @@ Singleton {
             clearedCheck.restart();
         }
     }
-
-    // Distância do topo para os painéis que descem ou encostam no topo: colados
-    // à borda com a barra escondida; abaixo dela quando ela está fixa.
-    readonly property real topInset: {
-        const gap = ThemeManager.spacing.small;
-        if (Config.barAutoHide)
-            return gap;
-        return Config.barStyle === "strip" ? ThemeManager.barHeight + gap : ThemeManager.barHeight + gap * 2;
-    }
-
-    // Faixa da barra, a partir do topo, que um modal com keepBar (a central)
-    // deixa fora da camada para a barra continuar clicável. Com a barra
-    // escondida sozinha, nenhuma: ela some com um painel aberto.
-    readonly property real barStrip: Config.barAutoHide ? 0 : topInset - ThemeManager.spacing.small
 
     function isOpen(name: string): bool {
         return opened.includes(name);

@@ -1,24 +1,31 @@
 import QtQuick
 import Quickshell
+import qs.core.frame
 import qs.core.theme
 import qs.core.widgets
+import qs.features.bar.state
 
-// Pílula: uma só, flutuante e centralizada, com tudo à mostra.
+// A barra: uma aba centralizada, fundida à borda de cima da moldura (a forma
+// da tela desenha o fundo dela), com tudo à mostra. Ao abrir o painel
+// superior, ela se transforma nele (`morph`): o conteúdo esmaece e ela deixa
+// de receber o mouse, que passa ao painel.
 Item {
     id: root
 
     required property real progress
-    readonly property real gap: ThemeManager.spacing.small
+    required property real morph
 
     readonly property Region mask: Region {
-        item: pill
+        item: root.morph > 0 ? null : pill
     }
+    // O fundo, que a forma da tela desenha (Frame).
+    readonly property rect shape: Qt.rect(pill.x, pill.y, pill.width, pill.height)
 
     Glass {
         id: pill
 
         anchors.horizontalCenter: parent.horizontalCenter
-        y: root.gap - (1 - root.progress) * (height + root.gap * 2)
+        y: BarState.pillY(height, root.progress)
         width: row.implicitWidth + ThemeManager.spacing.normal * 2
         height: ThemeManager.barHeight
         radius: height / 2
@@ -30,6 +37,8 @@ Item {
 
             anchors.centerIn: parent
             spacing: ThemeManager.spacing.small
+            opacity: Frame.barContentOpacity(root.morph)
+            visible: opacity > 0
 
             Workspaces {
                 anchors.verticalCenter: parent.verticalCenter

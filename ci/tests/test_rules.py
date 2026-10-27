@@ -83,8 +83,8 @@ class SuppressionsTest(RepoCase):
             "features/settings/ui/MonitorConfirm.qml": "    margins.top: 90 // qmllint disable unqualified missing-property\n",
             self.OSD: "    margins.bottom: 72 // qmllint disable unqualified missing-property\n",
             "features/notifications/ui/NotificationPopups.qml": (
-                "    margins.top: ThemeManager.spacing.small // qmllint disable unqualified missing-property\n"
-                "    margins.right: ThemeManager.spacing.small // qmllint disable unqualified missing-property\n"
+                "    margins.top: Frame.thickness + ThemeManager.spacing.small // qmllint disable unqualified missing-property\n"
+                "    margins.right: Frame.thickness + ThemeManager.spacing.small // qmllint disable unqualified missing-property\n"
             ),
         }
         self.assertEqual(self.found(files), [])
@@ -308,19 +308,40 @@ class GeneratedTest(RepoCase):
     def test_shader_orfao(self):
         root = self.repo(
             {
-                "novo/a.qsb": "A",
+                "novo/themes/shaders/a.qsb": "A",
+                "novo/core/widgets/shaders/b.qsb": "B",
                 "themes/shaders/a.frag": "",
                 "themes/shaders/a.qsb": "A",
                 "themes/shaders/velho.qsb": "V",
+                "core/widgets/shaders/b.frag": "",
+                "core/widgets/shaders/b.qsb": "B",
+                "core/widgets/shaders/antigo.qsb": "X",
             }
         )
         found = rules.check_generated_shaders(root / "novo", root)
-        self.assertEqual([(p, m.split(":")[0]) for p, _, m in found], [("themes/shaders/velho.qsb", "órfão")])
+        self.assertEqual(
+            [(p, m.split(":")[0]) for p, _, m in found],
+            [("themes/shaders/velho.qsb", "órfão"), ("core/widgets/shaders/antigo.qsb", "órfão")],
+        )
+
+    def test_shader_do_core_desatualizado(self):
+        root = self.repo(
+            {
+                "novo/themes/shaders/a.qsb": "A",
+                "novo/core/widgets/shaders/b.qsb": "novo",
+                "themes/shaders/a.frag": "",
+                "themes/shaders/a.qsb": "A",
+                "core/widgets/shaders/b.frag": "",
+                "core/widgets/shaders/b.qsb": "velho",
+            }
+        )
+        found = rules.check_generated_shaders(root / "novo", root)
+        self.assertEqual([(p, m.split(":")[0]) for p, _, m in found], [("core/widgets/shaders/b.qsb", "desatualizado")])
 
     def test_gerador_vazio_reprova(self):
         root = self.repo({"themes/shaders/a.frag": "", "themes/shaders/a.qsb": "A", "themes/a.json": "1\n"})
         (root / "vazio").mkdir()
-        self.assertEqual([p for p, _, _ in rules.check_generated_shaders(root / "vazio", root)], ["dev/shaders.sh"])
+        self.assertEqual([p for p, _, _ in rules.check_generated_shaders(root / "vazio", root)], ["dev/shaders.sh"] * 2)
         self.assertEqual([p for p, _, _ in rules.check_generated_themes(root / "vazio", root)], ["dev/themes.py"])
 
     def test_dica_manda_regenerar_com_o_qsb_do_ci(self):

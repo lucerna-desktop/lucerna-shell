@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.core.frame
 import qs.core.panels
 import qs.services
 
@@ -20,9 +21,11 @@ Singleton {
     readonly property bool open: Panels.isOpen("central")
     readonly property bool actionsOpen: Panels.actionsOpen
     readonly property bool notificationsOpen: Panels.notificationsOpen
-    readonly property var screen: Hypr.focusedScreen
-    // Distância do topo da tela: abaixo da barra, como o painel superior.
-    readonly property real top: Panels.topInset
+    // Fica no monitor onde abriu (ver Panels.screenFor).
+    property var openedOn: null
+    readonly property var screen: Panels.screenFor(openedOn, Quickshell.screens, Hypr.focusedScreen)
+    // O topo do bloco: encostado na moldura de cima (Frame), onde ele se funde.
+    readonly property real top: Frame.thickness
 
     // O que existe na máquina, para as páginas e os tiles.
     readonly property var has: ({
@@ -49,6 +52,12 @@ Singleton {
 
     Connections {
         target: Panels
+
+        // A tela é gravada antes de a central abrir: aberta, ela já está nela.
+        function onOpening(name) {
+            if (name === "central")
+                root.openedOn = Hypr.focusedScreen;
+        }
 
         function onActionsOpened(entry) {
             root.page = root.pageFor(entry, root.has);

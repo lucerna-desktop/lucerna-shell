@@ -14,8 +14,9 @@ Singleton {
     id: root
 
     readonly property bool open: Panels.isOpen("dashboard")
-    readonly property var screen: Hypr.focusedScreen
-    readonly property real topOffset: Panels.topInset
+    // Fica no monitor onde abriu (ver Panels.screenFor).
+    property var openedOn: null
+    readonly property var screen: Panels.screenFor(openedOn, Quickshell.screens, Hypr.focusedScreen)
     // A altura comum das abas: o painel não pula ao trocar de aba. O
     // Desempenho cabe nela com os anéis do disco e da memória de 109 px.
     readonly property int pageHeight: 300
@@ -47,8 +48,18 @@ Singleton {
         }
     }
 
+    // A tela é gravada antes de o painel abrir: aberto, ele já está nela.
+    Connections {
+        target: Panels
+
+        function onOpening(name) {
+            if (name === "dashboard")
+                root.openedOn = Hypr.focusedScreen;
+        }
+    }
+
     // Fechar ao tirar o mouse: só depois de o mouse ter entrado no painel
-    // (com a barra fixa ele abre abaixo do cursor, que está na hora).
+    // (ele pode abrir com o mouse fora dele, pelo atalho ou pela hora).
     property bool pointerInside: false
     property bool pointerEntered: false
 

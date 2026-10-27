@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.core.frame
 import qs.core.theme
 import qs.core.widgets
 import qs.features.notifications.state
@@ -34,9 +35,11 @@ PanelWindow {
         right: true
         bottom: true
     }
+    // Fora da moldura: a espessura dela e o espaço de sempre, que deixam o
+    // cartão fora do arco do canto (Frame.cornerClear), à mostra ou não.
     // Falso positivo do qmllint com o grupo margins do PanelWindow (ver o spec do CI).
-    margins.top: ThemeManager.spacing.small // qmllint disable unqualified missing-property
-    margins.right: ThemeManager.spacing.small // qmllint disable unqualified missing-property
+    margins.top: Frame.thickness + ThemeManager.spacing.small // qmllint disable unqualified missing-property
+    margins.right: Frame.thickness + ThemeManager.spacing.small // qmllint disable unqualified missing-property
     implicitWidth: 380
     color: "transparent"
     exclusionMode: ExclusionMode.Normal

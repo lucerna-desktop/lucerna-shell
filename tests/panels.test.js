@@ -58,24 +58,6 @@ function run(t) {
         t.check(!P.anyOpen, "nada aberto");
     });
 
-    t.test("panels: faixa da barra que fica clicável", () => {
-        const T = t.ThemeManager;
-        const hide0 = C.barAutoHide;
-        const style0 = C.barStyle;
-        try {
-            C.barAutoHide = false;
-            C.barStyle = "strip";
-            t.eq(P.barStrip, T.barHeight, "em faixa: a altura da barra");
-            C.barStyle = "island";
-            t.eq(P.barStrip, T.barHeight + T.spacing.small, "flutuante: a barra e a folga de cima");
-            C.barAutoHide = true;
-            t.eq(P.barStrip, 0, "escondida sozinha: nenhuma");
-        } finally {
-            C.barAutoHide = hide0;
-            C.barStyle = style0;
-        }
-    });
-
     // A central: [ações, notificações, entrada das ações, central no Panels].
     const central = () => [P.actionsOpen, P.notificationsOpen, P.centralEntry, P.isOpen("central")];
 
@@ -313,4 +295,61 @@ function run(t) {
 
     P.close();
     C.panelsTogether = together0;
+    t.test("panels: a tela fica onde o painel abriu", () => {
+        t.eq(P.screenFor("A", ["A", "B"], "B"), "A", "o foco passou para B: continua em A");
+        t.eq(P.screenFor("A", ["B"], "B"), "B", "a tela A saiu: vai para a com foco");
+        t.eq(P.screenFor(null, ["A", "B"], "B"), "B", "nunca aberto: a com foco");
+    });
+
+    // Os painéis da moldura, o OSD e os popups gravam a tela ao abrir e ficam
+    // nela (a troca do foco de monitor é a função acima; aqui, a ligação).
+    t.test("panels: o painel superior, a central, o OSD e os popups gravam a tela", () => {
+        const D = t.DashboardState, K = t.CentralState, O = t.OsdState, S = t.NotificationsState, N = t.Notifications;
+        const screen = t.Hypr.focusedScreen;
+        const saved = [P.opened, D.openedOn, K.openedOn, O.shownOn, O.shown, O.armed, O.kind, S.shownOn, N.popups];
+        try {
+            P.opened = [];
+            D.openedOn = null;
+            K.openedOn = null;
+            // A tela já está gravada quando o painel aparece como aberto.
+            let seen = [];
+            const watch = () => seen.push([P.opened.join(" "), D.openedOn, K.openedOn]);
+            P.openedChanged.connect(watch);
+            try {
+                P.open("dashboard");
+                t.check(D.openedOn === screen && D.screen === screen, "o painel superior grava a tela com foco");
+                t.check(seen.length > 0 && seen[0][1] === screen, "antes de abrir, não depois");
+                D.openedOn = "fora";
+                P.open("dashboard");
+                t.eq(D.openedOn, "fora", "já aberto: não troca de tela");
+                seen = [];
+                P.open("central");
+                t.check(K.openedOn === screen && K.screen === screen, "a central também");
+                t.check(seen.length > 0 && seen[0][2] === screen, "a central, antes de abrir");
+                K.openedOn = "fora";
+                P.openNotifications();
+                t.eq(K.openedOn, "fora", "trocar o que está à mostra na central não troca de tela");
+            } finally {
+                P.openedChanged.disconnect(watch);
+            }
+            P.opened = [];
+            O.armed = true;
+            O.shown = false;
+            O.shownOn = null;
+            O.show("volume");
+            t.check(O.shownOn === screen && O.screen === screen, "o OSD grava a tela ao aparecer");
+            O.shownOn = "fora";
+            O.show("volume");
+            t.eq(O.shownOn, "fora", "já à mostra: não troca de tela");
+            N.popups = [];
+            S.shownOn = null;
+            N.popups = ["a"];
+            t.check(S.shownOn === screen, "o primeiro popup grava a tela");
+            S.shownOn = "fora";
+            N.popups = ["a", "b"];
+            t.eq(S.shownOn, "fora", "os seguintes ficam nela");
+        } finally {
+            [P.opened, D.openedOn, K.openedOn, O.shownOn, O.shown, O.armed, O.kind, S.shownOn, N.popups] = saved;
+        }
+    });
 }

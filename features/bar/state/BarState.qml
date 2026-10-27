@@ -4,65 +4,94 @@ import QtQuick
 import Quickshell
 import qs.core.config
 import qs.core.format
+import qs.core.frame
 import qs.core.panels
 import qs.core.widgets
 import qs.services
 
 // View model da barra: o que ela mostra e quando ela aparece.
 //
-// Com auto-ocultar ligado, a barra fica escondida e aparece na tela onde o
+// A barra tem um modelo só: uma aba fundida à borda de cima da moldura da
+// tela (ver Frame); quando ela aparece, a moldura aparece junto, nos quatro
+// lados, e as duas recolhem juntas. Fica escondida e aparece na tela onde o
 // mouse encostou no topo (ou, por um instante, ao trocar de workspace). Some
-// quando o mouse sai e quando um painel abre. Na área de trabalho vazia (sem
-// janelas no workspace daquela tela), fica à mostra: não cobre nada.
+// quando o mouse sai e quando um painel centralizado abre. Na área de trabalho
+// vazia (sem janelas no workspace daquela tela), fica à mostra: não cobre
+// nada. Sobre uma janela em tela cheia de verdade (um jogo, um vídeo; a
+// maximizada não conta), só o mouse no topo a traz. Com um painel da
+// moldura aberto, fica à mostra: por cima da central, clicável; com o painel
+// superior, ela se transforma nele (ver Frame.morphOn).
 Singleton {
     id: root
 
-    // Visibilidade
-    readonly property bool autoHide: Config.barAutoHide
-    readonly property string style: Config.barStyle
     readonly property bool showDate: Config.barShowDate
+
+    // Visibilidade
     readonly property bool panelOpen: Panels.anyOpen
     property var revealedScreen: null
     property bool hovering: false
+    // Revelada pela troca de workspace, não pelo mouse.
     property bool peeking: false
-    // A ilha se expande (workspaces, data e ações) com o mouse em cima e ao
-    // aparecer por troca de workspace; no resto do tempo mostra só a hora.
-    readonly property bool expanded: hovering || peeking
 
     function shownOn(screen: var): bool {
-        if (!autoHide)
+        // O vazio e a tela cheia só são lidos quando decidem (getters).
+        return decide({
+            fused: Frame.fusedOn(screen),
+            panelOpen: panelOpen,
+            revealed: revealedScreen === screen,
+            peeking: peeking,
+            get empty() {
+                return Config.barOnEmpty && Hypr.isScreenEmpty(screen);
+            },
+            get fullscreen() {
+                return Hypr.hasRealFullscreen(screen);
+            }
+        });
+    }
+
+    // A regra, sem os serviços: fundida a um painel da moldura, fica; com um
+    // painel aberto, some; o mouse no topo sempre a traz; a troca de
+    // workspace e o workspace vazio, só fora de uma tela cheia de verdade.
+    function decide(s: var): bool {
+        if (s.fused)
             return true;
-        if (panelOpen)
+        if (s.panelOpen)
             return false;
-        return revealedScreen === screen || (Config.barOnEmpty && Hypr.isScreenEmpty(screen));
+        if (s.revealed && !s.peeking)
+            return true;
+        return (s.revealed || s.empty) && !s.fullscreen;
+    }
+
+    // O topo da barra, encostada na borda de cima (aberta, `progress` 1) ou
+    // acima da tela (0), descendo junto com a moldura.
+    function pillY(height: real, progress: real): real {
+        return -(1 - progress) * height;
     }
 
     // Mouse encostou no topo da tela.
     function reveal(screen: var): void {
         revealedScreen = screen;
+        peeking = false;
         hideDelay.stop();
     }
 
     function setHovering(on: bool): void {
         hovering = on;
-        if (on)
+        if (on) {
+            peeking = false;
             hideDelay.stop();
-        else
+        } else {
             hideDelay.restart();
+        }
     }
 
-    // Aparece por um instante (troca de workspace).
+    // Aparece por um instante (troca de workspace). Com o mouse em cima dela
+    // (a roda nos workspaces), vale o mouse: a tela cheia não a esconde.
     function peek(screen: var): void {
         if (panelOpen)
             return;
-        // Barra fixa: não precisa aparecer, só expandir por um instante.
-        if (!autoHide) {
-            peeking = true;
-            peekDelay.restart();
-            return;
-        }
         revealedScreen = screen;
-        peeking = true;
+        peeking = !hovering;
         peekDelay.restart();
     }
 
@@ -161,6 +190,16 @@ Singleton {
 
     // Painéis
     readonly property bool dashboardOpen: Panels.isOpen("dashboard")
+
+    // A barra se transforma no painel superior e deixa de receber o mouse (o
+    // HoverHandler dela não vê a saída): ao abrir, o mouse conta como fora, e
+    // ao fechar ela só fica se ainda tiver motivo para estar à mostra.
+    onDashboardOpenChanged: {
+        if (dashboardOpen) {
+            hovering = false;
+            hideDelay.restart();
+        }
+    }
 
     function registerSurface(window: var): void {
         Panels.register(window);

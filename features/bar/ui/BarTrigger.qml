@@ -3,12 +3,11 @@ import Quickshell
 import Quickshell.Wayland
 import qs.features.bar.state
 
-// Faixa de 1 px no topo da tela: encostar o mouse nela mostra a barra.
-// Só existe com o auto-ocultar ligado.
+// Faixa de 1 px no topo da tela: encostar o mouse nela mostra a barra, que
+// fica escondida sozinha.
 PanelWindow {
     id: root
 
-    visible: BarState.autoHide
     anchors {
         top: true
         left: true
