@@ -35,6 +35,8 @@ Singleton {
     readonly property real overhang: 64
     // Quantos pedaços a forma desenha numa tela (o shader tem um tanto fixo).
     readonly property int slotCount: 6
+    // Quantas faixas a forma usa no máximo (um ShaderEffect cada; ver regions).
+    readonly property int regionCount: 16
 
     // De que borda cada um sai.
     readonly property var edges: ({
@@ -169,6 +171,71 @@ Singleton {
         const x1 = Math.min(size.width, Math.max(...on.map(b => b.rect.x + b.rect.width)) + pad);
         const y1 = Math.min(size.height, Math.max(...on.map(b => b.rect.y + b.rect.height)) + pad);
         return Qt.rect(x0, y0, Math.max(0, x1 - x0), Math.max(0, y1 - y0));
+    }
+
+    // As faixas da janela (tamanho `size`) onde a forma pode ter cor, sem
+    // sobreposição: cada uma é um ShaderEffect com as mesmas uniforms, que
+    // desenha o seu pedaço da mesma forma, sem costura (sobrepostas, a cor
+    // somaria duas vezes). Com a moldura à mostra, as quatro bordas na
+    // espessura dela, mais o canto arredondado e a folga do arco; e cada
+    // pedaço com a folga da suavização. O resto da janela fica sem shader.
+    // Passando de `regionCount`, a área inteira (bounds) numa faixa só.
+    function regions(on: var, frame: real, size: size): var {
+        const pad = smoothing + 2;
+        const boxes = [];
+        if (frame > 0) {
+            const band = thicknessAt(frame) + radius * clamp(frame) + pad;
+            boxes.push([0, 0, size.width, band], [0, size.height - band, size.width, band]);
+            boxes.push([0, 0, band, size.height], [size.width - band, 0, band, size.height]);
+        }
+        for (const b of on)
+            if (b.rect.width > 0 && b.rect.height > 0)
+                boxes.push([b.rect.x - pad, b.rect.y - pad, b.rect.width + pad * 2, b.rect.height + pad * 2]);
+        const out = disjoint(boxes, size);
+        if (out.length <= regionCount)
+            return out;
+        const all = bounds(on, frame, size);
+        return [all];
+    }
+
+    // Os retângulos ([x, y, largura, altura]), arredondados para fora em
+    // pixels inteiros e cortados na janela, refeitos sem sobreposição: em
+    // faixas horizontais entre as bordas de cima e de baixo de todos, com os
+    // trechos de cada faixa unidos, e a faixa igual à de cima emendada nela.
+    function disjoint(boxes: var, size: size): var {
+        const clipped = [];
+        for (const b of boxes) {
+            const x0 = Math.max(0, Math.floor(b[0])), y0 = Math.max(0, Math.floor(b[1]));
+            const x1 = Math.min(size.width, Math.ceil(b[0] + b[2])), y1 = Math.min(size.height, Math.ceil(b[1] + b[3]));
+            if (x1 > x0 && y1 > y0)
+                clipped.push([x0, y0, x1, y1]);
+        }
+        const ys = [...new Set(clipped.map(b => b[1]).concat(clipped.map(b => b[3])))].sort((a, b) => a - b);
+        const out = [];
+        let above = null;
+        for (let i = 0; i + 1 < ys.length; i++) {
+            const y0 = ys[i], y1 = ys[i + 1];
+            const spans = clipped.filter(b => b[1] <= y0 && b[3] >= y1).map(b => [b[0], b[2]]).sort((a, b) => a[0] - b[0]);
+            const merged = [];
+            for (const s of spans) {
+                const last = merged[merged.length - 1];
+                if (last && s[0] <= last[1])
+                    last[1] = Math.max(last[1], s[1]);
+                else
+                    merged.push([s[0], s[1]]);
+            }
+            const same = above && above.bottom === y0 && above.spans.length === merged.length && above.spans.every((s, k) => s[0] === merged[k][0] && s[1] === merged[k][1]);
+            if (same) {
+                for (const r of above.rects)
+                    r.height += y1 - y0;
+                above.bottom = y1;
+                continue;
+            }
+            const rects = merged.map(s => ({ x: s[0], y: y0, width: s[1] - s[0], height: y1 - y0 }));
+            out.push(...rects);
+            above = merged.length ? { bottom: y1, spans: merged, rects: rects } : null;
+        }
+        return out.map(r => Qt.rect(r.x, r.y, r.width, r.height));
     }
 
     // Os pedaços nas vagas do shader: rects[i] = [x, y, largura, altura] e

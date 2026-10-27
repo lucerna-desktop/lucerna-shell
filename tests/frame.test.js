@@ -134,6 +134,28 @@ function run(t) {
         t.eq(box(F.bounds([pill], 0, size)), [700 - pad, 0, 480 + pad * 2, 8 + 34 + pad], "a pílula com a folga, sem sair da janela");
     });
 
+    t.test("frame: as faixas do shader, sem sobreposição", () => {
+        const size = Qt.size(1920, 1080);
+        const box = q => [q.x, q.y, q.width, q.height];
+        const pad = F.smoothing + 2;
+        t.eq(F.regions([], 0, size), [], "nada: nenhuma faixa");
+        t.eq(F.regions([pill], 0, size).map(box), [[700 - pad, 0, 480 + pad * 2, 8 + 34 + pad]], "só a pílula: a área dela com a folga, cortada na janela");
+        const band = Math.ceil(F.thickness + F.radius + pad);
+        const framed = F.regions([], 1, size).map(box);
+        t.eq(framed, [[0, 0, 1920, band], [0, band, band, 1080 - band * 2], [1920 - band, band, band, 1080 - band * 2], [0, 1080 - band, 1920, band]], "a moldura: as quatro bordas, sem repetir os cantos");
+        // Nenhum pixel em duas faixas, e os cantos de cada pedaço cobertos.
+        const all = F.regions([pill, dash], 0.5, size);
+        const overlap = (a, b) => Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+        t.check(all.every((a, i) => all.every((b, j) => i === j || overlap(a, b) === 0)), "sem sobreposição");
+        const covered = (x, y) => all.some(r => x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height);
+        t.check([[0, 0], [1919, 1079], [500 - pad, 242 + pad - 1], [1419 + pad, 100], [960, 8 + 34 + pad - 1]].every(p => covered(p[0], p[1])), "a moldura e os pedaços com a folga");
+        t.check(!covered(960, 700), "o meio da tela fica sem shader");
+        t.check(all.length <= F.regionCount, "cabem nos ShaderEffects");
+        const many = Array.from({ length: 20 }, (_, i) => blob({ open: true, progress: 1, rect: Qt.rect(i * 90, (i % 2) * 300 + 200, 40, 40) }));
+        t.eq(F.regions(many, 0, size).map(box), [box(F.bounds(many, 0, size))], "faixas demais: a área inteira numa só");
+        t.eq(F.disjoint([[10.5, 10.2, 5, 5], [-5, -5, 3, 3], [0, 0, 0, 9]], size).map(box), [[10, 10, 6, 6]], "arredonda para fora e descarta o que fica fora ou vazio");
+    });
+
     t.test("frame: as vagas do shader", () => {
         const s = F.slots([pill, dash, blob({ rect: Qt.rect(0, 0, 0, 10) })], 0.5);
         t.eq(s.rects.length, F.slotCount);
