@@ -54,9 +54,9 @@ Um bloco só que sai da borda direita, com as ações em cima e as notificaçõe
 | **Gruvbox Dark** | **Nord** |
 | ![Tema Gruvbox Dark](docs/screenshots/theme-gruvbox.jpg) | ![Tema Nord](docs/screenshots/theme-nord.jpg) |
 
-A barra flutua no topo em dois estilos: **pílula** (o padrão, tudo à mostra) e **ilha** (só a hora, e expande com o mouse). Fica escondida até o mouse encostar no topo.
+A barra é uma aba fundida à borda de cima de uma moldura fina que aparece nos quatro lados da tela junto com ela. Fica escondida até o mouse encostar no topo; aí a moldura e a barra aparecem juntas, e recolhem juntas quando o mouse sai.
 
-![Os dois estilos da barra](docs/screenshots/bars.png)
+![A barra fundida à moldura](docs/screenshots/bars.png)
 
 ### Papel de parede
 
@@ -98,7 +98,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 
 | Parte | O que faz |
 | --- | --- |
-| **Barra** | Workspaces, hora e data, rede, som, bateria e notificações. Pílula ou ilha, flutuante, e se esconde sozinha. Na área de trabalho vazia fica sempre à mostra, e aparece por um instante ao trocar de workspace. |
+| **Barra** | Workspaces, hora e data, rede, som, bateria e notificações. Uma aba fundida à moldura da tela, que aparece com ela e se esconde sozinha. Na área de trabalho vazia fica sempre à mostra, e aparece por um instante ao trocar de workspace. |
 | **Painel superior** | Visão geral (perfil, relógio, calendário, clima, recursos e mídia, com a capa num círculo e o espectro do som em volta, pelo `lucernad`), mídia com letra sincronizada (LRCLIB) e o espectro em volta da capa, desempenho (CPU, GPU, memória, disco e rede) e clima (Open-Meteo, pelo `lucernad`): a cidade e o dia, o nascer e o pôr do sol, o agora e os próximos sete dias. Abas reordenáveis e opção de abrir ao parar o mouse na hora. |
 | **Central** | Dois painéis flutuantes na direita, independentes (`Super+A`, `Super+N`, os dois com `Super+C`, ou pelos ícones da barra): ações e notificações. As ações são tiles em duas colunas (Wi-Fi, Bluetooth, saída de áudio, bateria, microfone, luz noturna, não perturbe e não apagar a tela; cheios quando ligados), com uma página por recurso: a lista de redes, com senha; os dispositivos Bluetooth, para parear; as saídas e o volume de cada app com áudio aberto; o microfone e as entradas; a bateria (um card em forma de bateria, cheio até a carga), o perfil de energia (Economia, Equilibrado e Turbo), o consumo da última hora num gráfico e a bateria dos dispositivos Bluetooth. Embaixo, os sliders largos de volume e de brilho da tela em foco, com a porcentagem; a engrenagem abre as configurações. |
 | **Notificações** | Popups com ações, pausa no mouse e prazo ajustável, não perturbe e a lista na central. |
@@ -131,7 +131,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 | **Notificações** | Não perturbe e tempo na tela. |
 | **Painéis** | Se o painel superior abre junto das configurações. |
 | **Launcher** | Estilo, buscador da web, favoritos (ordem e remoção), apps ocultos e histórico de uso. |
-| **Barra** | Pílula ou ilha, data, mostrar na área vazia e ao trocar de workspace. |
+| **Barra** | Data, mostrar na área vazia e ao trocar de workspace. |
 | **Painel superior** | Abas, abrir e fechar pelo mouse, cartões, semana, letra, espectro da capa, intervalo do desempenho, GPU, cidade, unidades e **modo offline**. |
 | **Energia e bateria** | Porcentagem na barra, avisos, ação no nível crítico, perfil automático, economia abaixo de um nível e modo leve. |
 | **Atalhos** | As teclas do shell (painéis, bloqueio, som, mídia e brilho): trocar, acrescentar, tirar e voltar ao padrão. Avisa quando a tecla era de outro atalho, da aba Teclado ou do `hyprland.lua`. |
