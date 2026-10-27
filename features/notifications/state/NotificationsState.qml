@@ -32,8 +32,20 @@ Singleton {
                 Notifications.clearPopups();
         }
     }
-    readonly property var screen: Hypr.focusedScreen
     readonly property var popups: Notifications.popups
+    // Os popups ficam no monitor onde o primeiro apareceu enquanto houver
+    // algum à mostra, e até a próxima leva (a saída do último anima lá; ver
+    // Panels.screenFor).
+    property var shownOn: null
+    property bool hadPopups: false
+    readonly property var screen: Panels.screenFor(shownOn, Quickshell.screens, Hypr.focusedScreen)
+
+    onPopupsChanged: {
+        const has = popups.length > 0;
+        if (has && !hadPopups)
+            shownOn = Hypr.focusedScreen;
+        hadPopups = has;
+    }
     readonly property var list: Notifications.list
     readonly property bool doNotDisturb: Config.doNotDisturb
 

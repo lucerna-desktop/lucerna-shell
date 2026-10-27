@@ -21,7 +21,9 @@ Singleton {
     readonly property bool open: Panels.isOpen("central")
     readonly property bool actionsOpen: Panels.actionsOpen
     readonly property bool notificationsOpen: Panels.notificationsOpen
-    readonly property var screen: Hypr.focusedScreen
+    // Fica no monitor onde abriu (ver Panels.screenFor).
+    property var openedOn: null
+    readonly property var screen: Panels.screenFor(openedOn, Quickshell.screens, Hypr.focusedScreen)
     // O topo do bloco: encostado na moldura de cima (Frame), onde ele se funde.
     readonly property real top: Frame.thickness
 
@@ -37,6 +39,11 @@ Singleton {
     // A página do painel de ações: "" (os tiles e os sliders), "wifi",
     // "bluetooth", "output", "input" ou "battery".
     property string page: ""
+
+    onOpenChanged: {
+        if (open)
+            openedOn = Hypr.focusedScreen;
+    }
 
     // Zera só ao abrir as Ações: na saída, o card continua na página até sumir.
     onActionsOpenChanged: {

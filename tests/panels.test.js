@@ -295,4 +295,44 @@ function run(t) {
 
     P.close();
     C.panelsTogether = together0;
+    t.test("panels: a tela fica onde o painel abriu", () => {
+        t.eq(P.screenFor("A", ["A", "B"], "B"), "A", "o foco passou para B: continua em A");
+        t.eq(P.screenFor("A", ["B"], "B"), "B", "a tela A saiu: vai para a com foco");
+        t.eq(P.screenFor(null, ["A", "B"], "B"), "B", "nunca aberto: a com foco");
+    });
+
+    // Os painéis da moldura, o OSD e os popups gravam a tela ao abrir e ficam
+    // nela (a troca do foco de monitor é a função acima; aqui, a ligação).
+    t.test("panels: o painel superior, a central, o OSD e os popups gravam a tela", () => {
+        const D = t.DashboardState, K = t.CentralState, O = t.OsdState, S = t.NotificationsState, N = t.Notifications;
+        const screen = t.Hypr.focusedScreen;
+        const saved = [P.opened, D.openedOn, K.openedOn, O.shownOn, O.shown, O.armed, O.kind, S.shownOn, N.popups];
+        try {
+            P.opened = [];
+            D.openedOn = null;
+            K.openedOn = null;
+            P.opened = ["dashboard"];
+            t.check(D.openedOn === screen && D.screen === screen, "o painel superior grava a tela com foco");
+            P.opened = ["central"];
+            t.check(K.openedOn === screen && K.screen === screen, "a central também");
+            P.opened = [];
+            O.armed = true;
+            O.shown = false;
+            O.shownOn = null;
+            O.show("volume");
+            t.check(O.shownOn === screen && O.screen === screen, "o OSD grava a tela ao aparecer");
+            O.shownOn = "fora";
+            O.show("volume");
+            t.eq(O.shownOn, "fora", "já à mostra: não troca de tela");
+            N.popups = [];
+            S.shownOn = null;
+            N.popups = ["a"];
+            t.check(S.shownOn === screen, "o primeiro popup grava a tela");
+            S.shownOn = "fora";
+            N.popups = ["a", "b"];
+            t.eq(S.shownOn, "fora", "os seguintes ficam nela");
+        } finally {
+            [P.opened, D.openedOn, K.openedOn, O.shownOn, O.shown, O.armed, O.kind, S.shownOn, N.popups] = saved;
+        }
+    });
 }

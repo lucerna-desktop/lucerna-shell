@@ -45,6 +45,14 @@ Singleton {
         return companions.includes(name);
     }
 
+    // A tela de um painel que fica onde abriu: a da abertura (`openedOn`),
+    // enquanto ela estiver entre as telas (`screens`); senão, a com foco. O
+    // foco de monitor muda só com o mouse passando de um para o outro, e o
+    // painel não pode trocar de tela no meio da animação.
+    function screenFor(openedOn: var, screens: var, focused: var): var {
+        return openedOn && screens.includes(openedOn) ? openedOn : focused;
+    }
+
     function isPanel(name: string): bool {
         return names.includes(name);
     }

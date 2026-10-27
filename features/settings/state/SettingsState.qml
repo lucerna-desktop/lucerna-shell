@@ -18,7 +18,7 @@ Singleton {
     // Fica no monitor onde abriu (mudar o arranjo move o foco); se ele sumir,
     // vai para o que tem foco.
     property var openedOn: null
-    readonly property var screen: openedOn && Quickshell.screens.includes(openedOn) ? openedOn : Hypr.focusedScreen
+    readonly property var screen: Panels.screenFor(openedOn, Quickshell.screens, Hypr.focusedScreen)
 
     onOpenChanged: {
         if (open)

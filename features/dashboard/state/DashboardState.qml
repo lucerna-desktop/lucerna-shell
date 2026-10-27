@@ -14,7 +14,9 @@ Singleton {
     id: root
 
     readonly property bool open: Panels.isOpen("dashboard")
-    readonly property var screen: Hypr.focusedScreen
+    // Fica no monitor onde abriu (ver Panels.screenFor).
+    property var openedOn: null
+    readonly property var screen: Panels.screenFor(openedOn, Quickshell.screens, Hypr.focusedScreen)
     // A altura comum das abas: o painel não pula ao trocar de aba. O
     // Desempenho cabe nela com os anéis do disco e da memória de 109 px.
     readonly property int pageHeight: 300
@@ -38,6 +40,8 @@ Singleton {
 
     // Ao abrir: a última aba usada ou uma fixa.
     onOpenChanged: {
+        if (open)
+            openedOn = Hypr.focusedScreen;
         if (open && Config.dashboardStartTab !== "last" && tabs.some(t => t.id === Config.dashboardStartTab))
             Config.dashboardTab = Config.dashboardStartTab;
         if (!open) {
