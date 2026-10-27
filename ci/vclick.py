@@ -3,9 +3,14 @@
 (zwlr_virtual_pointer_v1, que o sway e o Hyprland têm), falando o protocolo
 Wayland direto no socket: a fumaça e o roteiro de teste clicam na pílula da
 barra sem ferramenta de fora. Só a biblioteca padrão. Com `move` no fim, só
-leva o ponteiro até lá, sem clicar (o mouse encostado no topo).
+leva o ponteiro até lá, sem clicar (o mouse encostado no topo). Com `--path`,
+um caminho num ponteiro só: `X,Y` move, um número espera tantos segundos e
+`click` clica onde está. No sway, o ponteiro some quando o processo sai (era
+o único), e a janela embaixo dele recebe a saída do mouse: um hover que
+precisa durar vai inteiro num `--path`.
 
     ci/vclick.py X Y [LARGURA ALTURA] [move]   (padrão 1920x1080, a saída da fumaça)
+    ci/vclick.py --path 960,0 0.3 960,21 1 click
 """
 
 import os
@@ -14,12 +19,26 @@ import struct
 import sys
 import time
 
-args = sys.argv[1:]
-only_move = args[-1:] == ["move"]
-if only_move:
-    args = args[:-1]
-x, y = int(args[0]), int(args[1])
-W, H = (int(args[2]), int(args[3])) if len(args) > 3 else (1920, 1080)
+W, H = 1920, 1080
+# Os passos: ("move", x, y), ("wait", segundos) ou ("click",).
+if sys.argv[1:2] == ["--path"]:
+    steps = []
+    for token in sys.argv[2:]:
+        if token == "click":
+            steps.append(("click",))
+        elif "," in token:
+            px, py = token.split(",")
+            steps.append(("move", int(px), int(py)))
+        else:
+            steps.append(("wait", float(token)))
+else:
+    args = sys.argv[1:]
+    only_move = args[-1:] == ["move"]
+    if only_move:
+        args = args[:-1]
+    if len(args) > 3:
+        W, H = int(args[2]), int(args[3])
+    steps = [("move", int(args[0]), int(args[1]))] + ([] if only_move else [("click",)])
 
 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 sock.connect(os.path.join(os.environ["XDG_RUNTIME_DIR"], os.environ["WAYLAND_DISPLAY"]))
@@ -69,16 +88,26 @@ if manager is None:
     sys.exit("sem zwlr_virtual_pointer_manager_v1")
 send(2, 0, struct.pack("<I", manager) + wstr("zwlr_virtual_pointer_manager_v1") + struct.pack("<II", 1, 4))
 send(4, 0, struct.pack("<II", 0, 5))  # create_virtual_pointer(seat nulo) -> 5
-t = int(time.monotonic() * 1000) & 0xFFFFFFFF
-send(5, 1, struct.pack("<IIIII", t, x, y, W, H))  # motion_absolute
-send(5, 4)  # frame
-if not only_move:
-    time.sleep(0.05)
-    send(5, 2, struct.pack("<III", t + 50, 0x110, 1))  # BTN_LEFT pressionado
-    send(5, 4)
-    time.sleep(0.05)
-    send(5, 2, struct.pack("<III", t + 100, 0x110, 0))  # solto
-    send(5, 4)
+
+
+
+def now():
+    return int(time.monotonic() * 1000) & 0xFFFFFFFF
+
+
+for step in steps:
+    if step[0] == "move":
+        send(5, 1, struct.pack("<IIIII", now(), step[1], step[2], W, H))  # motion_absolute
+        send(5, 4)  # frame
+    elif step[0] == "wait":
+        time.sleep(step[1])
+    else:
+        time.sleep(0.05)
+        send(5, 2, struct.pack("<III", now(), 0x110, 1))  # BTN_LEFT pressionado
+        send(5, 4)
+        time.sleep(0.05)
+        send(5, 2, struct.pack("<III", now(), 0x110, 0))  # solto
+        send(5, 4)
 send(1, 0, struct.pack("<I", 6))
 read_events(6)
 time.sleep(0.1)

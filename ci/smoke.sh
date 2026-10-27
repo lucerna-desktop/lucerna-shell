@@ -524,17 +524,18 @@ set_config() {
     sleep 1
 }
 # hover_pill <rótulo> <esperado no panels get> [move]: com `move`, encosta o
-# mouse no topo antes; clica na hora e confere o painel.
+# mouse no topo e desce até a hora com a barra descendo, num ponteiro só (no
+# sway, o ponteiro some com o processo, e a barra recolheria); clica na hora e
+# confere o painel.
 hover_pill() {
-    local got
+    local got path=("960,21" click)
     n=$((n + 1))
     timeout "$CMD_TIMEOUT" python3 -I "$repo/ci/vclick.py" 960 600 move || fail "mover o ponteiro falhou: $(why $?)"
     sleep 1
     if [ "${3:-}" = move ]; then
-        timeout "$CMD_TIMEOUT" python3 -I "$repo/ci/vclick.py" 960 0 move || fail "mover o ponteiro falhou: $(why $?)"
-        sleep 1
+        path=("960,0" 0.3 "960,21" 1 click)
     fi
-    timeout "$CMD_TIMEOUT" python3 -I "$repo/ci/vclick.py" 960 21 || fail "o clique na hora falhou: $(why $?)"
+    timeout "$CMD_TIMEOUT" python3 -I "$repo/ci/vclick.py" --path "${path[@]}" || fail "o clique na hora falhou: $(why $?)"
     sleep 1
     alive || fail "o shell caiu depois do clique na hora ($1)"
     got=$(ipc panels get) || fail "ipc call panels get falhou: $(why $?)"
