@@ -37,6 +37,9 @@ Singleton {
     readonly property int slotCount: 6
     // Quantas faixas a forma usa no máximo (um ShaderEffect cada; ver regions).
     readonly property int regionCount: 16
+    // A coluna da direita, onde os popups e o OSD saem sem a moldura: a janela
+    // da forma encolhe para ela (ver compactOn).
+    readonly property real column: 480
 
     // De que borda cada um sai.
     readonly property var edges: ({
@@ -78,13 +81,23 @@ Singleton {
     // Quanto da moldura aparece (0 a 1): o mais aberto dos painéis da moldura
     // nessa tela. A mola passa do alvo; a moldura não.
     function progressOn(screen: var): real {
-        return clamp(Math.max(0, ...blobs.filter(b => b.framed && b.screen === screen).map(b => b.progress)));
+        return progressIn(blobsOn(screen));
+    }
+
+    // O mesmo, sobre os pedaços já separados de uma tela (a janela da forma
+    // separa uma vez por quadro e deriva tudo deles).
+    function progressIn(parts: var): real {
+        return clamp(Math.max(0, ...parts.filter(b => b.framed).map(b => b.progress)));
     }
 
     // Quanto a barra dessa tela já virou painel (0 a 1): o mais aberto dos
     // pedaços `fromBar` (o painel superior).
     function morphOn(screen: var): real {
-        return clamp(Math.max(0, ...blobs.filter(b => b.fromBar && b.screen === screen).map(b => b.progress)));
+        return morphIn(blobsOn(screen));
+    }
+
+    function morphIn(parts: var): real {
+        return clamp(Math.max(0, ...parts.filter(b => b.fromBar).map(b => b.progress)));
     }
 
     // O conteúdo da barra esmaece logo no começo da transformação (até 40%)
@@ -156,6 +169,15 @@ Singleton {
         if (sides.includes("right"))
             w += overhang;
         return Qt.rect(x, y, w, h);
+    }
+
+    // Sem a moldura e com todos os pedaços (e a folga do arco) na coluna da
+    // direita, a janela da forma ocupa só a coluna: o Hyprland desfoca e
+    // recompõe a cada quadro só ela, não a tela inteira (um popup por cima de
+    // um vídeo). Muda só na passagem entre com e sem moldura.
+    function compactOn(on: var, frame: real, size: size): bool {
+        const pad = smoothing + 2;
+        return frame <= 0 && on.length > 0 && on.every(b => b.rect.x - pad >= size.width - column);
     }
 
     // A área que a forma ocupa na janela (tamanho `size`): a janela toda com a

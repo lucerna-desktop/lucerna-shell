@@ -6,22 +6,28 @@ import qs.core.theme
 
 // A forma da tela (ver Frame), desenhada por um shader: a moldura e os pedaços
 // ativos da tela `screen`, fundidos, na cor e na transparência da barra.
-// Preenche a janela, que fica no canto da tela. O shader roda só nas faixas
-// onde pode haver forma (Frame.regions): um ShaderEffect por faixa, todos com
-// as mesmas uniforms, cada um desenhando o seu pedaço da mesma forma. Parado,
-// não redesenha.
+// Preenche a janela, presa à borda direita da tela: a tela inteira, ou só a
+// coluna da direita (Frame.compactOn). Os pedaços e as faixas ficam em
+// coordenadas da tela; cada faixa é posta na janela descontando a origem dela.
+// O shader roda só nas faixas onde pode haver forma (Frame.regions): um
+// ShaderEffect por faixa, todos com as mesmas uniforms, cada um desenhando o
+// seu pedaço da mesma forma. Parado, não redesenha.
 Item {
     id: root
 
     required property var screen
-
-    readonly property var parts: Frame.blobsOn(screen)
-    readonly property real fuse: Frame.progressOn(screen)
-    readonly property var regions: Frame.regions(parts, fuse, Qt.size(width, height))
+    // Os pedaços ativos da tela e a abertura da moldura (Frame.blobsOn e
+    // Frame.progressIn), separados uma vez pela janela.
+    required property var parts
+    required property real fuse
+    readonly property size screenSize: Qt.size(screen?.width ?? width, screen?.height ?? height)
+    // Onde a janela começa na tela (presa à direita).
+    readonly property real originX: screenSize.width - width
+    readonly property var regions: Frame.regions(parts, fuse, screenSize)
     readonly property var packed: Frame.slots(parts, fuse)
 
     // As uniforms comuns a todas as faixas, calculadas uma vez por quadro.
-    readonly property vector4d frame: Qt.vector4d(Frame.thicknessAt(fuse), Frame.radius * fuse, screen?.width ?? width, screen?.height ?? height)
+    readonly property vector4d frame: Qt.vector4d(Frame.thicknessAt(fuse), Frame.radius * fuse, screenSize.width, screenSize.height)
     readonly property vector4d fill: vec(ThemeManager.glass(ThemeManager.colors.base, 0))
     readonly property vector4d edge: vec(ThemeManager.colors.border)
     readonly property real outline: ThemeManager.outlines ? 1 : 0
@@ -61,7 +67,7 @@ Item {
             required property int index
             readonly property rect region: index < root.regions.length ? root.regions[index] : Qt.rect(0, 0, 0, 0)
 
-            x: region.x
+            x: region.x - root.originX
             y: region.y
             width: region.width
             height: region.height

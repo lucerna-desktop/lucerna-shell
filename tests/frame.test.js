@@ -156,6 +156,22 @@ function run(t) {
         t.eq(F.disjoint([[10.5, 10.2, 5, 5], [-5, -5, 3, 3], [0, 0, 0, 9]], size).map(box), [[10, 10, 6, 6]], "arredonda para fora e descarta o que fica fora ou vazio");
     });
 
+    t.test("frame: sem a moldura, a janela da forma encolhe para a coluna da direita", () => {
+        const size = Qt.size(1920, 1080);
+        const right = blob({ open: true, progress: 1, rect: Qt.rect(1920 - 60, 400, 124, 220) });
+        t.check(F.compactOn([right], 0, size), "só o OSD na borda direita: a coluna");
+        t.check(!F.compactOn([right], 0.2, size), "com a moldura: a tela inteira");
+        t.check(!F.compactOn([right, dash], 0, size), "um pedaço fora da coluna: a tela inteira");
+        t.check(!F.compactOn([], 0, size), "sem pedaço, nada a encolher");
+    });
+
+    t.test("frame: a abertura e a transformação a partir dos pedaços da tela", () => {
+        const parts = [pill, blob({ framed: true, fromBar: true, progress: 0.4 }), blob({ progress: 0.9 })];
+        t.eq(F.progressIn(parts), 1, "a moldura: o mais aberto dos da moldura");
+        t.near(F.morphIn(parts), 0.4, 1e-9, "a transformação: o que sai da barra");
+        t.eq([F.progressIn([]), F.morphIn([])], [0, 0]);
+    });
+
     t.test("frame: as vagas do shader", () => {
         const s = F.slots([pill, dash, blob({ rect: Qt.rect(0, 0, 0, 10) })], 0.5);
         t.eq(s.rects.length, F.slotCount);
