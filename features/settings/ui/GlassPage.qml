@@ -70,15 +70,31 @@ Column {
         title: "Desfoque"
 
         SettingRow {
+            wide: true
             icon: SettingsState.blur ? Icons.blur : Icons.blurOff
             title: "Desfocar o fundo"
-            description: SettingsState.blurAvailable ? "Feito pelo Hyprland; só aparece com os painéis translúcidos" : "Precisa do Hyprland com configuração em Lua"
-            dimmed: !SettingsState.transparency
+            description: SettingsState.blurAvailable ? `${SettingsState.blurModeDescription}. Feito pelo Hyprland; só aparece com os painéis translúcidos` : "Precisa do Hyprland com configuração em Lua"
+            dimmed: !SettingsState.transparency || !SettingsState.blurAvailable
+
+            SegmentedControl {
+                width: parent.width
+                options: SettingsState.blurModeOptions
+                value: SettingsState.blurMode
+                enabled: SettingsState.transparency && SettingsState.blurAvailable
+                onSelected: v => SettingsState.setBlurMode(v)
+            }
+        }
+
+        SettingRow {
+            icon: Icons.blur
+            title: "Desfocar as janelas"
+            description: "Janelas translúcidas; religar recarrega a config do Hyprland"
+            dimmed: !SettingsState.blurAvailable
 
             Switch {
-                checked: SettingsState.blur
-                enabled: SettingsState.transparency && SettingsState.blurAvailable
-                onToggled: on => SettingsState.setBlur(on)
+                checked: SettingsState.blurWindows
+                enabled: SettingsState.blurAvailable
+                onToggled: on => SettingsState.setBlurWindows(on)
             }
         }
 
