@@ -111,6 +111,25 @@ Adiadas na revisão do módulo `power` do `lucernad` (lucernad#14) e do shell (P
   - um `1003` no meio do arrasto marca a tela com erro e o slider da central passa para a próxima tela;
   - o `busctl` continua na imagem do container (vem do systemd do Arch base), embora o shell não o use mais.
 
+## Sobras do módulo de rede externa
+
+Adiadas na revisão do módulo `web` do `lucernad` (lucernad#17) e do shell (PR #52).
+
+- [ ] **Vagalume não testado na máquina real:** a API (`api.vagalume.com.br`) respondeu 503 durante todo o desenvolvimento, inclusive a documentação e os termos. Quando voltar: conferir o formato da resposta (`type` `exact`/`aprox`), colar a chave nas Configurações e testar uma faixa brasileira que a LRCLIB não tenha.
+- [ ] **lucernad:**
+  - letra em erro não tem nova tentativa automática (só ao reabrir a aba, no `web.refresh` ou na volta da conexão);
+  - com a chave do Vagalume, uma faixa instrumental é buscada de novo a cada vez que toca;
+  - a busca de cidade em andamento não é cancelada quando o modo offline liga, e há uma corrida curta entre a troca da conexão e a busca;
+  - o clima fica em `loading` ou com o erro de offline já superado enquanto não há assinante, e aparece um `loading` passageiro quando um `configure` troca a cidade e liga o offline juntos;
+  - a normalização faz as minúsculas depois de tirar os acentos (`İstanbul` vira `i stanbul`); o sufixo só é reconhecido depois de ` - ` com hífen comum (não ` – ` nem ` — `); os formatadores bidi (Cf) não são removidos do texto (o shell passa pelo `plain()`);
+  - o cache: a poda varre as duas pastas, mas só confere a do tipo gravado (um link na outra apagaria `.json` fora do cache), e a leitura segue link (um FIFO no lugar do arquivo trava a leitura);
+  - a conectividade: o `PropertiesChanged` não filtra pela interface do NetworkManager; há uma janela estreita no `watch()` em que um receptor novo fica num canal morto;
+  - testes: o corpo lido em pedaços (resposta sem `Content-Length`) não tem teste; o `LocalServer` solto não fecha as conexões abertas; o `base_from_env` aceita porta com zero à esquerda; falta teste do `--lat`/`--lon` negativos na linha de comando; umidade e chance de chuva saem como `58.0` (o shell não se importa).
+- [ ] **Shell:**
+  - o "Hoje" e a data do topo da aba Clima usam a data da máquina, e os dias vêm pela data da cidade: com a cidade em outro fuso, perto da meia-noite, os dois podem divergir;
+  - a barra de ações rápidas do Painel não tem navegação pelo teclado (o Tab do painel troca de aba); se fizer falta, as setas;
+  - sem teste do `openLink` (só `https://`) da página Créditos nem do `openSettings` da aba Clima.
+
 ## Depois
 
 - [ ] Aba Desempenho: um medidor de bateria em forma de pilha, só no notebook. Rascunhos de três encaixes (ao lado de CPU e GPU, em pé ao lado da Memória, faixa embaixo) em `.superpowers/brainstorm/436361-1792526405/content/bateria-desempenho.html`; o usuário quer planejar melhor antes.
