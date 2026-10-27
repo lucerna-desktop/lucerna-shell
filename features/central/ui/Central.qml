@@ -97,7 +97,9 @@ OverlayPanel {
         id: focusSink
     }
 
-    // O bloco: dos painéis à mostra até a borda direita.
+    // O bloco: dos painéis à mostra até a borda direita. Encostado na moldura
+    // de cima (e na de baixo, com as Notificações até o fim), fica preso a ela
+    // também: o canto vira a junção côncava da forma, não um canto próprio.
     readonly property var parts: [actions, inbox].filter(c => c.visible)
 
     FrameBlob {
@@ -112,7 +114,8 @@ OverlayPanel {
             const x = Math.min(...parts.map(c => c.x));
             const top = Math.min(...parts.map(c => c.y));
             const bottom = Math.max(...parts.map(c => c.y + c.height));
-            return Frame.attach(Qt.rect(x, top, panel.width - x, bottom - top), Frame.edges.central);
+            const edge = (top <= CentralState.top + 0.5 ? "top-" : "") + Frame.edges.central + (bottom >= panel.height - panel.margin - 0.5 ? "-bottom" : "");
+            return Frame.attach(Qt.rect(x, top, panel.width - x, bottom - top), edge);
         }
     }
 
