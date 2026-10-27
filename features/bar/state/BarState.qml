@@ -15,9 +15,10 @@ import qs.services
 // tela (ver Frame); quando ela aparece, a moldura aparece junto, nos quatro
 // lados, e as duas recolhem juntas. Fica escondida e aparece na tela onde o
 // mouse encostou no topo (ou, por um instante, ao trocar de workspace). Some
-// quando o mouse sai e quando um painel centralizado abre; não aparece por
-// cima de uma janela em tela cheia. Na área de trabalho vazia (sem janelas no
-// workspace daquela tela), fica à mostra: não cobre nada. Com um painel da
+// quando o mouse sai e quando um painel centralizado abre. Na área de trabalho
+// vazia (sem janelas no workspace daquela tela), fica à mostra: não cobre
+// nada. Sobre uma janela em tela cheia de verdade (um jogo, um vídeo; a
+// maximizada não conta), só o mouse no topo a traz. Com um painel da
 // moldura aberto, fica à mostra: por cima da central, clicável; com o painel
 // superior, ela se transforma nele (ver Frame.morphOn).
 Singleton {
@@ -29,15 +30,36 @@ Singleton {
     readonly property bool panelOpen: Panels.anyOpen
     property var revealedScreen: null
     property bool hovering: false
+    // Revelada pela troca de workspace, não pelo mouse.
+    property bool peeking: false
 
     function shownOn(screen: var): bool {
-        if (Frame.fusedOn(screen))
+        // O vazio e a tela cheia só são lidos quando decidem (getters).
+        return decide({
+            fused: Frame.fusedOn(screen),
+            panelOpen: panelOpen,
+            revealed: revealedScreen === screen,
+            peeking: peeking,
+            get empty() {
+                return Config.barOnEmpty && Hypr.isScreenEmpty(screen);
+            },
+            get fullscreen() {
+                return Hypr.hasRealFullscreen(screen);
+            }
+        });
+    }
+
+    // A regra, sem os serviços: fundida a um painel da moldura, fica; com um
+    // painel aberto, some; o mouse no topo sempre a traz; a troca de
+    // workspace e o workspace vazio, só fora de uma tela cheia de verdade.
+    function decide(s: var): bool {
+        if (s.fused)
             return true;
-        if (panelOpen)
+        if (s.panelOpen)
             return false;
-        if (revealedScreen !== screen && !(Config.barOnEmpty && Hypr.isScreenEmpty(screen)))
-            return false;
-        return !Hypr.hasFullscreen(screen);
+        if (s.revealed && !s.peeking)
+            return true;
+        return (s.revealed || s.empty) && !s.fullscreen;
     }
 
     // O topo da barra, encostada na borda de cima (aberta, `progress` 1) ou
@@ -49,15 +71,18 @@ Singleton {
     // Mouse encostou no topo da tela.
     function reveal(screen: var): void {
         revealedScreen = screen;
+        peeking = false;
         hideDelay.stop();
     }
 
     function setHovering(on: bool): void {
         hovering = on;
-        if (on)
+        if (on) {
+            peeking = false;
             hideDelay.stop();
-        else
+        } else {
             hideDelay.restart();
+        }
     }
 
     // Aparece por um instante (troca de workspace).
@@ -65,6 +90,7 @@ Singleton {
         if (panelOpen)
             return;
         revealedScreen = screen;
+        peeking = true;
         peekDelay.restart();
     }
 
@@ -83,6 +109,7 @@ Singleton {
 
         interval: 1400
         onTriggered: {
+            root.peeking = false;
             if (!root.hovering)
                 root.revealedScreen = null;
         }

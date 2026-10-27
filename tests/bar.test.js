@@ -12,6 +12,7 @@ function run(t) {
     function withFrame(name, open, body) {
         t.test(name, () => {
             const blobs0 = F.blobs, opened0 = P.opened, revealed0 = B.revealedScreen;
+            const peeking0 = B.peeking, hovering0 = B.hovering;
             try {
                 F.blobs = [{ screen: "A", role: "panel", framed: true, open: open, progress: open ? 1 : 0, rect: Qt.rect(0, 0, 10, 10) }];
                 body();
@@ -19,6 +20,8 @@ function run(t) {
                 F.blobs = blobs0;
                 P.opened = opened0;
                 B.revealedScreen = revealed0;
+                B.peeking = peeking0;
+                B.hovering = hovering0;
             }
         });
     }
@@ -34,6 +37,45 @@ function run(t) {
         t.check(!B.shownOn("A"), "o mouse no topo não traz a pílula por cima do launcher");
         B.peek("A");
         t.eq(B.revealedScreen, "A", "a troca de workspace não mexe nela com um painel aberto");
+    });
+
+    withFrame("bar: o mouse no topo traz a barra; a troca de workspace também", false, () => {
+        const onEmpty0 = t.Config.barOnEmpty;
+        try {
+            t.Config.barOnEmpty = false;
+            P.opened = [];
+            B.reveal("A");
+            t.check(B.shownOn("A") && !B.peeking, "o mouse no topo");
+            t.check(!B.shownOn("B"), "só na tela onde encostou");
+            // Uma tela de verdade: a tela cheia é lida do Hyprland (fora dele, nenhuma).
+            const screen = t.screens[0];
+            B.peek(screen);
+            t.check(B.peeking && B.shownOn(screen), "a troca de workspace, sem tela cheia");
+            B.setHovering(true);
+            t.check(!B.peeking, "o mouse em cima dela durante a troca: passa a valer o mouse");
+        } finally {
+            t.Config.barOnEmpty = onEmpty0;
+        }
+    });
+
+    t.test("bar: a regra de quando ela aparece", () => {
+        const base = { fused: false, panelOpen: false, revealed: false, peeking: false, empty: false, fullscreen: false };
+        const at = over => B.decide(Object.assign({}, base, over));
+        t.check(!at({}), "sem motivo, escondida");
+        t.check(at({ revealed: true }), "o mouse no topo");
+        t.check(at({ revealed: true, fullscreen: true }), "o mouse no topo, mesmo sobre a tela cheia");
+        t.check(at({ revealed: true, peeking: true }), "a troca de workspace");
+        t.check(!at({ revealed: true, peeking: true, fullscreen: true }), "a troca de workspace não cobre a tela cheia");
+        t.check(at({ empty: true }) && !at({ empty: true, fullscreen: true }), "o workspace vazio, fora da tela cheia");
+        t.check(!at({ revealed: true, panelOpen: true }), "um painel centralizado aberto esconde");
+        t.check(at({ fused: true, panelOpen: true, fullscreen: true }), "fundida a um painel da moldura, sempre");
+    });
+
+    withFrame("bar: ao abrir o painel superior, o mouse conta como fora", true, () => {
+        P.opened = [];
+        B.setHovering(true);
+        P.opened = ["dashboard"];
+        t.check(!B.hovering, "a barra virou o painel e não vê a saída do mouse");
     });
 
     t.test("bar: o topo da barra desce com a moldura", () => {

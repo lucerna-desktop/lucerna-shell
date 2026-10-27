@@ -46,9 +46,18 @@ Singleton {
         return !ws || ws.toplevels.values.length === 0;
     }
 
-    // Para o wallpaper animado: o que está à mostra em cada tela.
+    // Para o wallpaper animado: o que está à mostra em cada tela. Conta também
+    // a janela maximizada (o modo 1 de tela cheia do Hyprland).
     function hasFullscreen(screen: var): bool {
         return Hyprland.monitorFor(screen)?.activeWorkspace?.hasFullscreen ?? false;
+    }
+
+    // Tela cheia de verdade (o bit 2 do modo, o de um jogo ou vídeo), não a
+    // janela maximizada. O modo vem do `lastIpcObject`, renovado no evento
+    // `fullscreen`.
+    function hasRealFullscreen(screen: var): bool {
+        const ws = Hyprland.monitorFor(screen)?.activeWorkspace;
+        return ws?.hasFullscreen === true && ws.toplevels.values.some(t => ((t.lastIpcObject?.fullscreen ?? 0) & 2) !== 0);
     }
 
     // Tela apagada (DPMS). O Quickshell não tem essa propriedade: vem dos dados
@@ -63,6 +72,8 @@ Singleton {
         function onRawEvent(event) {
             if (event.name.startsWith("monitor") || event.name === "dpms")
                 Hyprland.refreshMonitors();
+            if (event.name === "fullscreen")
+                Hyprland.refreshToplevels();
             if (["openwindow", "closewindow", "movewindow", "movewindowv2", "changefloatingmode", "fullscreen"].includes(event.name))
                 root.windowsChanged();
         }

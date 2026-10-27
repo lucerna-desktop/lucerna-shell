@@ -507,6 +507,47 @@ click_pill dashboard
 click_pill dashboard
 ipc panels close > /dev/null || fail "ipc call panels close falhou: $(why $?)"
 sleep 1
+# A barra sobre as janelas: sem o "Sempre visível sem janelas", ela fica
+# escondida (o clique na altura da hora não abre nada) e o mouse encostado no
+# topo a traz (o clique na hora abre o painel superior). No Hyprland, isso vale
+# também com uma janela maximizada (só a tela cheia de verdade segura a troca
+# de workspace); o sway da fumaça não tem o Hyprland, então o teste da
+# maximizada fica no roteiro do container (dev/test.sh).
+# set_config <json>: mescla o objeto no config.json do shell, que vigia
+# o arquivo e recarrega.
+set_config() {
+    local file
+    file=$(find "$XDG_STATE_HOME/quickshell" -name config.json -print -quit)
+    [ -n "$file" ] || fail "não achei o config.json do shell em $XDG_STATE_HOME/quickshell"
+    python3 -I -c 'import json, sys; d = json.load(open(sys.argv[1])); d.update(json.loads(sys.argv[2])); json.dump(d, open(sys.argv[1], "w"), indent=4)' "$file" "$1" \
+        || fail "não consegui mudar o config.json ($1)"
+    sleep 1
+}
+# hover_pill <rótulo> <esperado no panels get> [move]: com `move`, encosta o
+# mouse no topo antes; clica na hora e confere o painel.
+hover_pill() {
+    local got
+    n=$((n + 1))
+    timeout "$CMD_TIMEOUT" python3 -I "$repo/ci/vclick.py" 960 600 move || fail "mover o ponteiro falhou: $(why $?)"
+    sleep 1
+    if [ "${3:-}" = move ]; then
+        timeout "$CMD_TIMEOUT" python3 -I "$repo/ci/vclick.py" 960 0 move || fail "mover o ponteiro falhou: $(why $?)"
+        sleep 1
+    fi
+    timeout "$CMD_TIMEOUT" python3 -I "$repo/ci/vclick.py" 960 21 || fail "o clique na hora falhou: $(why $?)"
+    sleep 1
+    alive || fail "o shell caiu depois do clique na hora ($1)"
+    got=$(ipc panels get) || fail "ipc call panels get falhou: $(why $?)"
+    row "$1" "$2" "${got:-(nenhum)}"
+    [ "$got" = "$2" ] || fail "$1: o panels get trouxe \"$got\"; o esperado era \"${2:-nenhum}\""
+    shot "$out/shots/$(printf '%02d' "$n")-barra-hover.png" || fail "o grim não capturou $1: $(why $?)"
+    ipc panels close > /dev/null || fail "ipc call panels close falhou: $(why $?)"
+    sleep 1
+}
+set_config '{"barOnEmpty": false, "barPeek": false}'
+hover_pill "barra escondida: clique na hora" ""
+hover_pill "mouse no topo: clique na hora" dashboard move
+set_config '{"barOnEmpty": true, "barPeek": true}'
 for topic in appearance wallpaper displays idle nightlight launcher clipboard capture mouse keyboard glass \
     notifications panels bar dashboard power shortcuts credits about; do
     step settings settings open "$topic"
