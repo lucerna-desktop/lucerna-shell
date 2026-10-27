@@ -142,6 +142,12 @@ Singleton {
         }
     }
 
+    // Recarrega o hyprland.lua (hyprctl reload); quem aplica algo por cima
+    // reaplica pelo configReloaded.
+    function reloadConfig(): void {
+        Quickshell.execDetached(["hyprctl", "reload"]);
+    }
+
     // Executa Lua na config em uso, sem gravar no arquivo (hyprctl eval).
     function evalLua(lua: string): void {
         Quickshell.execDetached(["hyprctl", "eval", lua]);

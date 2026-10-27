@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import qs.core.carousel
+import qs.core.config
 import qs.core.panels
 import qs.core.theme
 import qs.services
@@ -116,8 +117,12 @@ Singleton {
 
     // Integração com o Hyprland
     readonly property string hyprlandConfig: Hypr.usingLua ? toLua(ThemeManager.hyprland) : ""
-    readonly property string blurRule: Hypr.usingLua ? blurLua(ThemeManager.transparency.enabled && ThemeManager.blur.enabled) : ""
-    readonly property string blurConfig: Hypr.usingLua ? `hl.config({ decoration = { blur = { size = ${ThemeManager.blur.size}, passes = ${ThemeManager.blur.passes} } } })` : ""
+    readonly property string blurRule: Hypr.usingLua ? blurLua(ThemeManager.blur.mode, ThemeManager.transparency.enabled) : ""
+    readonly property string blurConfig: Hypr.usingLua ? blurConfigLua(ThemeManager.blur.size, ThemeManager.blur.passes) : ""
+    // Janelas sem desfoque (Config.blurWindows desligado): uma regra de janela.
+    readonly property string windowRule: Hypr.usingLua && !Config.blurWindows ? windowBlurLua() : ""
+    // A regra de janela já foi enviada: religar precisa do reload.
+    property bool windowRuleSent: false
 
     onHyprlandConfigChanged: {
         if (hyprlandConfig)
@@ -128,6 +133,19 @@ Singleton {
     onBlurRuleChanged: {
         if (blurRule)
             Hypr.evalLua(blurRule);
+    }
+
+    // Desligar envia a regra. Religar não manda a regra contrária (desfaria um
+    // no_blur do próprio usuário): recarrega a config do Hyprland, que apaga a
+    // regra, e o reapply() manda de volta o que é do shell.
+    onWindowRuleChanged: {
+        if (windowRule) {
+            Hypr.evalLua(windowRule);
+            windowRuleSent = true;
+        } else if (windowRuleSent) {
+            windowRuleSent = false;
+            Hypr.reloadConfig();
+        }
     }
 
     // Intensidade do desfoque: com atraso, para não mandar um comando por
@@ -153,6 +171,10 @@ Singleton {
         blurDelay.start();
         if (frameRule)
             Hypr.evalLua(frameRule);
+        if (windowRule) {
+            Hypr.evalLua(windowRule);
+            windowRuleSent = true;
+        }
     }
 
     // Um `hyprctl reload` apaga as regras de camada e a config aplicadas por
@@ -166,21 +188,48 @@ Singleton {
     }
 
     function reapply(): void {
-        for (const lua of [root.hyprlandConfig, root.blurRule, root.blurConfig, root.frameRule])
-            if (lua)
-                Hypr.evalLua(lua);
+        for (const lua of rules(Hypr.usingLua))
+            Hypr.evalLua(lua);
+    }
+
+    // O que o shell aplica por cima do hyprland.lua (e reaplica depois de um
+    // reload). Sem a config em Lua, nada.
+    function rules(lua: bool): var {
+        if (!lua)
+            return [];
+        const list = [toLua(ThemeManager.hyprland), blurLua(ThemeManager.blur.mode, ThemeManager.transparency.enabled), blurConfigLua(ThemeManager.blur.size, ThemeManager.blur.passes), noAnimLua()];
+        if (!Config.blurWindows)
+            list.push(windowBlurLua());
+        return list.filter(x => x);
     }
 
     function noAnimLua(): string {
         return `hl.layer_rule({ match = { namespace = "^lucerna-(panel-bar|frame-.*)$" }, no_anim = true })`;
     }
 
-    // Desfoque atrás dos painéis do shell ("lucerna-panel-*"). O ignore_alpha
+    // Desfoque atrás dos painéis do shell ("lucerna-panel-*"), pelo nível
+    // (ThemeManager.blurModes) e só com a transparência ligada. O ignore_alpha
     // restringe o desfoque aos pixels quase opacos: o véu escuro atrás dos
     // painéis (no máximo 40%) e as sobras transparentes ficam de fora. Por
-    // isso a opacidade dos painéis não desce de 50%.
-    function blurLua(enabled: bool): string {
-        return `hl.layer_rule({ match = { namespace = "^lucerna-panel-.*" }, blur = ${enabled}, ignore_alpha = 0.45 })`;
+    // isso a opacidade dos painéis não desce de 50%. No nível "performance", o
+    // xray: a camada desfoca só o fundo (papel de parede e camadas de baixo),
+    // que o Hyprland guarda e reaproveita, em vez das janelas atrás dela.
+    function blurLua(mode: string, transparency: bool): string {
+        return `hl.layer_rule({ match = { namespace = "^lucerna-panel-.*" }, blur = ${transparency && mode !== "off"}, xray = ${mode === "performance"}, ignore_alpha = 0.45 })`;
+    }
+
+    // Intensidade do desfoque, com o que não custa nada na aparência: vfr (no
+    // 0.56 é debug:vfr), as otimizações do desfoque e nada de desfoque nos
+    // popups. Nunca mexe no decoration.blur.enabled: isso mataria também o
+    // desfoque das camadas.
+    function blurConfigLua(size: int, passes: int): string {
+        return `hl.config({ debug = { vfr = true }, decoration = { blur = { size = ${size}, passes = ${passes}, new_optimizations = true, popups = false } } })`;
+    }
+
+    // Janelas sem desfoque. Só no_blur = true: o contrário apagaria um no_blur
+    // que o usuário tenha na config dele.
+    function windowBlurLua(): string {
+        return `hl.window_rule({ match = { class = ".*" }, no_blur = true })`;
     }
 
     function toLua(h: var): string {
