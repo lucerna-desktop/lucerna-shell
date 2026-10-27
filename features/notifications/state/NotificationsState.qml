@@ -33,7 +33,6 @@ Singleton {
         }
     }
     readonly property var screen: Hypr.focusedScreen
-    readonly property real topOffset: Panels.topInset
     readonly property var popups: Notifications.popups
     readonly property var list: Notifications.list
     readonly property bool doNotDisturb: Config.doNotDisturb
