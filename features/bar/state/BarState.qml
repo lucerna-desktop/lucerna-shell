@@ -20,7 +20,10 @@ import qs.services
 // nada. Sobre uma janela em tela cheia de verdade (um jogo, um vídeo; a
 // maximizada não conta), só o mouse no topo a traz. Com um painel da
 // moldura aberto, fica à mostra: por cima da central, clicável; com o painel
-// superior, ela se transforma nele (ver Frame.morphOn).
+// superior, ela se transforma nele (ver Frame.morphOn). A ação `bar` (um
+// atalho) a revela na tela com foco e a esconde no segundo toque. No modo jogo
+// (com o item ligado), o mouse no topo e a troca de workspace não a trazem;
+// a ação `bar` ainda traz.
 Singleton {
     id: root
 
@@ -32,6 +35,10 @@ Singleton {
     property bool hovering: false
     // Revelada pela troca de workspace, não pelo mouse.
     property bool peeking: false
+    // Revelada pela ação `bar` (o atalho), até o segundo toque ou o mouse sair dela.
+    property var pinnedScreen: null
+    // O modo jogo prende a barra: só a ação `bar` a revela.
+    readonly property bool gameLocked: GameMode.active && Config.gameBar
 
     function shownOn(screen: var): bool {
         // O vazio e a tela cheia só são lidos quando decidem (getters).
@@ -40,6 +47,8 @@ Singleton {
             panelOpen: panelOpen,
             revealed: revealedScreen === screen,
             peeking: peeking,
+            pinned: pinnedScreen === screen,
+            gameLocked: gameLocked,
             get empty() {
                 return Config.barOnEmpty && Hypr.isScreenEmpty(screen);
             },
@@ -50,13 +59,18 @@ Singleton {
     }
 
     // A regra, sem os serviços: fundida a um painel da moldura, fica; com um
-    // painel aberto, some; o mouse no topo sempre a traz; a troca de
-    // workspace e o workspace vazio, só fora de uma tela cheia de verdade.
+    // painel aberto, some; a ação `bar` sempre a traz; o mouse no topo também,
+    // fora do modo jogo; a troca de workspace (também fora do modo jogo) e o
+    // workspace vazio, só fora de uma tela cheia de verdade.
     function decide(s: var): bool {
         if (s.fused)
             return true;
         if (s.panelOpen)
             return false;
+        if (s.pinned)
+            return true;
+        if (s.gameLocked)
+            return s.empty && !s.fullscreen;
         if (s.revealed && !s.peeking)
             return true;
         return (s.revealed || s.empty) && !s.fullscreen;
@@ -68,8 +82,10 @@ Singleton {
         return -(1 - progress) * height;
     }
 
-    // Mouse encostou no topo da tela.
+    // Mouse encostou no topo da tela (no modo jogo, não traz).
     function reveal(screen: var): void {
+        if (gameLocked)
+            return;
         revealedScreen = screen;
         peeking = false;
         hideDelay.stop();
@@ -88,11 +104,21 @@ Singleton {
     // Aparece por um instante (troca de workspace). Com o mouse em cima dela
     // (a roda nos workspaces), vale o mouse: a tela cheia não a esconde.
     function peek(screen: var): void {
-        if (panelOpen)
+        if (panelOpen || gameLocked)
             return;
         revealedScreen = screen;
         peeking = !hovering;
         peekDelay.restart();
+    }
+
+    // A ação `bar`: revela na tela dada; na mesma tela, o segundo toque esconde.
+    function togglePinned(screen: var): void {
+        if (pinnedScreen === screen) {
+            pinnedScreen = null;
+            return;
+        }
+        pinnedScreen = screen;
+        hideDelay.stop();
     }
 
     Timer {
@@ -100,8 +126,19 @@ Singleton {
 
         interval: 450
         onTriggered: {
-            if (!root.hovering)
+            if (!root.hovering) {
                 root.revealedScreen = null;
+                root.pinnedScreen = null;
+            }
+        }
+    }
+
+    // A ação `bar` vem pelo Panels (a feature input não importa a barra).
+    Connections {
+        target: Panels
+
+        function onBarToggleRequested(screen: var): void {
+            root.togglePinned(screen);
         }
     }
 

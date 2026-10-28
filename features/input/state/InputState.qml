@@ -203,6 +203,12 @@ Singleton {
         case "dnd":
             Config.doNotDisturb = !Config.doNotDisturb;
             break;
+        case "game":
+            GameMode.toggle();
+            break;
+        case "bar":
+            Panels.requestBarToggle(Hypr.focusedScreen);
+            break;
         case "play-pause":
             Media.togglePlaying();
             break;

@@ -46,4 +46,22 @@ function run(t) {
     t.test("wallpaper: sem desfoque, não pausa", () => {
         t.eq(W.blurCovers(a, false, [{ screen: a, visible: true, open: true }], [{ targetScreen: a, visible: true, parts: panel }]), false);
     });
+
+    t.test("wallpaper: o modo jogo pausa o papel", () => {
+        t.eq([W.gamePauses(true, true), W.gamePauses(false, true)], [true, false]);
+        const G = t.GameMode;
+        const was = G.active;
+        const screen = t.screens[0] ?? a;
+        try {
+            G.active = true;
+            t.eq(W.shouldAnimate(screen), false, "com o item ligado (o padrão), pausa");
+        } finally {
+            G.active = was;
+        }
+        t.eq(G.active, was, "estado original restaurado");
+    });
+
+    t.test("wallpaper: a pausa do modo jogo respeita o item", () => {
+        t.eq(W.gamePauses(true, false), false);
+    });
 }

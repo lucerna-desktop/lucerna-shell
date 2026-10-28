@@ -67,8 +67,11 @@ Singleton {
     // Se o animado deve rodar agora. Pausado, o último quadro fica na tela e o
     // custo cai a zero (nada redesenha). Tela bloqueada, app em tela cheia ou
     // tela apagada pausam; no modo estrito, qualquer janela no workspace também.
-    // Também pausa sob um painel desfocado (blurCovers).
+    // Também pausa sob um painel desfocado (blurCovers) e, antes de tudo, no
+    // modo jogo (gamePauses).
     function shouldAnimate(screen: var): bool {
+        if (gamePauses(GameMode.active, Config.gameWallpaper))
+            return false;
         if (!showsEffect(screen) || Session.locked)
             return false;
         if (blurCovers(screen, ThemeManager.transparency.enabled && ThemeManager.blur.enabled, Panels.surfaces, Frame.windows))
@@ -78,6 +81,12 @@ Singleton {
         if (Config.wallpaperStrict && !Hypr.isScreenEmpty(screen))
             return false;
         return true;
+    }
+
+    // O modo jogo pausa o papel (o mesmo caminho das outras pausas: o último
+    // quadro fica), se o item estiver ligado nas configurações.
+    function gamePauses(active: bool, enabled: bool): bool {
+        return active && enabled;
     }
 
     // Uma camada desfocada grande cobre a tela: um painel aberto (surfaces com

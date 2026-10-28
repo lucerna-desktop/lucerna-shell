@@ -49,11 +49,18 @@ Singleton {
     readonly property var list: Notifications.list
     readonly property bool doNotDisturb: Config.doNotDisturb
 
-    // O "não perturbe" e o tempo dos popups são salvos na config e repassados ao serviço.
+    // O "não perturbe" do serviço: o do usuário (salvo na config) ou o do modo
+    // jogo, um segundo interruptor que não grava nada (o do usuário continua
+    // dele quando o modo sai).
+    function quietFor(userDnd: bool, gameActive: bool, gameQuiet: bool): bool {
+        return userDnd || (gameActive && gameQuiet);
+    }
+
+    // O tempo dos popups é salvo na config e repassado ao serviço.
     Binding {
         target: Notifications
         property: "doNotDisturb"
-        value: Config.doNotDisturb
+        value: root.quietFor(Config.doNotDisturb, GameMode.active, Config.gameQuiet)
     }
 
     Binding {

@@ -29,6 +29,8 @@ Singleton {
         { id: "power", keys: [{ mods: mod, trigger: "Escape" }] },
         { id: "lock", keys: [{ mods: mod, trigger: "l" }] },
         { id: "dnd", keys: [] },
+        { id: "game", keys: [] },
+        { id: "bar", keys: [] },
         { id: "volume-up", keys: [{ mods: "", trigger: "XF86AudioRaiseVolume" }] },
         { id: "volume-down", keys: [{ mods: "", trigger: "XF86AudioLowerVolume" }] },
         { id: "mute", keys: [{ mods: "", trigger: "XF86AudioMute" }] },

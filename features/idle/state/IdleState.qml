@@ -11,8 +11,8 @@ import qs.services
 // teclado, escurece a tela, desliga (DPMS), bloqueia e suspende, cada etapa
 // com seu tempo (um na tomada, outro na bateria; 0 = nunca). Qualquer entrada
 // desfaz o escurecer e religa a tela. Não conta a ociosidade com mídia
-// tocando, com um app em tela cheia (opcional, cada um) nem com o "não
-// apagar" ligado; os inibidores dos apps (um navegador tocando vídeo) também
+// tocando, com um app em tela cheia, no modo jogo (opcional, cada um) nem com
+// o "não apagar" ligado; os inibidores dos apps (um navegador tocando vídeo) também
 // valem.
 Singleton {
     id: root
@@ -20,11 +20,36 @@ Singleton {
     readonly property var times: Battery.available && Battery.onBattery ? (Config.idleBattery ?? {}) : (Config.idleAC ?? {})
     readonly property bool mediaPlaying: Media.players.some(p => p.isPlaying)
     readonly property bool fullscreen: Quickshell.screens.some(s => Hypr.hasFullscreen(s))
-    readonly property bool held: Config.idleInhibit || (Config.idleMedia && mediaPlaying) || (Config.idleFullscreen && fullscreen)
+    // O modo jogo (com o item ligado nas configurações) segura a ociosidade.
+    readonly property bool gameHeld: Config.gameIdle && GameMode.active
+    readonly property var holds: ({
+            enabled: Config.idleEnabled,
+            inhibit: Config.idleInhibit,
+            game: gameHeld,
+            media: Config.idleMedia && mediaPlaying,
+            fullscreen: Config.idleFullscreen && fullscreen
+        })
+    readonly property bool held: holds.inhibit || holds.game || holds.media || holds.fullscreen
     readonly property bool active: Config.idleEnabled && !held
 
     // Por que não está contando (para mostrar nas configurações).
-    readonly property string holdReason: !Config.idleEnabled ? "" : Config.idleInhibit ? "“Não apagar a tela” está ligado" : Config.idleMedia && mediaPlaying ? "Há mídia tocando" : Config.idleFullscreen && fullscreen ? "Há um app em tela cheia" : ""
+    readonly property string holdReason: reasonFor(holds)
+
+    // O primeiro motivo que segura, na ordem em que aparece; "" com a
+    // ociosidade desligada ou contando.
+    function reasonFor(h: var): string {
+        if (!h.enabled)
+            return "";
+        if (h.inhibit)
+            return "“Não apagar a tela” está ligado";
+        if (h.game)
+            return "O modo jogo está ligado";
+        if (h.media)
+            return "Há mídia tocando";
+        if (h.fullscreen)
+            return "Há um app em tela cheia";
+        return "";
+    }
 
     function stage(name: string): real {
         return Number(times[name] ?? 0);
