@@ -21,12 +21,11 @@ Item {
     readonly property bool open: OsdState.shown && here
     property real shown: open ? 1 : 0
 
-    // A curva pelo alvo do Behavior, não pelo estado (ver OverlayPanel).
+    // A mesma mola nos dois sentidos. Ao fechar ela passa do zero uma vez e
+    // volta por baixo: só esconde (`visible`), nunca reabre.
     Behavior on shown {
-        id: shownBehavior
-
         Anim {
-            type: shownBehavior.targetValue > 0 ? Anim.Spatial : Anim.EmphasizedAccel
+            type: Anim.Spatial
         }
     }
 
