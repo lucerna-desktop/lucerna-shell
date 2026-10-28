@@ -88,14 +88,21 @@ function run(t) {
         t.check(idsOf(c, "lucerna.subscribe").some(id => Array.from(c.pending[id].params.topics).includes("game.state")), "assina o estado");
         c.pending = {};
         G.tearing = !G.tearing;
+        t.eq(last(c, "game.configure"), null, "espera o fim do turno");
+        G.flushConfigure();
         const after = last(c, "game.configure");
         t.check(after !== null, "a mudança configura de novo");
         t.eq(Object.keys(after.params), ["auto", "always", "never", "compositor", "system"], "o objeto inteiro");
         t.eq(after.params.compositor.tearing, G.tearing);
+        c.pending = {};
         G.autoFullscreen = false;
         G.light = false;
+        G.never = ["x"];
+        G.flushConfigure();
+        G.flushConfigure();
+        t.eq(idsOf(c, "game.configure").length, 1, "três mudanças no mesmo turno, um configure");
         const p = last(c, "game.configure").params;
-        t.eq([p.auto.fullscreen, p.system.light], [false, false]);
+        t.eq([p.auto.fullscreen, p.system.light, p.never], [false, false, ["x"]]);
     });
 
     withClient("gamemode: as listas vão limpas", c => {
@@ -103,10 +110,12 @@ function run(t) {
         for (let i = 0; i < 120; i++)
             many.push(`app${i}`);
         G.always = [" Steam ", "steam", "", "x".repeat(129), "  ", "Heroic"].concat(many);
+        G.flushConfigure();
         const sent = Array.from(last(c, "game.configure").params.always);
         t.eq(sent.slice(0, 3), ["steam", "heroic", "app0"]);
         t.eq(sent.length, 100);
         G.never = ["MPV", "mpv"];
+        G.flushConfigure();
         t.eq(last(c, "game.configure").params.never, ["mpv"]);
         t.eq(G.cleanClasses(null), []);
     });

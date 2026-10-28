@@ -117,6 +117,24 @@ Singleton {
         };
     }
 
+    // Uma mudança das preferências: as do mesmo turno (a página grava uma
+    // chave por vez; as listas mudam a cada atribuição) viram um configure só.
+    property bool configurePending: false
+
+    function requestConfigure(): void {
+        if (configurePending)
+            return;
+        configurePending = true;
+        Qt.callLater(root.flushConfigure);
+    }
+
+    function flushConfigure(): void {
+        if (!configurePending)
+            return;
+        configurePending = false;
+        configure();
+    }
+
     function configure(): void {
         if (client.connected)
             client.call("game.configure", configureParams(), null);
@@ -207,16 +225,16 @@ Singleton {
         return why ? `ligado (${why})` : "ligado";
     }
 
-    onAutoFullscreenChanged: configure()
-    onAutoGamesChanged: configure()
-    onAlwaysChanged: configure()
-    onNeverChanged: configure()
-    onEffectsOnChanged: configure()
-    onVrrChanged: configure()
-    onTearingChanged: configure()
-    onProfileChanged: configure()
-    onGamemodeChanged: configure()
-    onLightChanged: configure()
+    onAutoFullscreenChanged: requestConfigure()
+    onAutoGamesChanged: requestConfigure()
+    onAlwaysChanged: requestConfigure()
+    onNeverChanged: requestConfigure()
+    onEffectsOnChanged: requestConfigure()
+    onVrrChanged: requestConfigure()
+    onTearingChanged: requestConfigure()
+    onProfileChanged: requestConfigure()
+    onGamemodeChanged: requestConfigure()
+    onLightChanged: requestConfigure()
 
     Binding {
         target: root
