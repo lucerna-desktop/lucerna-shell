@@ -16,7 +16,9 @@ Item {
 
     required property var screen
     readonly property bool shown: BarState.shownOn(screen)
-    property real progress: shown ? 1 : 0
+    // A barra traz a moldura: a mola espera a janela da forma chegar à tela
+    // inteira (Frame.readyOn).
+    property real progress: shown && Frame.readyOn(screen, Frame.sizeOn(screen).width) ? 1 : 0
     readonly property real morph: Frame.morphOn(screen)
 
     // A curva pelo alvo do Behavior, não por `shown` (ver OverlayPanel).

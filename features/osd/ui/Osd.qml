@@ -19,7 +19,8 @@ Item {
     readonly property real bodyWidth: 52 + Frame.thicknessAt(Frame.progressOn(screen))
     readonly property real bodyHeight: 220
     readonly property bool open: OsdState.shown && here
-    property real shown: open ? 1 : 0
+    // A mola espera a janela da forma chegar à coluna (Frame.readyOn).
+    property real shown: open && Frame.readyOn(screen, Frame.column) ? 1 : 0
 
     // A mesma mola nos dois sentidos. Ao fechar ela passa do zero uma vez e
     // volta por baixo: só esconde (`visible`), nunca reabre.

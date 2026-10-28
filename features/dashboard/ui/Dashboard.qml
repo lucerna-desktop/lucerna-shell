@@ -22,7 +22,8 @@ Item {
     required property var screen
     readonly property bool here: DashboardState.screen === screen
     readonly property bool open: DashboardState.open && here
-    property real progress: open ? 1 : 0
+    // A mola espera a janela da forma chegar à tela inteira (Frame.readyOn).
+    property real progress: open && Frame.readyOn(screen, Frame.sizeOn(screen).width) ? 1 : 0
 
     // A mesma mola nos dois sentidos. Ao fechar ela passa do zero uma vez e
     // volta por baixo: só esconde, nunca reabre.

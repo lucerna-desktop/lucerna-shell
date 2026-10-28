@@ -152,6 +152,21 @@ Singleton {
         windows = windows.filter(w => w !== window);
     }
 
+    // A janela da forma dessa tela já tem a largura `need` (o compositor
+    // respondeu à troca de nível, ~40-60 ms depois do pedido). Um painel só
+    // começa a mola daí: antes, os quadros não aparecem (a janela ainda está
+    // estreita) e a mola correria sem ser vista, e o 1º quadro à mostra
+    // sairia adiantado. Sem janela registrada (os testes), já tem.
+    function readyOn(screen: var, need: real): bool {
+        const window = windows.find(w => w.targetScreen === screen && w.visible);
+        return !window || readyIn(window.width, need);
+    }
+
+    // Meio pixel de folga para o arredondamento da largura.
+    function readyIn(width: real, need: real): bool {
+        return width >= need - 0.5;
+    }
+
     // O tamanho de cada tela (pelo nome) medido pela janela da forma dela
     // (FrameWindow), com o tamanho que a tela informava na hora:
     // { screenWidth, screenHeight, width, height }. A tela do Qt pode ficar

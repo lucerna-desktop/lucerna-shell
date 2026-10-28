@@ -28,9 +28,12 @@ Item {
     required property var screen
     readonly property bool here: CentralState.screen === screen
     readonly property bool open: CentralState.open && here
+    // A central traz a moldura: os painéis esperam a janela da forma chegar
+    // à tela inteira (Frame.readyOn) para começar a mola.
+    readonly property bool ready: Frame.readyOn(screen, Frame.sizeOn(screen).width)
     // Os pedidos de cada painel, só na tela da central.
-    readonly property bool actionsWanted: CentralState.actionsOpen && here
-    readonly property bool inboxWanted: CentralState.notificationsOpen && here
+    readonly property bool actionsWanted: CentralState.actionsOpen && here && ready
+    readonly property bool inboxWanted: CentralState.notificationsOpen && here && ready
 
     anchors.fill: parent
 

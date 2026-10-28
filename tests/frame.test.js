@@ -94,6 +94,22 @@ function run(t) {
         t.check(!F.windows.includes(w), "tirada");
     });
 
+    scenario("frame: a janela da forma já na largura pedida", [], () => {
+        t.check(F.readyIn(1920, 1920) && F.readyIn(1919.6, 1920), "na largura (meio pixel de folga)");
+        t.check(!F.readyIn(1, 1920) && !F.readyIn(128, 1920), "estreita: ainda não");
+        t.check(F.readyIn(1920, F.column), "mais larga que a coluna também serve");
+        F.windows = [];
+        t.check(F.readyOn("A", 1920), "sem janela registrada: já tem");
+        const w = { targetScreen: "A", visible: true, width: 1 };
+        F.addWindow(w);
+        t.check(!F.readyOn("A", F.column), "em 1 px: espera");
+        w.width = F.column;
+        t.check(F.readyOn("A", F.column) && !F.readyOn("A", 1920), "na coluna: só o que cabe nela");
+        t.check(F.readyOn("B", 1920), "a janela de outra tela não conta");
+        w.visible = false;
+        t.check(F.readyOn("A", 1920), "escondida não conta");
+    });
+
     t.test("frame: a moldura e a suavização com a abertura", () => {
         t.eq([F.clamp(-1), F.clamp(0.4), F.clamp(2)], [0, 0.4, 1]);
         t.eq([F.thicknessAt(0), F.thicknessAt(0.5), F.thicknessAt(1.2)], [0, F.thickness / 2, F.thickness]);
