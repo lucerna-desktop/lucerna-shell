@@ -239,6 +239,27 @@ Singleton {
         }
     }
 
+    // O modo jogo pelo terminal: `qs -c lucerna ipc call game toggle|on|off|get`.
+    IpcHandler {
+        target: "game"
+
+        function toggle(): void {
+            GameMode.toggle();
+        }
+
+        function on(): void {
+            GameMode.set(true);
+        }
+
+        function off(): void {
+            GameMode.set(false);
+        }
+
+        function get(): string {
+            return GameMode.statusText(GameMode.available, GameMode.active, GameMode.reasons);
+        }
+    }
+
     IpcHandler {
         target: "action"
 

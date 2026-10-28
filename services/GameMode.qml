@@ -196,6 +196,17 @@ Singleton {
         return Array.from(list ?? []).map(r => names[r] ?? String(r)).join(", ");
     }
 
+    // O estado numa linha, para o IPC `game get`: "ligado (tela cheia, jogo)",
+    // "ligado", "desligado" ou "indisponível".
+    function statusText(isAvailable: bool, isActive: bool, list: var): string {
+        if (!isAvailable)
+            return "indisponível";
+        if (!isActive)
+            return "desligado";
+        const why = reasonsText(list);
+        return why ? `ligado (${why})` : "ligado";
+    }
+
     onAutoFullscreenChanged: configure()
     onAutoGamesChanged: configure()
     onAlwaysChanged: configure()

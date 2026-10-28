@@ -13,7 +13,7 @@
         "services/Brightness.qml": ["wantedTopics", "sync", "toScreen", "merged", "apply", "applyScreens", "applyStatus", "connectionChanged", "withValue", "set", "setScreen", "focusedId", "change", "answered", "hold", "released", "reload", "withError", "warnOf"],
         "services/Capture.qml": ["geometryArg"],
         "services/Clipboard.qml": ["wantedTopics", "sync", "configureParams", "configure", "listParams", "load", "more", "fetch", "request", "merge", "applyPage", "apply", "applyHistory", "applyStatus", "connectionChanged", "copy", "remove", "pin", "clear", "copyResult", "copyImage"],
-        "services/GameMode.qml": ["offEffects", "wantedTopics", "sync", "cleanClasses", "configureParams", "configure", "apply", "applyState", "applyStatus", "connectionChanged", "set", "toggle", "reasonsText"],
+        "services/GameMode.qml": ["offEffects", "wantedTopics", "sync", "cleanClasses", "configureParams", "configure", "apply", "applyState", "applyStatus", "connectionChanged", "set", "toggle", "reasonsText", "statusText"],
         "services/Input.qml": ["option", "luaString", "luaValue", "nest", "unbindLua", "bindLua", "parseKeymap", "keyBlock", "patchKeymap"],
         "services/lucerna/LucernaClient.qml": ["backoff", "encode", "helloParams", "parse", "accept", "store", "receive", "send", "request", "handshake", "greeted", "offeredTopics", "subscribable", "setTopics", "union", "want", "subscribeNow", "unsubscribeNow", "subscribed", "settled", "resubscribe", "call", "open", "opened", "lost", "failPending"],
         "services/Lyrics.qml": ["wantedTopics", "sync", "trackParams", "sendTrack", "toLine", "apply", "applyLyrics", "clear", "connectionChanged", "lineAt", "lineRole"],

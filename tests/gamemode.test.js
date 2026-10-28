@@ -185,4 +185,12 @@ function run(t) {
         G.toggle();
         t.check(last(c, "game.toggle") !== null, "pediu o toggle");
     });
+
+    t.test("gamemode: o texto do IPC game get", () => {
+        t.eq(G.statusText(true, true, ["manual"]), "ligado (manual)");
+        t.eq(G.statusText(true, true, ["fullscreen", "game"]), "ligado (tela cheia, jogo)");
+        t.eq(G.statusText(true, true, []), "ligado");
+        t.eq(G.statusText(true, false, ["game"]), "desligado");
+        t.eq(G.statusText(false, true, ["game"]), "indisponível");
+    });
 }
