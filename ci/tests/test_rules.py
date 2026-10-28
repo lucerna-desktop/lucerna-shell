@@ -348,5 +348,44 @@ class GeneratedTest(RepoCase):
         self.assertIn("dev/ci.sh shell rules", rules.SHADER_HINT)
 
 
+class BehaviorsTest(RepoCase):
+    def found(self, text):
+        return [(p, n) for p, n, _ in rules.check_behaviors(self.repo({"core/widgets/P.qml": text}))]
+
+    def test_tipo_pelo_estado_reprova(self):
+        text = "Item {\n    Behavior on shown {\n        Anim {\n            type: root.open ? Anim.Spatial : Anim.EmphasizedAccel\n        }\n    }\n}\n"
+        self.assertEqual(self.found(text), [("core/widgets/P.qml", 4)])
+
+    def test_uma_linha_e_duracao_reprovam(self):
+        text = (
+            "Item {\n"
+            "    Behavior on a { Anim { type: x.on ? Anim.Spatial : Anim.EmphasizedAccel } }\n"
+            "    Behavior on b { NumberAnimation { duration: x.on ? 1800 : 180 } }\n"
+            "}\n"
+        )
+        self.assertEqual(self.found(text), [("core/widgets/P.qml", 2), ("core/widgets/P.qml", 3)])
+
+    def test_pelo_target_value_passa(self):
+        text = (
+            "Item {\n"
+            "    Behavior on shown {\n"
+            "        id: shownBehavior\n"
+            "        Anim { type: shownBehavior.targetValue > 0 ? Anim.Spatial : Anim.EmphasizedAccel }\n"
+            "    }\n"
+            "}\n"
+        )
+        self.assertEqual(self.found(text), [])
+
+    def test_fora_do_behavior_e_enabled_passam(self):
+        text = (
+            "Item {\n"
+            "    Behavior on x { enabled: !moving; Anim { type: Anim.Spatial } }\n"
+            "    Anim { type: open ? Anim.Spatial : Anim.Effects }\n"
+            "    width: open ? 1 : 0\n"
+            "}\n"
+        )
+        self.assertEqual(self.found(text), [])
+
+
 if __name__ == "__main__":
     unittest.main()

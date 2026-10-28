@@ -15,8 +15,13 @@ Variants {
         required property var modelData
         property real shown: IdleState.dimmed ? 1 : 0
 
-        // Escurece devagar; volta rápido ao mexer.
-        Behavior on shown { NumberAnimation { duration: IdleState.dimmed ? 1800 : 180; easing.type: Easing.InOutQuad } }
+        // Escurece devagar; volta rápido ao mexer. A duração pelo alvo do
+        // Behavior, não pelo estado (ver OverlayPanel).
+        Behavior on shown {
+            id: shownBehavior
+
+            NumberAnimation { duration: shownBehavior.targetValue > 0 ? 1800 : 180; easing.type: Easing.InOutQuad }
+        }
 
         screen: modelData
         visible: shown > 0

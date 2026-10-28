@@ -64,9 +64,12 @@ PanelWindow {
         onTriggered: root.lingering = 0
     }
 
+    // A curva pelo alvo do Behavior, não por `shown` (ver OverlayPanel).
     Behavior on progress {
+        id: progressBehavior
+
         Anim {
-            type: root.shown ? Anim.Spatial : Anim.EmphasizedAccel
+            type: progressBehavior.targetValue > 0 ? Anim.Spatial : Anim.EmphasizedAccel
         }
     }
 

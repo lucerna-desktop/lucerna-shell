@@ -105,6 +105,42 @@ def check_suppressions(root):
     return out
 
 
+BEHAVIOR_START = re.compile(r"\bBehavior\s+on\s+[\w.]+\s*\{")
+BEHAVIOR_CONDITIONAL = re.compile(r"\b(type|duration|easing\.\w+)\s*:([^;}\n]*\?[^;}\n]*)")
+
+
+def check_behaviors(root):
+    """Dentro de um `Behavior on X { ... }`, o tipo, a duração ou a curva da
+    animação não escolhem pelo estado (`open ? ... : ...`): o Behavior dispara
+    quando o valor muda, antes de a expressão ser reavaliada, e a animação sai
+    com a escolha velha (a abertura com a curva da saída). Escolha pelo
+    `targetValue` do Behavior (com id)."""
+    out = []
+    for rel in repo_files(root):
+        if rel.suffix != ".qml":
+            continue
+        text = (root / rel).read_text(encoding="utf-8")
+        for start in BEHAVIOR_START.finditer(text):
+            depth, end = 0, start.end() - 1
+            for end in range(start.end() - 1, len(text)):
+                depth += {"{": 1, "}": -1}.get(text[end], 0)
+                if depth == 0:
+                    break
+            for match in BEHAVIOR_CONDITIONAL.finditer(text, start.end(), end):
+                if "targetValue" in match.group(2):
+                    continue
+                out.append(
+                    (
+                        rel.as_posix(),
+                        text.count("\n", 0, match.start()) + 1,
+                        f"`{match.group(1)}` de animação de Behavior escolhido pelo estado: "
+                        "o Behavior dispara antes de a condição mudar e a animação sai com a escolha velha; "
+                        "dê um id ao Behavior e escolha pelo `targetValue` dele",
+                    )
+                )
+    return out
+
+
 IMPORT_QS = re.compile(r"^\s*import\s+qs\.([\w.]+)")
 
 
@@ -526,6 +562,7 @@ RULES = {
     "espaços": check_whitespace,
     "acentos": check_accents,
     "links": check_links,
+    "animações": check_behaviors,
     "shaders": check_shaders,
     "temas": check_themes,
 }
