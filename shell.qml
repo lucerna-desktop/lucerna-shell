@@ -41,6 +41,10 @@ ShellRoot {
                 screen: frameWindow.modelData
             }
 
+            Central {
+                screen: frameWindow.modelData
+            }
+
             BarLayer {
                 screen: frameWindow.modelData
             }
@@ -51,7 +55,6 @@ ShellRoot {
         }
     }
     CaptureOverlay {}
-    Central {}
     Clipboard {}
     Displays {}
     Energy {}

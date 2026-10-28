@@ -5,10 +5,10 @@ import qs.core.widgets
 
 // Um dos dois painéis da central: `panelWidth` de largura, a `margin` da borda
 // direita (dentro da moldura). O fundo é o bloco da central (a forma da tela);
-// o conteúdo aparece quando ele passa de ~70% da entrada. Entra deslizando da
-// direita e sai, mais rápido, pelo mesmo caminho. Com os dois abrindo juntos,
-// a entrada vai em cascata, com um atraso pela ordem (`order`: 40 ms por
-// passo, na escala das animações). Os filhos vão para dentro da margem
+// o conteúdo desliza com ele desde o 1º quadro. Entra deslizando da direita e
+// sai pelo mesmo caminho, com a mesma mola (que passa do zero na volta: só
+// esconde). Com os dois abrindo juntos, a entrada vai em cascata, com um
+// atraso pela ordem (`order`: 40 ms por passo, na escala das animações). Os filhos vão para dentro da margem
 // interna (`padding`). `reveal` (0 a 1) é quanto da altura está à mostra, de
 // cima para baixo: o bloco da forma vai até `shownHeight`, e o conteúdo é
 // cortado nela.
@@ -34,7 +34,7 @@ Item {
 
     width: panelWidth
     visible: shown > 0
-    opacity: Frame.contentOpacity(shown)
+    opacity: Frame.clamp(shown)
     x: areaWidth - width - margin + (1 - shown) * travel
 
     function enter(cascade: bool): void {
@@ -67,7 +67,7 @@ Item {
         target: root
         property: "shown"
         to: 0
-        type: Anim.StandardAccel
+        type: Anim.Spatial
     }
 
     // Corta só enquanto cresce: com tudo à mostra, sem recorte.
