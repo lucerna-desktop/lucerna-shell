@@ -12,7 +12,7 @@ function run(t) {
     function withFrame(name, open, body) {
         t.test(name, () => {
             const blobs0 = F.blobs, opened0 = P.opened, revealed0 = B.revealedScreen;
-            const peeking0 = B.peeking, hovering0 = B.hovering, pinned0 = B.pinnedScreen;
+            const peeking0 = B.peeking, hovering0 = B.hovering, pinned0 = B.pinnedScreen, pinHovered0 = B.pinHovered;
             try {
                 F.blobs = [{ screen: "A", role: "panel", framed: true, open: open, progress: open ? 1 : 0, rect: Qt.rect(0, 0, 10, 10) }];
                 body();
@@ -23,6 +23,7 @@ function run(t) {
                 B.peeking = peeking0;
                 B.hovering = hovering0;
                 B.pinnedScreen = pinned0;
+                B.pinHovered = pinHovered0;
             }
         });
     }
@@ -127,6 +128,11 @@ function run(t) {
             B.togglePinned("A");
             B.togglePinned("B");
             t.eq(B.pinnedScreen, "B", "noutra tela, muda de tela");
+            B.setHovering(false);
+            t.eq(B.pinHovered, false, "o mouse saindo da faixa do topo sem passar pela barra não solta o pino");
+            B.setHovering(true);
+            t.eq(B.pinHovered, true, "o mouse passou pela barra: a saída solta o pino (o hideDelay)");
+            B.setHovering(false);
             B.pinnedScreen = null;
             C.gameBar = true;
             G.active = true;

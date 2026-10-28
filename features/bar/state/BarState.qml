@@ -35,8 +35,10 @@ Singleton {
     property bool hovering: false
     // Revelada pela troca de workspace, não pelo mouse.
     property bool peeking: false
-    // Revelada pela ação `bar` (o atalho), até o segundo toque ou o mouse sair dela.
+    // Revelada pela ação `bar` (o atalho), até o segundo toque ou o mouse sair
+    // dela depois de passar por cima (a faixa do topo sozinha não conta).
     property var pinnedScreen: null
+    property bool pinHovered: false
     // O modo jogo prende a barra: só a ação `bar` a revela.
     readonly property bool gameLocked: GameMode.active && Config.gameBar
 
@@ -93,6 +95,8 @@ Singleton {
 
     function setHovering(on: bool): void {
         hovering = on;
+        if (on && pinnedScreen !== null)
+            pinHovered = true;
         if (on) {
             peeking = false;
             hideDelay.stop();
@@ -113,6 +117,7 @@ Singleton {
 
     // A ação `bar`: revela na tela dada; na mesma tela, o segundo toque esconde.
     function togglePinned(screen: var): void {
+        pinHovered = false;
         if (pinnedScreen === screen) {
             pinnedScreen = null;
             return;
@@ -128,7 +133,10 @@ Singleton {
         onTriggered: {
             if (!root.hovering) {
                 root.revealedScreen = null;
-                root.pinnedScreen = null;
+                if (root.pinHovered) {
+                    root.pinnedScreen = null;
+                    root.pinHovered = false;
+                }
             }
         }
     }
