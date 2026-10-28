@@ -37,6 +37,10 @@ ShellRoot {
 
             targetScreen: modelData
 
+            NotificationPopups {
+                screen: frameWindow.modelData
+            }
+
             Osd {
                 screen: frameWindow.modelData
             }
@@ -62,7 +66,6 @@ ShellRoot {
     Input {}
     Launcher {}
     NightLight {}
-    NotificationPopups {}
     PowerMenu {}
     Settings {}
     MonitorConfirm {}

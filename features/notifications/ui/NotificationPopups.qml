@@ -1,25 +1,38 @@
 import QtQuick
 import Quickshell
-import Quickshell.Wayland
 import qs.core.frame
 import qs.core.theme
 import qs.core.widgets
 import qs.features.notifications.state
 
-// Popups no canto superior direito do monitor com foco. Entram e saem
-// deslizando pela direita; os de baixo se reacomodam com mola.
+// Popups no canto superior direito do monitor com foco, dentro da janela da
+// forma de cada tela (ver core/widgets/FrameWindow), em coordenadas da tela e
+// abaixo dos painéis. Entram e saem deslizando pela direita; os de baixo se
+// reacomodam com mola. Continuam cartões soltos (fora da forma), desfocados
+// pela regra da janela da forma ("lucerna-panel-frame").
 //
-// A janela ocupa a coluna inteira, mas só a área dos cartões recebe cliques
-// (máscara), e ela só existe enquanto há popups (mais o tempo da animação de
-// saída do último). O resumo do modo jogo é um cartão próprio no topo da
-// pilha, que abre as notificações no clique.
-PanelWindow {
-    id: window
+// A coluna vai até o pé da tela, mas só a área dos cartões recebe cliques (a
+// área de entrada), e ela só existe enquanto há popups (mais o tempo da
+// animação de saída do último), só na tela deles. O resumo do modo jogo é um
+// cartão próprio no topo da pilha, que abre as notificações no clique.
+Item {
+    id: root
 
+    required property var screen
+    readonly property bool here: NotificationsState.screen === screen
     readonly property bool hasPopups: NotificationsState.popups.length > 0 || NotificationsState.summary !== null
+    // Há popups, ou a saída do último ainda anima. Só cai no fim do `linger`
+    // (nunca no meio da troca do `hasPopups`): a lista não pode perder o
+    // modelo antes da saída.
+    property bool live: false
+    // Com a central aberta, os cartões esperam escondidos (o prazo não corre).
+    readonly property bool shown: live && here && !NotificationsState.popupsHidden
 
+    Component.onCompleted: live = hasPopups
     onHasPopupsChanged: {
-        if (!hasPopups)
+        if (hasPopups)
+            live = true;
+        else
             linger.restart();
     }
 
@@ -27,33 +40,35 @@ PanelWindow {
         id: linger
 
         interval: 600
+        onTriggered: root.live = root.hasPopups
     }
 
-    visible: (hasPopups || linger.running) && !NotificationsState.popupsHidden
-    screen: NotificationsState.screen
-    anchors {
-        top: true
-        right: true
-        bottom: true
+    anchors.fill: parent
+    visible: shown
+
+    // A área dos cartões, em coordenadas da tela: o contentItem da lista, do
+    // começo do conteúdo (o resumo, que fica acima da origem, no `originY`)
+    // até o fim.
+    FrameInput {
+        screen: root.screen
+        active: root.shown
+        rect: Qt.rect(list.x + list.contentItem.x, list.y + list.contentItem.y + list.originY, list.contentItem.width, list.contentHeight)
     }
-    // Fora da moldura: a espessura dela e o espaço de sempre, que deixam o
-    // cartão fora do arco do canto (Frame.cornerClear), à mostra ou não.
-    // Falso positivo do qmllint com o grupo margins do PanelWindow (ver o spec do CI).
-    margins.top: Frame.thickness + ThemeManager.spacing.small // qmllint disable unqualified missing-property
-    margins.right: Frame.thickness + ThemeManager.spacing.small // qmllint disable unqualified missing-property
-    implicitWidth: 380
-    color: "transparent"
-    exclusionMode: ExclusionMode.Normal
-    mask: Region {
-        item: list.contentItem
-    }
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "lucerna-panel-notifications"
 
     ListView {
         id: list
 
-        anchors.fill: parent
+        // Fora da moldura: a espessura dela e o espaço de sempre, que deixam o
+        // cartão fora do arco do canto (Frame.cornerClear), à mostra ou não.
+        readonly property real margin: Frame.thickness + ThemeManager.spacing.small
+
+        x: root.width - width - margin
+        y: margin
+        width: 380
+        height: root.height - margin
+        // Os cartões que saem pela direita somem na beira da coluna, como na
+        // antiga janela própria.
+        clip: true
         spacing: ThemeManager.spacing.small
         interactive: false
 
@@ -107,9 +122,9 @@ PanelWindow {
             }
         }
 
-        model: ScriptModel {
-            values: NotificationsState.popups
-        }
+        // Só na tela dos popups: nas outras, nenhum cartão.
+        model: root.live && root.here ? popupsModel : []
+
 
         delegate: NotificationCard {
             required property var modelData
@@ -119,7 +134,7 @@ PanelWindow {
             popup: true
             timeText: NotificationsState.timeLabel(modelData)
             timeout: NotificationsState.timeoutFor(modelData)
-            // Com a central aberta a janela some, mas o prazo não corre.
+            // Com a central aberta os cartões somem, mas o prazo não corre.
             held: NotificationsState.popupsHidden
             onExpired: NotificationsState.hidePopup(modelData)
             onDismissRequested: NotificationsState.dismiss(modelData)
@@ -144,5 +159,11 @@ PanelWindow {
             Anim { properties: "x,y"; type: Anim.Spatial }
             Anim { property: "opacity"; to: 1; type: Anim.Effects }
         }
+    }
+
+    ScriptModel {
+        id: popupsModel
+
+        values: NotificationsState.popups
     }
 }
