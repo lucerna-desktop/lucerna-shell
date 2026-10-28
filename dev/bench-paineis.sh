@@ -31,6 +31,13 @@
 # BENCH_OUT: a pasta da saída (padrão /tmp/lucerna-bench).
 # BENCH_REC=1: só grava os três casos de ciclo em $BENCH_OUT/<caso>.mkv, sem
 # medir nem reiniciar o qs (para as tiras do dev/tira.sh).
+# BENCH_KITTY=1: um kitty parado fica aberto lado a lado na área de trabalho 1
+# do começo ao fim (antes do qs com o log), então a barra se esconde e a janela
+# da forma fica em 1 px em repouso e muda de tamanho de fato a cada abertura
+# (no padrão, com a área vazia, a barra aparece e a janela fica em tela cheia).
+# Sem o caso `janela`, que precisa de um kitty próprio em tela cheia. Vale
+# também com BENCH_REC=1.
+#   dev/test.sh run 'BENCH_KITTY=1 bash ~/.config/quickshell/lucerna/dev/bench-paineis.sh 10 10'
 set -euo pipefail
 
 cycles=${1:-10}
@@ -43,6 +50,7 @@ usage="uso: dev/bench-paineis.sh [ciclos] [segundos]"
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 out=${BENCH_OUT:-/tmp/lucerna-bench}
 rec_only=${BENCH_REC:-0}
+with_kitty=${BENCH_KITTY:-0}
 mkdir -p "$out"
 log=$out/qs.log
 marks=$out/marks.tsv
@@ -68,6 +76,7 @@ fi
 
 class=lucerna-bench-paineis
 kitty_pid=""
+tile_pid=""
 rec_pid=""
 osd_up=0
 restarted=0
@@ -81,6 +90,10 @@ restore() {
     if [ -n "$kitty_pid" ]; then
         kill "$kitty_pid" 2> /dev/null || true
         wait "$kitty_pid" 2> /dev/null || true
+    fi
+    if [ -n "$tile_pid" ]; then
+        kill "$tile_pid" 2> /dev/null || true
+        wait "$tile_pid" 2> /dev/null || true
     fi
     [ "$osd_up" = 0 ] || ipc brightness down > /dev/null || true
     ipc panels close > /dev/null || true
@@ -226,8 +239,25 @@ continuous() {
 
 rss() { awk '/^VmRSS:/ { print $2 }' "/proc/$qs_pid/status"; }
 
+# wait_client <classe>: espera a janela aparecer no Hyprland (até 10 s).
+wait_client() {
+    for _ in $(seq 50); do
+        hyprctl -j clients | grep -q "\"class\": \"$1\"" && return 0
+        sleep 0.2
+    done
+    return 1
+}
+
 ipc panels close > /dev/null
 ipc wallpaper mode static > /dev/null
+
+if [ "$with_kitty" = 1 ]; then
+    hyprctl dispatch 'hl.dsp.focus({ workspace = 1 })' > /dev/null 2>&1 || true
+    kitty --class "$class-lado" -o confirm_os_window_close=0 sh -c 'sleep 100000' > /dev/null 2>&1 &
+    tile_pid=$!
+    wait_client "$class-lado" || { echo "ERRO: o kitty lado a lado não apareceu" >&2; exit 1; }
+    sleep 1
+fi
 
 if [ "$rec_only" = 1 ]; then
     : > "$marks"
@@ -260,6 +290,7 @@ sleep 3
     printf 'info\tpapel de parede\t%s (estático fora do caso papel)\n' "$wall_before"
     printf 'info\tsaída\t%s %s\n' "$output_name" "$output_mode"
     printf 'info\tciclos\t%s\n' "$cycles"
+    [ "$with_kitty" != 1 ] || printf 'info\tkitty\tlado a lado na área 1 (a barra se esconde), sem o caso janela\n'
     printf 'info\tsegundos\t%s\n' "$secs"
     printf 'rss\tantes\t%s\n' "$(rss)"
 } > "$marks"
@@ -275,30 +306,29 @@ ipc panels close > /dev/null
 ipc wallpaper mode static > /dev/null
 sleep 1
 
-# Em tela cheia e com linhas da largura da tela: o texto rola atrás do vidro
-# da central (lado a lado, a central reserva a área e nada passa atrás dela).
-# shellcheck disable=SC2016 # expande no sh do kitty
-kitty --class "$class" -o confirm_os_window_close=0 sh -c \
-    'while :; do t=$(date +%T.%N); echo "$t $t $t $t $t $t $t $t $t $t $t $t $t $t"; sleep 0.016; done' > /dev/null 2>&1 &
-kitty_pid=$!
-for _ in $(seq 50); do
-    hyprctl -j clients | grep -q "\"class\": \"$class\"" && break
-    sleep 0.2
-done
-hyprctl dispatch "hl.dsp.focus({ window = \"class:$class\" })" > /dev/null 2>&1 || true
-hyprctl dispatch 'hl.dsp.window.fullscreen()' > /dev/null 2>&1 || true
-sleep 1
-ipc central open "" > /dev/null
-sleep 2
-continuous janela
-ipc panels close > /dev/null
-kill "$kitty_pid" 2> /dev/null || true
-wait "$kitty_pid" 2> /dev/null || true
-kitty_pid=""
-# Depois de uma janela em tela cheia fechar, o qs ainda redesenha por ~10 s
-# (medido na main: 92, 23, 1 e 0 quadros em blocos de 5 s): 15 s para o
-# `parado` não herdar isso.
-sleep 15
+if [ "$with_kitty" != 1 ]; then
+    # Em tela cheia e com linhas da largura da tela: o texto rola atrás do vidro
+    # da central (lado a lado, a central reserva a área e nada passa atrás dela).
+    # shellcheck disable=SC2016 # expande no sh do kitty
+    kitty --class "$class" -o confirm_os_window_close=0 sh -c \
+        'while :; do t=$(date +%T.%N); echo "$t $t $t $t $t $t $t $t $t $t $t $t $t $t"; sleep 0.016; done' > /dev/null 2>&1 &
+    kitty_pid=$!
+    wait_client "$class" || true
+    hyprctl dispatch "hl.dsp.focus({ window = \"class:$class\" })" > /dev/null 2>&1 || true
+    hyprctl dispatch 'hl.dsp.window.fullscreen()' > /dev/null 2>&1 || true
+    sleep 1
+    ipc central open "" > /dev/null
+    sleep 2
+    continuous janela
+    ipc panels close > /dev/null
+    kill "$kitty_pid" 2> /dev/null || true
+    wait "$kitty_pid" 2> /dev/null || true
+    kitty_pid=""
+    # Depois de uma janela em tela cheia fechar, o qs ainda redesenha por ~10 s
+    # (medido na main: 92, 23, 1 e 0 quadros em blocos de 5 s): 15 s para o
+    # `parado` não herdar isso.
+    sleep 15
+fi
 
 continuous parado
 

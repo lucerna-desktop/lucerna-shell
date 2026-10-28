@@ -138,6 +138,11 @@ tempo todo, então o recuo não muda a condição medida.
 
 ## Análise dos quadros longos das aberturas
 
+[SUPERADA em parte: a "Medição extra" e a conclusão logo abaixo foram
+escritas antes da sonda A/B e da revisão final; ver "A troca de tamanho" e
+"Revisão final", no fim. O que continua valendo: os longos do OSD são todos
+swap.]
+
 Por quadro, o log do render loop dá `frame rendered in T ms, sync, render,
 swap`. Em todos os quadros > 15 ms do osd:abrir (11 na r1, 47 na r2) e da
 central (o 26 da r2: sync=1, swap=24), o tempo é todo do swap: sync=0,
@@ -170,6 +175,20 @@ Ou seja: o pior e o p95 do OSD vêm do OSD estar na janela da forma (o swap
 dela espera o compositor), seja ela em tela cheia, seja na coluna. A janela
 em tela cheia sempre aberta (o recuo da regra) é exatamente o que o bench
 mediu aqui; o recuo não deve melhorar o osd:abrir.
+
+[SUPERADA. Esta medição extra (uma rodada só, driver de ocasião, 26 / 13 /
+4 longos) e a sonda A/B (duas rodadas controladas, S 14/13 / 13/13, 0
+longos, "encolher para a coluna resolve") pareciam se contradizer. A
+revisão final explica: nas duas, a regra `no_anim` da janela da forma não
+valia (o `usingLua` do Quickshell chega depois do Component.onCompleted do
+ThemeSwitcherState, e a regra só ia ali), então o Hyprland animava a
+largura da janela a cada troca de nível (~0,3 s de redesenho da tela,
+"FPS tela" ~73). Esse redesenho deixa o ritmo dos quadros do OSD ora
+regular, ora não: 0 a 4 longos por 20 aberturas, e o pior oscila entre
+13 e 26 de uma rodada para outra (a sem regra da revisão final deu 26 / 13
+/ 3, igual a esta). Nenhuma das duas leituras ("não ajuda" e "resolve")
+se sustenta; com a regra valendo, o OSD na coluna repete o da tela cheia
+(ver "Revisão final").]
 
 ## Tiras e capturas (Tarefa 8, passo 3)
 
@@ -256,9 +275,95 @@ pior ms da central (15-17 contra 9-10, tudo abaixo de um quadro de 16,7 ms).
 
 Decisão: a janela continua encolhendo; o recuo para tela cheia não se aplica,
 porque o engasgo não vem da troca de tamanho. Na máquina real, a 144 Hz, o
-usuário pode conferir de novo com o mesmo driver (a sonda usou um driver
-próprio sobre o mesmo leitor `dev/bench-paineis.py`).
+usuário pode conferir de novo com o modo do bench que repete a condição da
+sonda (um kitty lado a lado do começo ao fim, a barra escondida, a janela
+mudando de tamanho de fato), sobre o mesmo leitor `dev/bench-paineis.py`:
+  BENCH_KITTY=1 dev/bench-paineis.sh 10 10
+  (no container: dev/test.sh run 'BENCH_KITTY=1 bash ~/.config/quickshell/lucerna/dev/bench-paineis.sh 10 10')
+[Ver "Revisão final": os números do OSD de S nesta seção vieram com a
+janela sendo animada pelo Hyprland; com a regra valendo, o OSD em S piora.]
 
 Observação: na 2ª rodada de cada sessão o kitty saiu com `fullscreen: 1`
 (maximizado) no `hyprctl clients`, com o mesmo tamanho 1896x1056, nas três
 variantes; a comparação vale.
+
+## Revisão final: a regra `no_anim` e o 1º quadro com a janela mudando de tamanho
+
+Código: a branch depois das correções da revisão final (Frame.readyOn, a
+regra da janela da forma pelo onFrameRuleChanged). Container recriado
+(`dev/test.sh up`) antes de cada rodada; 1920x1080@60, desfoque performance.
+
+### O 1º quadro com a janela mudando de tamanho (tiras)
+
+Condição: `BENCH_KITTY=1 BENCH_REC=1 ... bench-paineis.sh 3 10` (um kitty lado
+a lado, a barra escondida, a janela da forma em 1 px em repouso);
+`dev/tira.sh` na 2ª e na 3ª abertura (scratchpad da sessão,
+tiras/final-redim-*).
+
+- Antes (o código da revisão, 327a605): a abertura do painel superior e da
+  central saía esticada. O Hyprland 0.56 anima a geometria de uma camada
+  quando ela muda de tamanho (`setBox` com a curva `layersIn`), e só não
+  anima com o `no_anim` da camada; a regra ia só no Component.onCompleted
+  do ThemeSwitcherState, quando o `Hyprland.usingLua` do Quickshell ainda
+  era falso, e nunca era enviada. Resultado: por ~0,3 s a janela de 1920
+  aparecia espremida numa caixa que crescia da direita (uma linha vertical
+  da beira dela andando de x=734 a x=243 em 17 quadros; o painel superior
+  comprimido e deslocado à direita, centro em ~1327 em vez de 960).
+  Tiras: final-redim-antes-painel-superior-{3.42,5.88}.png,
+  final-redim-antes-central-*.png, final-redim-antes-painel-p04-p10.png.
+  Com a regra posta à mão no hyprland.lua do container (teste, revertido),
+  o esticão some.
+- Só com a regra valendo (sem a espera): o painel aparece já adiantado. A
+  mola começa na mudança de estado, e a janela chega a 1920 ~40-60 ms
+  depois: o 1º quadro com o painel vem com 133 de 417 px (32% do
+  percurso; os passos seguintes são de ~45 px), a central com 128 px de
+  um percurso de ~440 (29%; passos de ~50). Tiras:
+  final-redim-regra-sem-portao-{painel-superior,central}-3.42.png.
+- Corrigido: `Frame.readyOn(tela, largura)`: a mola do painel superior, da
+  barra e dos painéis da central espera a janela da forma ter a tela
+  inteira, e a do OSD, a coluna. A janela muda de tamanho como antes (pelo
+  pedaço aberto, só entre os níveis); o teclado sai no começo do
+  fechamento como antes. Agora o 1º quadro é o da aba (44 px, ~10%), e
+  depois passos regulares de ~45 px; a central entra com 76 px no 1º quadro
+  e ~50 nos seguintes. OSD (1 -> 128 em ~20 ms): igual antes e depois, sem
+  adiantamento. Tiras: final-redim-depois-{painel-superior,central}-{3.42,5.88}.png
+  e final-redim-depois-osd-3.5.png.
+
+### BENCH_KITTY=1, 10 ciclos, 10 s
+
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+sem a regra (só o onFrameRuleChanged desfeito, para comparar), 1 rodada:
+painel-superior:abrir        64.4     62.5       29      13       1      402  10.0         3.8      72.6
+central:abrir                57.0     55.8       14      13       0      356   6.1         3.1      73.8
+osd:abrir                    60.0     58.7       26      13       3      750   3.0         2.6      73.7
+parado                        0.0      0.0        0       -       0        0   0.7         0.0         -
+com a regra (o código final), rodada 1:
+painel-superior:abrir        62.0     54.5       29      13       8      387   9.7         2.1      63.2
+painel-superior:fechar       27.3     25.5       13       5       0      171   9.7         2.1      26.2
+central:abrir                55.5     51.2       26      13       6      346   6.3         1.3      56.3
+central:fechar               25.2     24.0       13       8       0      157   6.3         1.3      25.3
+osd:abrir                    57.4     48.2       26      25      45      715   3.1         1.0      54.0
+papel                        67.4     67.4       15      13       0      674  12.2         3.4         -
+parado                        0.0      0.0        0       -       0        0   0.7         0.2         -
+parado-painel                67.7     67.7       14      13       0      677  12.7         3.5         -
+com a regra (o código final), rodada 2:
+painel-superior:abrir        64.4     62.5       29      13       1      402   9.8         2.2      64.7
+painel-superior:fechar       27.2     25.6       13       7       0      170   9.8         2.2      25.6
+central:abrir                55.7     51.4       25      13       3      347   6.1         1.4      55.4
+central:fechar               25.0     22.5       15       7       0      156   6.1         1.4      25.2
+osd:abrir                    59.3     46.5       27      14      23      739   3.1         1.0      56.2
+papel                        67.3     67.3       13      13       0      673  12.4         3.5         -
+parado                        0.0      0.0        0       -       0        0   0.7         0.2         -
+parado-painel                67.8     67.8       16      13       0      678  12.4         3.5         -
+
+Leitura: sem a regra, o Hyprland redesenha a tela toda durante a animação
+da geometria (FPS tela ~73, Hyprland 2.6-3.8 %), e o OSD na coluna fica
+com 3 longos; com a regra, o Hyprland gasta menos (1.0-2.2 %), a tela só
+redesenha com o qs (FPS tela = FPS do qs), e o OSD na coluna volta a
+esperar dois quadros no swap (23-45 longos, p95 14-25), como a janela em
+tela cheia do bench oficial e o F da sonda. O que piora o OSD não é o
+tamanho da janela da forma, e sim o ritmo do swap dela quando o compositor
+não tem mais nada para redesenhar: fica nas Pendências (item do OSD), para
+medir na máquina real. A decisão de manter a janela encolhendo continua:
+em tela cheia o OSD fica igual, e o resto (desfoque e composição só da
+coluna) é menor.
