@@ -7,15 +7,13 @@ import qs.core.widgets
 // direita (dentro da moldura). O fundo é o bloco da central (a forma da tela);
 // o conteúdo desliza com ele desde o 1º quadro. Entra deslizando da direita e
 // sai pelo mesmo caminho, com a mesma mola (que passa do zero na volta: só
-// esconde). Com os dois abrindo juntos, a entrada vai em cascata, com um
-// atraso pela ordem (`order`: 40 ms por passo, na escala das animações). Os
-// filhos vão para dentro da margem interna (`padding`). `reveal` (0 a 1) é
-// quanto da altura está à mostra, de cima para baixo: o bloco da forma vai até
-// `shownHeight`, e o conteúdo é cortado nela.
+// esconde). Os dois abrindo ou fechando juntos andam no mesmo passo, como uma
+// peça só. Os filhos vão para dentro da margem interna (`padding`). `reveal`
+// (0 a 1) é quanto da altura está à mostra, de cima para baixo: o bloco da
+// forma vai até `shownHeight`, e o conteúdo é cortado nela.
 Item {
     id: root
 
-    required property int order
     required property real margin
     // Largura da tela, para colar na borda direita.
     required property real areaWidth
@@ -24,8 +22,6 @@ Item {
     property real shown: 0
     // Pedido aberto (o último enter() ou leave()).
     property bool wanted: false
-    // A entrada atual espera a vez da ordem (os dois abrindo juntos).
-    property bool cascade: false
     readonly property real padding: ThemeManager.spacing.normal
     readonly property real travel: width + margin + 24
     property real reveal: 1
@@ -37,9 +33,8 @@ Item {
     opacity: Frame.clamp(shown)
     x: areaWidth - width - margin + (1 - shown) * travel
 
-    function enter(cascade: bool): void {
+    function enter(): void {
         wanted = true;
-        root.cascade = cascade;
         // Reaberta na saída, segue de onde está; senão, entra do zero.
         if (leaving.running)
             leaving.stop();
@@ -54,11 +49,13 @@ Item {
         leaving.restart();
     }
 
-    SequentialAnimation {
+    Anim {
         id: entering
 
-        PauseAnimation { duration: root.cascade ? root.order * 40 * ThemeManager.anim.scale : 0 }
-        Anim { target: root; property: "shown"; to: 1; type: Anim.Spatial }
+        target: root
+        property: "shown"
+        to: 1
+        type: Anim.Spatial
     }
 
     Anim {

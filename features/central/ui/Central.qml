@@ -14,14 +14,15 @@ import qs.features.central.state
 // altura do conteúdo, até deixar o mínimo das Notificações, se elas estiverem
 // abertas) e as Notificações embaixo, na altura que sobra, até a moldura de
 // baixo; sozinhas, elas sobem até a de cima. Cada painel desliza da direita
-// com o fundo desde o 1º quadro (em cascata, se os dois abrem juntos) e sai
-// pelo mesmo caminho, com a mesma mola; as Notificações sobem e descem junto
-// com a entrada e a saída das Ações. O fundo do bloco é um pedaço da forma da
-// tela (Frame), do tamanho dos painéis à mostra. Abaixo das Ações, as
-// Notificações crescem para baixo a partir delas ao entrar (e encolhem até
-// elas ao sair): o bloco não pula de altura num quadro. A pílula fundida
-// continua clicável (fora das áreas de entrada da central). Esc fecha os dois;
-// o clique fora fecha pelo grab (ver Panels).
+// para a esquerda com o fundo desde o 1º quadro e sai pelo mesmo caminho, com
+// a mesma mola; os dois abrindo ou fechando juntos (o atalho geral) andam no
+// mesmo passo, como uma peça só, já na altura toda. As Notificações sobem e
+// descem junto com a entrada e a saída das Ações. O fundo do bloco é um pedaço
+// da forma da tela (Frame), do tamanho dos painéis à mostra. Só com as Ações
+// já à mostra (e ficando), as Notificações crescem para baixo a partir delas
+// ao entrar (e encolhem até elas ao sair): o bloco não pula de altura num
+// quadro. A pílula fundida continua clicável (fora das áreas de entrada da
+// central). Esc fecha os dois; o clique fora fecha pelo grab (ver Panels).
 Item {
     id: panel
 
@@ -46,6 +47,10 @@ Item {
     // cima: 1 com as Ações abertas, 0 sem elas. Muda só com as Notificações
     // abertas: na saída delas, ficam onde estavam.
     property real reserve: 1
+    // As Notificações entram ou saem sozinhas, com as Ações à mostra e
+    // ficando: crescem a partir delas (e encolhem até elas). Com as duas
+    // juntas, não: o bloco desliza já na altura toda.
+    property bool inboxGrows: false
 
     onOpenChanged: {
         if (open)
@@ -53,14 +58,15 @@ Item {
     }
 
     // Os dois sub-estados mudam juntos numa chamada só (o atalho geral, o IPC
-    // central): a decisão espera o fim dela, para a cascata valer só quando os
-    // dois abrem juntos. A tela da central também conta: trocar de tela é
+    // central): a decisão espera o fim dela, para os dois andarem juntos só
+    // quando mudam juntos. A tela da central também conta: trocar de tela é
     // fechar numa e abrir na outra.
     onActionsWantedChanged: Qt.callLater(panel.sync)
     onInboxWantedChanged: Qt.callLater(panel.sync)
 
     function sync(): void {
-        const both = actionsWanted && !actions.wanted && inboxWanted && !inbox.wanted;
+        // As Ações já pedidas e ficando, antes de a decisão delas mudar o `wanted`.
+        const actionsStay = actionsWanted && actions.wanted;
         if (inboxWanted) {
             const target = actionsWanted ? 1 : 0;
             if (inbox.wanted) {
@@ -73,17 +79,21 @@ Item {
             }
         }
         if (actionsWanted && !actions.wanted)
-            actions.enter(both);
+            actions.enter();
         else if (!actionsWanted && actions.wanted) {
             actions.leave();
             // O campo focado (a senha do Wi-Fi) some com as Ações: o Esc volta para cá.
             if (open)
                 focusSink.forceActiveFocus();
         }
-        if (inboxWanted && !inbox.wanted)
-            inbox.enter(both);
-        else if (!inboxWanted && inbox.wanted)
+        if (inboxWanted && !inbox.wanted) {
+            inboxGrows = actionsStay;
+            inbox.enter();
+        } else if (!inboxWanted && inbox.wanted) {
+            // Fechando no meio do crescimento, encolhe dali (sem pulo de altura).
+            inboxGrows = actionsStay || (inboxGrows && inbox.shown < 1);
             inbox.leave();
+        }
     }
 
     Anim {
@@ -145,23 +155,23 @@ Item {
         id: actions
 
         z: 1
-        order: 0
         margin: panel.margin
         areaWidth: panel.width
         y: CentralState.top
-        maxHeight: Math.max(0, panel.height - y - panel.margin - (panel.inboxWanted ? panel.gap + panel.inboxMin : 0))
+        // Com as Notificações saindo junto, o limite fica até elas sumirem: a
+        // altura não muda na saída.
+        maxHeight: Math.max(0, panel.height - y - panel.margin - (panel.inboxWanted || inbox.visible ? panel.gap + panel.inboxMin : 0))
     }
 
     InboxPanel {
         id: inbox
 
-        order: 1
         margin: panel.margin
         areaWidth: panel.width
         y: CentralState.top + Math.max(0, panel.reserve) * (actions.height + panel.gap)
         height: Math.max(0, panel.height - y - panel.margin)
-        // Com o lugar das Ações reservado, cresce a partir delas junto com a
-        // entrada (a mola, cortada em 1); sozinhas, entram já na altura toda.
-        reveal: 1 - panel.reserve * (1 - Math.min(1, Math.max(0, shown)))
+        // Entrando ou saindo sozinha abaixo das Ações, cresce a partir delas
+        // junto com a mola (cortada em 1); senão, já na altura toda.
+        reveal: panel.inboxGrows ? Math.min(1, Math.max(0, shown)) : 1
     }
 }
