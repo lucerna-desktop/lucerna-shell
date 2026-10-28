@@ -100,7 +100,8 @@ RSS do qs
   base: 312 -> 327 (+15), 313 -> 316 (+3)
   final: 335 -> 353 (+18), 335 -> 339 (+4)   (parte 23 MB acima da base)
 
-## Regra de decisão do usuário (da base): DISPARADA
+## Regra de decisão do usuário (da base): DISPARADA numericamente no bench
+## oficial, anulada pela sonda A/B (ver a seção "A troca de tamanho")
 
 Pior das 2 rodadas, base -> final:
 
@@ -195,3 +196,69 @@ fechamento de cada (no scratchpad da sessão, tiras/final-*):
 Só as Configurações abertas, `hyprctl dispatch 'hl.dsp.focus({ workspace = 2 })'`
 (o mesmo do atalho Super+2): as Configurações continuam abertas (panels get =
 settings) na área 2 e de volta na 1. Não fecham.
+
+## A troca de tamanho: sonda A/B com a barra escondida
+
+Por quê: o bench oficial roda numa área de trabalho vazia, então a barra
+aparece e a janela da forma fica em 1920 px o tempo todo. Ele nunca exercita
+a troca de 1 px -> nível, e foi nessa condição que a regra de decisão
+numérica disparou (osd:abrir e central:abrir). A sonda mede o caso em que o
+tamanho muda de fato.
+
+Condição:
+- um kitty lado a lado (tiled) na área 1 (1896x1056), a barra se esconde;
+  1920x1080, desfoque performance, papel de parede estático;
+- S = a branch encolhendo (11b14cf); F = a mesma branch forçada em tela cheia
+  (`extent: screenSize.width` no FrameWindow.qml, edição temporária
+  revertida); base = 9afba51;
+- duas rodadas por variante (r1 / r2), `dev/test.sh up` novo antes de cada
+  sessão, mesmo log do render loop e mesma tabela do bench;
+- a sonda usou um driver próprio sobre o mesmo leitor `dev/bench-paineis.py`
+  (o bench fecha o kitty entre os casos).
+
+A mudança de tamanho acontece em S (conferida com `hyprctl layers -j`):
+repouso 1x1080; painel superior 1 -> 1920 em ~40-60 ms depois do IPC;
+central 1 -> 1920; OSD 1 -> 128 em ~20 ms; fechado volta a 1.
+
+Resultados (r1 / r2):
+
+caso / métrica          S (encolhe)    F (tela cheia)   base 9afba51
+painel-superior:abrir
+  pior ms               28 / 25        31 / 13          55 / 55
+  p95 ms                13 / 13         1 / 1           20 / 16
+  longos (>20)           5 / 1          2 / 0           33 / 26
+  FPS shell             63.5 / 64.7    61.1 / 61.3      56.7 / 57.7
+central:abrir
+  pior ms               17 / 15        10 / 9           26 / 23
+  p95 ms                13 / 13         1 / 1           16 / 15
+  longos                 0 / 0          0 / 0           12 / 4
+  FPS shell             56.9 / 56.7    52.9 / 53.3      56.7 / 57.2
+osd:abrir
+  pior ms               14 / 13        26 / 27          22 / 23
+  p95 ms                13 / 13        19 / 19          13 / 13
+  longos                 0 / 0         31 / 33           5 / 5
+  FPS shell             59.9 / 59.9    57.9 / 58.2      55.3 / 55.3
+parado (10 s)
+  quadros                0 / 0          1 / 0            0 / 0
+  qs % / Hyprland %     0.8 / 0.1 e 0.7 / 0.1 (S); 0.7 / 0.1 e 0.7 / 0.0 (F);
+                        0.7 / 0.0 e 0.7 / 0.1 (base): as três gastam o mesmo.
+
+Achado: o 1º quadro de toda abertura em S custa 0 a 2 ms, e os seguintes
+esperam ~12-13 ms no swap (o ritmo do vsync a 60 Hz). Não há salto no
+configure/buffer novo: a troca de tamanho não causa o quadro longo. Os únicos
+> 20 ms em S são o render frio do 1º ciclo do painel (28 ms, render=26; F
+tem o mesmo, 31 com render=28) e um swap de 25 ms numa fatia da r2. O OSD
+lento do bench oficial vem da janela em tela cheia: F o reproduz (swap
+alternando 25/13-14 ms, 31-33 longos por rodada, só swap) e encolher para a
+coluna de 128 o resolve. Com a barra escondida, S é melhor que a base em
+tudo nas aberturas; S × F: melhor no OSD, igual no painel e um pouco pior no
+pior ms da central (15-17 contra 9-10, tudo abaixo de um quadro de 16,7 ms).
+
+Decisão: a janela continua encolhendo; o recuo para tela cheia não se aplica,
+porque o engasgo não vem da troca de tamanho. Na máquina real, a 144 Hz, o
+usuário pode conferir de novo com o mesmo driver (a sonda usou um driver
+próprio sobre o mesmo leitor `dev/bench-paineis.py`).
+
+Observação: na 2ª rodada de cada sessão o kitty saiu com `fullscreen: 1`
+(maximizado) no `hyprctl clients`, com o mesmo tamanho 1896x1056, nas três
+variantes; a comparação vale.
