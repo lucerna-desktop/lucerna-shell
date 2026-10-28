@@ -48,10 +48,14 @@ Item {
         rect: layout.shape
     }
 
+    // Escondida, a pílula sai da tela e também some: o que muda nela (a hora,
+    // as áreas de trabalho, o pulso da gravação) não redesenha a janela da
+    // forma, que fica sempre mapeada.
     PillLayout {
         id: layout
 
         anchors.fill: parent
+        visible: root.shown || root.progress > 0
         progress: root.progress
         morph: root.morph
     }
