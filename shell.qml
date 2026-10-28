@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import qs.core.widgets
 import qs.features.bar.ui
 import qs.features.capture.ui
 import qs.features.central.ui
@@ -24,18 +25,47 @@ ShellRoot {
     Wallpaper {}
     WorkspacesOverview {}
     Bar {}
+    // A janela da forma de cada tela, com o que as features põem nela, de
+    // baixo para cima.
+    Variants {
+        model: Quickshell.screens
+
+        FrameWindow {
+            id: frameWindow
+
+            required property var modelData
+
+            targetScreen: modelData
+            // Abaixo da forma: os painéis cobrem os popups.
+            underlay: NotificationPopups {
+                screen: frameWindow.modelData
+            }
+
+            Osd {
+                screen: frameWindow.modelData
+            }
+
+            Central {
+                screen: frameWindow.modelData
+            }
+
+            BarLayer {
+                screen: frameWindow.modelData
+            }
+
+            Dashboard {
+                screen: frameWindow.modelData
+            }
+        }
+    }
     CaptureOverlay {}
-    Central {}
     Clipboard {}
-    Dashboard {}
     Displays {}
     Energy {}
     Idle {}
     Input {}
     Launcher {}
     NightLight {}
-    NotificationPopups {}
-    Osd {}
     PowerMenu {}
     Settings {}
     MonitorConfirm {}

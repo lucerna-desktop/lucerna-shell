@@ -169,10 +169,18 @@ Singleton {
         }
     }
 
-    // Os painéis que saem da moldura ("lucerna-frame-*") e a barra, que desenha
-    // a forma deles, não ganham o esmaecer de camada do Hyprland: a forma e o
-    // conteúdo entram juntos, sem a camada inteira começar transparente.
+    // A janela da forma ("lucerna-panel-frame", sempre aberta) não ganha o
+    // esmaecer de camada do Hyprland: a forma e o conteúdo entram juntos, sem
+    // a camada inteira começar transparente.
     readonly property string frameRule: Hypr.usingLua ? noAnimLua() : ""
+
+    // O `usingLua` do Quickshell pode chegar depois do Component.onCompleted:
+    // a regra vai quando ele chega (sem ela, o Hyprland anima e estica a
+    // janela da forma a cada troca de largura).
+    onFrameRuleChanged: {
+        if (frameRule)
+            Hypr.evalLua(frameRule);
+    }
 
     Component.onCompleted: {
         blurDelay.start();
@@ -211,7 +219,7 @@ Singleton {
     }
 
     function noAnimLua(): string {
-        return `hl.layer_rule({ match = { namespace = "^lucerna-(panel-bar|frame-.*)$" }, no_anim = true })`;
+        return `hl.layer_rule({ match = { namespace = "^lucerna-panel-frame$" }, no_anim = true })`;
     }
 
     // Desfoque atrás dos painéis do shell ("lucerna-panel-*"), pelo nível

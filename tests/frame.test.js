@@ -6,6 +6,7 @@ function run(t) {
     const F = t.Frame;
     const blobs0 = F.blobs;
     const windows0 = F.windows;
+    const inputs0 = F.inputs;
 
     function blob(props) {
         return Object.assign({ screen: "A", role: "panel", framed: false, open: false, progress: 0, rect: Qt.rect(0, 0, 0, 0), radius: 16 }, props);
@@ -16,12 +17,14 @@ function run(t) {
         t.test(name, () => {
             try {
                 F.blobs = [];
+                F.inputs = [];
                 for (const b of list)
                     F.register(b);
                 body();
             } finally {
                 F.blobs = blobs0;
                 F.windows = windows0;
+                F.inputs = inputs0;
             }
         });
     }
@@ -77,37 +80,40 @@ function run(t) {
         try {
             t.eq(F.progressOn("A"), 0, "o OSD sai da borda sem moldura");
             t.check(!F.fusedOn("A"), "e a pílula não se funde");
-            t.check(F.wantedOn("A"), "mas a janela da forma existe");
         } finally {
             osd.open = false;
             osd.progress = 0;
         }
     });
 
-    scenario("frame: a janela da forma", [pill, hiddenPill], () => {
-        t.check(F.wantedOn("A") && !F.wantedOn("B"), "existe onde há pedaço ativo");
-        F.unregister(pill);
-        t.check(!F.wantedOn("A"), "a barra escondida não conta");
-    });
-
-    scenario("frame: os painéis esperam a janela da forma à mostra", [], () => {
-        const w = { targetScreen: "A", visible: false };
+    scenario("frame: as janelas da forma registradas", [], () => {
+        const w = { targetScreen: "A", visible: true };
         F.addWindow(w);
-        t.check(!F.isReady("A"), "escondida, ainda não");
-        w.visible = true;
-        t.check(F.isReady("A") && !F.isReady("B"), "à mostra, na tela dela");
+        t.check(F.windows.includes(w), "registrada");
         F.removeWindow(w);
-        t.check(!F.isReady("A"), "tirada, não");
+        t.check(!F.windows.includes(w), "tirada");
     });
 
-    t.test("frame: a moldura, a suavização e o conteúdo com a abertura", () => {
+    scenario("frame: a janela da forma já na largura pedida", [], () => {
+        t.check(F.readyIn(1920, 1920) && F.readyIn(1919.6, 1920), "na largura (meio pixel de folga)");
+        t.check(!F.readyIn(1, 1920) && !F.readyIn(128, 1920), "estreita: ainda não");
+        t.check(F.readyIn(1920, F.column), "mais larga que a coluna também serve");
+        F.windows = [];
+        t.check(F.readyOn("A", 1920), "sem janela registrada: já tem");
+        const w = { targetScreen: "A", visible: true, width: 1 };
+        F.addWindow(w);
+        t.check(!F.readyOn("A", F.column), "em 1 px: espera");
+        w.width = F.column;
+        t.check(F.readyOn("A", F.column) && !F.readyOn("A", 1920), "na coluna: só o que cabe nela");
+        t.check(F.readyOn("B", 1920), "a janela de outra tela não conta");
+        w.visible = false;
+        t.check(F.readyOn("A", 1920), "escondida não conta");
+    });
+
+    t.test("frame: a moldura e a suavização com a abertura", () => {
         t.eq([F.clamp(-1), F.clamp(0.4), F.clamp(2)], [0, 0.4, 1]);
         t.eq([F.thicknessAt(0), F.thicknessAt(0.5), F.thicknessAt(1.2)], [0, F.thickness / 2, F.thickness]);
         t.eq([F.smoothingAt(0), F.smoothingAt(0.25), F.smoothingAt(0.5), F.smoothingAt(1)], [0, F.smoothing / 2, F.smoothing, F.smoothing]);
-        t.eq(F.contentOpacity(0.3), 0, "antes de ~70%, sem conteúdo");
-        t.eq(F.contentOpacity(F.contentStart), 0);
-        t.near(F.contentOpacity(0.85), 0.5, 1e-9, "entra entre 70% e 100%");
-        t.eq(F.contentOpacity(1.1), 1);
     });
 
     t.test("frame: de que borda cada painel sai", () => {
@@ -164,13 +170,83 @@ function run(t) {
         t.eq(F.disjoint([[10.5, 10.2, 5, 5], [-5, -5, 3, 3], [0, 0, 0, 9]], size).map(box), [[10, 10, 6, 6]], "arredonda para fora e descarta o que fica fora ou vazio");
     });
 
-    t.test("frame: sem a moldura, a janela da forma encolhe para a coluna da direita", () => {
+    // Uma área de entrada (FrameInput) solta: a tela, ativa, com teclado e o
+    // retângulo em coordenadas da tela.
+    function input(props) {
+        return Object.assign({ screen: "A", active: true, keyboard: false, rect: Qt.rect(0, 0, 0, 0) }, props);
+    }
+
+    scenario("frame: as entradas de cada tela", [], () => {
+        const bar = input({ rect: Qt.rect(700, 8, 480, 34) });
+        const closed = input({ active: false, rect: Qt.rect(500, 42, 920, 200) });
+        const elsewhere = input({ screen: "B", rect: Qt.rect(10, 10, 10, 10) });
+        for (const i of [bar, closed, elsewhere])
+            F.registerInput(i);
+        t.eq(F.inputs.length, 3, "registradas");
+        t.check(F.inputsOn("A").length === 1 && F.inputsOn("A")[0] === bar, "só as ativas da tela");
+        t.check(F.inputsOn("B").length === 1 && F.inputsOn("B")[0] === elsewhere, "a outra tela, as dela");
+        F.unregisterInput(bar);
+        t.check(F.inputsOn("A").length === 0 && F.inputs.length === 2, "tirada");
+    });
+
+    scenario("frame: cada tela só vê as próprias entradas", [], () => {
+        F.registerInput(input({ keyboard: true, rect: Qt.rect(500, 0, 920, 400) }));
+        t.check(F.keyboardOn("A"), "o painel com teclado na A pega o teclado da A");
+        t.check(!F.keyboardOn("B"), "e não o da B");
+        t.eq(F.inputsOn("B").length, 0, "nem recebe o mouse na B");
+    });
+
+    scenario("frame: o teclado só com painel que precisa", [], () => {
+        F.registerInput(input({ rect: Qt.rect(700, 8, 480, 34) }));
+        t.check(!F.keyboardOn("A"), "só a pílula: sem teclado");
+        const top = input({ keyboard: true, rect: Qt.rect(500, 0, 920, 400) });
+        F.registerInput(top);
+        t.check(F.keyboardOn("A"), "o painel superior aberto pega o teclado");
+        top.active = false;
+        top.keyboard = false;
+        t.check(!F.keyboardOn("A"), "fechando (a mola ainda andando), o teclado já sai");
+    });
+
+    scenario("frame: sem nada à mostra, nenhuma entrada e a janela de 1 px", [], () => {
+        t.eq(F.extentOn([], [], 0, Qt.size(1920, 1080)), F.idleWidth, "1 px na borda");
+        t.eq(F.idleWidth, 1);
+        t.eq(F.inputsOn("A").length, 0, "nenhum clique preso");
+    });
+
+    t.test("frame: a largura da janela da forma", () => {
         const size = Qt.size(1920, 1080);
-        const right = blob({ open: true, progress: 1, rect: Qt.rect(1920 - 60, 400, 124, 220) });
-        t.check(F.compactOn([right], 0, size), "só o OSD na borda direita: a coluna");
-        t.check(!F.compactOn([right], 0.2, size), "com a moldura: a tela inteira");
-        t.check(!F.compactOn([right, dash], 0, size), "um pedaço fora da coluna: a tela inteira");
-        t.check(!F.compactOn([], 0, size), "sem pedaço, nada a encolher");
+        const osdPart = blob({ open: true, progress: 1, rect: F.attach(Qt.rect(1920 - 52, 430, 52, 220), F.edges.osd) });
+        const popups = input({ rect: Qt.rect(size.width - 404, 50, 396, 300) });
+        t.eq(F.extentOn([osdPart], [], 0, size), F.column, "o OSD na coluna");
+        t.eq(F.extentOn([], [popups], 0, size), F.wideColumn, "os popups na coluna larga");
+        t.eq(F.extentOn([osdPart], [popups], 0, size), F.wideColumn, "os popups e o OSD juntos");
+        t.eq(F.extentOn([osdPart], [], 0.2, size), size.width, "com a moldura: a tela inteira");
+        t.eq(F.extentOn([osdPart, dash], [], 0, size), size.width, "um pedaço fora das colunas: a tela inteira");
+        t.eq(F.extentOn([], [input({ rect: Qt.rect(700, 8, 480, 34) })], 0, size), size.width, "uma entrada fora das colunas: a tela inteira");
+    });
+
+    // Como no Osd.qml: o bloco cresce da borda direita com a mola (que passa de 1).
+    t.test("frame: o OSD deslizando fica na coluna", () => {
+        const size = Qt.size(1920, 1080);
+        for (let shown = 0.05; shown <= 1.1 + 1e-9; shown += 0.05) {
+            const grown = 52 * Math.max(0, shown);
+            const part = blob({ open: true, progress: shown, rect: F.attach(Qt.rect(size.width - grown, 430, grown, 220), F.edges.osd) });
+            t.eq(F.extentOn([part], [], 0, size), F.column, "aberto " + shown.toFixed(2));
+        }
+    });
+
+    t.test("frame: a janela estreita não apaga a largura medida", () => {
+        const sizes0 = F.measured;
+        try {
+            F.measured = ({});
+            const a = { name: "A", width: 1920, height: 1080 };
+            F.measure(a, 1920, 1080);
+            F.measure(a, 0, 1000);
+            const s = F.sizeOn(a);
+            t.eq([s.width, s.height], [1920, 1000], "a largura da tela cheia fica; a altura muda");
+        } finally {
+            F.measured = sizes0;
+        }
     });
 
     t.test("frame: a abertura e a transformação a partir dos pedaços da tela", () => {

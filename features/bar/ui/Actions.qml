@@ -28,14 +28,18 @@ Row {
             spacing: 5
 
             Rectangle {
+                id: pulse
+
                 anchors.verticalCenter: parent.verticalCenter
                 width: 8
                 height: 8
                 radius: 4
                 color: ThemeManager.colors.accentText
 
+                // Só pulsa à mostra: com a barra escondida, a animação
+                // redesenharia a janela da forma a cada quadro.
                 SequentialAnimation on opacity {
-                    running: BarState.recording
+                    running: BarState.recording && pulse.visible
                     loops: Animation.Infinite
 
                     NumberAnimation { to: 0.3; duration: 700 }

@@ -4,22 +4,25 @@ import QtQuick
 import Quickshell
 
 // A moldura da tela e o que sai dela: uma forma só por monitor, desenhada
-// pelo core/widgets/FrameShape (união suave por SDF) na janela da barra.
+// pelo core/widgets/FrameShape (união suave por SDF) na janela da forma
+// (core/widgets/FrameWindow, uma por tela, sempre aberta). O conteúdo dos
+// painéis que saem da borda (a barra, o painel superior, a central, o OSD e
+// os popups de notificação) fica na mesma janela, por cima da forma, e
+// desliza com o fundo desde o 1º quadro.
 //
 // Cada pedaço da forma é um FrameBlob, registrado aqui: a pílula da barra e o
 // fundo de cada painel que sai de uma borda (o painel superior, a central e o
-// OSD; os popups de notificação são cartões soltos, fora da forma). O
-// conteúdo deles fica nas próprias janelas,
-// por cima. A moldura nos quatro lados aparece com os pedaços "da moldura"
-// (`framed`: a barra, o painel superior e a central): engrossa de 0 até
-// `thickness` junto com a abertura deles e some quando fecham; a barra é uma
-// aba fundida à borda de cima dela, e o painel superior é essa aba
-// transformada (`fromBar`): ela se alarga e cresce para baixo, e o conteúdo da
-// barra esmaece.
+// OSD; os popups de notificação são cartões soltos, fora da forma). A moldura
+// nos quatro lados aparece com os pedaços "da moldura" (`framed`: a barra, o
+// painel superior e a central): engrossa de 0 até `thickness` junto com a
+// abertura deles e some quando fecham; a barra é uma aba fundida à borda de
+// cima dela, e o painel superior é essa aba transformada (`fromBar`): ela se
+// alarga e cresce para baixo, e o conteúdo da barra esmaece.
 //
-// A janela da barra só existe enquanto há algum pedaço ativo na tela dela;
-// as janelas dos painéis esperam por ela (`isReady`), para ficarem por cima
-// (no Hyprland, a camada criada depois fica na frente).
+// A janela da forma fica sempre aberta e muda de largura só entre quatro
+// níveis (extentOn): 1 px na borda direita sem nada à mostra, a coluna, a
+// coluna larga e a tela inteira. Ela recebe o mouse só nas áreas de entrada
+// (FrameInput) ativas da tela, e o teclado só com uma delas pedindo.
 Singleton {
     id: root
 
@@ -36,13 +39,6 @@ Singleton {
     // ficar fora do arco do canto de dentro da moldura, com qualquer raio de
     // canto no cartão (o pior é o canto reto, na diagonal do arco).
     readonly property real cornerClear: thickness + radius * (1 - Math.SQRT1_2)
-    // O conteúdo de um painel entra quando a forma dele passa disto: a forma
-    // e o conteúdo ficam em janelas diferentes e podem chegar à tela com um
-    // quadro de diferença; entrando tarde, a forma já está à frente dele.
-    readonly property real contentStart: 0.7
-    // Quanto o conteúdo fica recuado da beira da forma que o recorta (o
-    // painel superior): um quadro de atraso da forma não o deixa sem fundo.
-    readonly property real contentInset: 4
     // Quanto um lado preso a uma borda passa dela: os cantos desse lado ficam
     // fora da tela, e a junção com a borda vira o arco côncavo.
     readonly property real overhang: 64
@@ -50,9 +46,12 @@ Singleton {
     readonly property int slotCount: 6
     // Quantas faixas a forma usa no máximo (um ShaderEffect cada; ver regions).
     readonly property int regionCount: 16
-    // A coluna da direita, onde o OSD sai sem a moldura: a janela da forma
-    // encolhe para ela (ver compactOn).
+    // A coluna da direita, onde o OSD sai sem a moldura, e a coluna larga,
+    // onde cabem os popups de notificação: a janela da forma encolhe para
+    // elas, e para 1 px sem nada à mostra (ver extentOn).
     readonly property real column: 128
+    readonly property real wideColumn: 420
+    readonly property real idleWidth: 1
 
     // De que borda cada um sai.
     readonly property var edges: ({
@@ -62,8 +61,10 @@ Singleton {
         })
 
     property var blobs: []
-    // As janelas da forma (a da barra de cada tela), com `targetScreen` e `visible`.
+    // As janelas da forma (uma por tela), com `targetScreen`, `visible` e `parts`.
     property var windows: []
+    // As áreas de entrada (FrameInput) da janela da forma, de todas as telas.
+    property var inputs: []
 
     function register(blob: var): void {
         blobs = blobs.concat([blob]);
@@ -71,6 +72,24 @@ Singleton {
 
     function unregister(blob: var): void {
         blobs = blobs.filter(b => b !== blob);
+    }
+
+    function registerInput(input: var): void {
+        inputs = inputs.concat([input]);
+    }
+
+    function unregisterInput(input: var): void {
+        inputs = inputs.filter(i => i !== input);
+    }
+
+    // As áreas de entrada ativas de uma tela: a máscara da janela da forma.
+    function inputsOn(screen: var): var {
+        return inputs.filter(i => i.screen === screen && i.active);
+    }
+
+    // Alguma área ativa da tela pede o teclado (um painel que digita).
+    function keyboardOn(screen: var): bool {
+        return inputsOn(screen).some(i => i.keyboard);
     }
 
     // Aberto, ou ainda animando o fechamento.
@@ -125,11 +144,6 @@ Singleton {
         return blobs.some(b => b.role !== "pill" && b.framed && b.open && b.screen === screen);
     }
 
-    // A tela precisa da janela da forma.
-    function wantedOn(screen: var): bool {
-        return blobsOn(screen).length > 0;
-    }
-
     function addWindow(window: var): void {
         windows = windows.concat([window]);
     }
@@ -138,22 +152,31 @@ Singleton {
         windows = windows.filter(w => w !== window);
     }
 
-    // A janela da forma dessa tela já existe (à mostra).
-    function isReady(screen: var): bool {
-        return windows.some(w => w.targetScreen === screen && w.visible);
+    // A janela da forma dessa tela já tem a largura `need` (o compositor
+    // respondeu à troca de nível, ~40-60 ms depois do pedido). Um painel só
+    // começa a mola daí: antes, os quadros não aparecem (a janela ainda está
+    // estreita) e a mola correria sem ser vista, e o 1º quadro à mostra
+    // sairia adiantado. Sem janela registrada (os testes), já tem.
+    function readyOn(screen: var, need: real): bool {
+        const window = windows.find(w => w.targetScreen === screen && w.visible);
+        return !window || readyIn(window.width, need);
     }
 
-    // O tamanho de cada tela (pelo nome) medido pelas janelas em tela cheia
-    // dela (a da forma e as dos painéis da moldura), com o tamanho que a tela
-    // informava na hora: { screenWidth, screenHeight, width, height }. A tela
-    // do Qt pode ficar velha quando a saída muda de tamanho (o Hyprland
-    // aninhado não manda o tamanho lógico novo), mas a janela mapeada depois
-    // recebe o de verdade; a forma, numa janela, e o conteúdo, na outra, se
-    // medem pelo mesmo número.
+    // Meio pixel de folga para o arredondamento da largura.
+    function readyIn(width: real, need: real): bool {
+        return width >= need - 0.5;
+    }
+
+    // O tamanho de cada tela (pelo nome) medido pela janela da forma dela
+    // (FrameWindow), com o tamanho que a tela informava na hora:
+    // { screenWidth, screenHeight, width, height }. A tela do Qt pode ficar
+    // velha quando a saída muda de tamanho (o Hyprland aninhado não manda o
+    // tamanho lógico novo), mas a janela mapeada depois recebe o de verdade; a
+    // forma e o conteúdo, na mesma janela, se medem pelo mesmo número.
     property var measured: ({})
 
-    // Grava o tamanho de uma janela em tela cheia dessa tela. Escondida, a
-    // janela tem 0 x 0: não mede. Largura 0 com altura (a janela da forma
+    // Grava o tamanho da janela da forma dessa tela. Escondida, a janela tem
+    // 0 x 0: não mede. Largura 0 com altura (a janela da forma
     // estreita, na coluna da direita) mede só a altura.
     function measure(screen: var, width: real, height: real): void {
         if (!screen || (width <= 0 && height <= 0))
@@ -202,11 +225,6 @@ Singleton {
         return smoothing * clamp(p * 2);
     }
 
-    // A opacidade do conteúdo de um painel com a forma em `p`.
-    function contentOpacity(p: real): real {
-        return clamp((p - contentStart) / (1 - contentStart));
-    }
-
     // O retângulo esticado para fora da tela pelos lados presos à borda
     // (`edge`: "top", "right", "bottom", "left", "top-right"...).
     function attach(r: rect, edge: string): rect {
@@ -227,13 +245,22 @@ Singleton {
         return Qt.rect(x, y, w, h);
     }
 
-    // Sem a moldura e com todos os pedaços (e a folga do arco) na coluna da
-    // direita, a janela da forma ocupa só a coluna: o Hyprland desfoca e
-    // recompõe a cada quadro só ela, não a tela inteira (o OSD por cima de
-    // um vídeo). Muda só na passagem entre com e sem moldura.
-    function compactOn(on: var, frame: real, size: size): bool {
-        const pad = reach;
-        return frame <= 0 && on.length > 0 && on.every(b => b.rect.x - pad >= size.width - column);
+    // A largura da janela da forma (presa à direita), num dos quatro níveis:
+    // a tela inteira com a moldura à mostra; senão, a menor coluna (a do OSD
+    // ou a larga, dos popups) que cobre todos os pedaços (com a folga do
+    // arco) e todas as áreas de entrada; a tela inteira se nenhuma cobre; e
+    // 1 px sem nada. O Hyprland desfoca e recompõe a cada quadro só a janela,
+    // e ela não muda de tamanho a cada quadro, só na troca de nível.
+    function extentOn(parts: var, inputs: var, frame: real, size: size): real {
+        if (frame > 0)
+            return size.width;
+        if (!parts.length && !inputs.length)
+            return idleWidth;
+        const left = Math.min(...parts.map(b => b.rect.x - reach), ...inputs.map(i => i.rect.x));
+        for (const width of [column, wideColumn])
+            if (left >= size.width - width)
+                return width;
+        return size.width;
     }
 
     // A área que a forma ocupa na janela (tamanho `size`): a janela toda com a

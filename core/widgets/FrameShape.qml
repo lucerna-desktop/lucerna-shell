@@ -6,8 +6,8 @@ import qs.core.theme
 
 // A forma da tela (ver Frame), desenhada por um shader: a moldura e os pedaços
 // ativos da tela `screen`, fundidos, na cor e na transparência da barra.
-// Preenche a janela, presa à borda direita da tela: a tela inteira, ou só a
-// coluna da direita (Frame.compactOn). Os pedaços e as faixas ficam em
+// Preenche a janela, presa à borda direita da tela: a tela inteira, uma das
+// colunas da direita ou 1 px (Frame.extentOn). Os pedaços e as faixas ficam em
 // coordenadas da tela; cada faixa é posta na janela descontando a origem dela.
 // O shader roda só nas faixas onde pode haver forma (Frame.regions): um
 // ShaderEffect por faixa, todos com as mesmas uniforms, cada um desenhando o

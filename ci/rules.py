@@ -65,11 +65,6 @@ def repo_files(root):
 # registro estão no spec do CI (docs/superpowers/specs/2026-09-26-ci-design.md).
 QMLLINT_ALLOWED = {
     "features/settings/ui/MonitorConfirm.qml": ("margins.top: 90",),
-    "features/osd/ui/Osd.qml": ("margins.bottom: 72",),
-    "features/notifications/ui/NotificationPopups.qml": (
-        "margins.top: Frame.thickness + ThemeManager.spacing.small",
-        "margins.right: Frame.thickness + ThemeManager.spacing.small",
-    ),
 }
 QMLLINT_SUPPRESSION = re.compile(r"qmllint\s+(disable|enable)\b")
 QMLLINT_ALLOWED_COMMENT = "// qmllint disable unqualified missing-property"

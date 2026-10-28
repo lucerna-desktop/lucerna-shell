@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import qs.core.frame
 import qs.core.panels
 import qs.core.theme
 
@@ -15,12 +14,6 @@ import qs.core.theme
 // Não modal (acompanhante ou base, ver Panels): não escurece nem cobre a tela;
 // só `inputItem` recebe o mouse, então a barra e os outros painéis seguem
 // clicáveis. O clique fora é tratado pelo Panels.
-//
-// Saindo da moldura (`frameScreen`, ver Frame): o fundo é um pedaço da forma
-// da tela, desenhado pela janela da barra, que esta espera existir para ficar
-// por cima dela; o conteúdo não esmaece com a janela (o painel o mostra quando
-// a forma passa de ~70%); e, modal, a pílula fundida fica fora da máscara: o
-// clique nela vai para a barra.
 PanelWindow {
     id: root
 
@@ -29,16 +22,8 @@ PanelWindow {
     property string name: "panel"
     readonly property bool modal: Panels.isModal(name) || !inputItem
     property Item inputItem: null
-    // A tela da moldura de onde o painel sai; null para os centralizados.
-    property var frameScreen: null
-    readonly property bool framed: frameScreen !== null
     readonly property real progress: shown
-    // O tamanho para o layout: saindo da moldura, o da tela dela (Frame.sizeOn,
-    // o medido pelas janelas em tela cheia, como esta; a tela informada pode
-    // estar velha). A janela só ganha o tamanho depois de aparecer (antes,
-    // 0 x 0), e a forma, desenhada na janela da barra, já aparece antes dela:
-    // medida só pela janela, saía por um quadro no canto de cima à esquerda.
-    readonly property size area: framed ? Frame.sizeOn(frameScreen) : Qt.size(width, height)
+    readonly property size area: Qt.size(width, height)
     readonly property real areaWidth: area.width
     readonly property real areaHeight: area.height
     default property alias content: container.data
@@ -59,7 +44,7 @@ PanelWindow {
         }
     }
 
-    visible: shown > 0 && (!framed || Frame.isReady(frameScreen))
+    visible: shown > 0
     color: "transparent"
     anchors {
         top: true
@@ -70,49 +55,16 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     // "lucerna-panel-*" recebe o desfoque do Hyprland (ver ThemeSwitcherState).
-    // Saindo da moldura, "lucerna-frame-*": o fundo é a forma, já desfocada
-    // na janela da barra; desfocar de novo atrás do conteúdo dobraria o custo
-    // do Hyprland a cada quadro.
-    WlrLayershell.namespace: framed ? `lucerna-frame-${name}` : `lucerna-panel-${name}`
+    WlrLayershell.namespace: `lucerna-panel-${name}`
     // Não modal: teclado "sob demanda", que o Hyprland entrega ao abrir e ao
     // clicar; mais de um aberto, fica com o último clicado.
-    // Modal da moldura (a central): também sob demanda. Com o teclado exclusivo,
-    // o Hyprland manda todo clique para a camada exclusiva, mesmo fora da
-    // máscara, e a pílula fundida deixaria de ser clicável; o clique fora dela
-    // continua caindo na tela inteira deste painel, que fecha.
-    WlrLayershell.keyboardFocus: modal && !framed ? (open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None) : !visible ? WlrKeyboardFocus.None : WlrKeyboardFocus.OnDemand
-    mask: !modal ? companionMask : framed ? pillMask : null
+    WlrLayershell.keyboardFocus: modal ? (open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None) : !visible ? WlrKeyboardFocus.None : WlrKeyboardFocus.OnDemand
+    mask: !modal ? companionMask : null
 
     Region {
         id: companionMask
 
         item: root.inputItem
-    }
-
-    // A tela inteira menos a pílula fundida da tela da moldura.
-    Region {
-        id: pillMask
-
-        readonly property rect pill: root.framed ? Frame.pillOn(root.frameScreen) : Qt.rect(0, 0, 0, 0)
-
-        width: root.width
-        height: root.height
-
-        Region {
-            x: pillMask.pill.x
-            y: pillMask.pill.y
-            width: pillMask.pill.width
-            height: pillMask.pill.height
-            intersection: Intersection.Subtract
-        }
-    }
-
-    onWidthChanged: measure()
-    onHeightChanged: measure()
-
-    function measure(): void {
-        if (framed && visible)
-            Frame.measure(frameScreen, width, height);
     }
 
     Component.onCompleted: Panels.register(root)
@@ -137,7 +89,7 @@ PanelWindow {
         id: container
 
         anchors.fill: parent
-        opacity: root.framed ? 1 : root.shown
+        opacity: root.shown
         focus: true
         Keys.onEscapePressed: root.dismissed()
     }
