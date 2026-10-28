@@ -26,7 +26,10 @@ PanelWindow {
     required property var targetScreen
     readonly property bool shown: BarState.shownOn(targetScreen)
     property real progress: shown ? 1 : 0
-    readonly property size screenSize: Qt.size(targetScreen?.width ?? 0, targetScreen?.height ?? 0)
+    // O tamanho da tela medido pelas janelas (Frame.sizeOn), não o informado,
+    // que pode estar velho; esta mede o dela, em tela cheia (a altura sempre;
+    // a largura só fora da coluna).
+    readonly property size screenSize: Frame.sizeOn(targetScreen)
     // Os pedaços ativos desta tela, separados uma vez por quadro: a forma, o
     // tamanho da janela e a transformação da barra derivam deles.
     readonly property var parts: Frame.blobsOn(targetScreen)
@@ -88,6 +91,13 @@ PanelWindow {
 
     // Clicar na barra não fecha os painéis acompanhantes.
     // Os painéis que saem da moldura esperam esta janela à mostra.
+    onWidthChanged: measure()
+    onHeightChanged: measure()
+
+    function measure(): void {
+        Frame.measure(targetScreen, visible && !compact ? width : 0, visible ? height : 0);
+    }
+
     Component.onCompleted: {
         BarState.registerSurface(root);
         Frame.addWindow(root);

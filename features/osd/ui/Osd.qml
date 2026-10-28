@@ -42,8 +42,9 @@ PanelWindow {
 
     // O bloco, em coordenadas da tela (a janela fica no meio da borda direita).
     FrameBlob {
-        readonly property real edge: OsdState.screen?.width ?? 0
-        readonly property real top: ((OsdState.screen?.height ?? 0) - window.implicitHeight) / 2 + window.flare
+        readonly property size area: Frame.sizeOn(OsdState.screen)
+        readonly property real edge: area.width
+        readonly property real top: (area.height - window.implicitHeight) / 2 + window.flare
         readonly property real grown: window.bodyWidth * Math.max(0, window.shown)
 
         screen: OsdState.screen
