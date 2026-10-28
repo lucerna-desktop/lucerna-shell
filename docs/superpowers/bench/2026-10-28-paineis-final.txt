@@ -49,6 +49,9 @@ RSS do qs: 335 MB antes, 339 MB depois
 
 ## Base × final, por linha
 
+Nota: a rodada final oficial (11b14cf) foi tirada antes da correção da regra
+`no_anim` (2ac19d7) e do portão readyOn (6d0e123).
+
 Cada célula: base r1/r2 -> final r1/r2.
 
 painel-superior:abrir
@@ -102,6 +105,9 @@ RSS do qs
 
 ## Regra de decisão do usuário (da base): DISPARADA numericamente no bench
 ## oficial, anulada pela sonda A/B (ver a seção "A troca de tamanho")
+
+Nota: a rodada final oficial (11b14cf) foi tirada antes da correção da regra
+`no_anim` (2ac19d7) e do portão readyOn (6d0e123).
 
 Pior das 2 rodadas, base -> final:
 
@@ -367,3 +373,49 @@ não tem mais nada para redesenhar: fica nas Pendências (item do OSD), para
 medir na máquina real. A decisão de manter a janela encolhendo continua:
 em tela cheia o OSD fica igual, e o resto (desfoque e composição só da
 coluna) é menor.
+
+## Sonda A/B 2: com a regra `no_anim` valendo
+
+Condição: BENCH_KITTY=1, variantes S (a branch, janela da forma que encolhe),
+F (janela sempre em tela cheia) e base (9afba51), 2 rodadas, 1920x1080@60,
+desfoque performance, `dev/test.sh up` novo antes de cada rodada.
+Resultados r1 / r2:
+
+caso                 métrica           S (encolhe)      F (tela cheia)   base
+painel-superior      pior ms           29 / 29          34 / 29          51 / 51
+                     p95 ms            14 / 13          1 / 1            19 / 16
+                     longos (>20)      10 / 2           2 / 2            29 / 24
+                     FPS shell         62.7 / 62.7      61.2 / 59.8      57.5 / 57.6
+                     qs % / Hyprland % 9.8/2.2 - 9.8/2.3  9.6/2.1 - 9.6/2.1  13.2/4.4 - 13.8/4.6
+central              pior ms           25 / 25          26 / 25          23 / 26
+                     p95 ms            14 / 17          2 / 1            15 / 16
+                     longos            8 / 11           6 / 5            4 / 10
+                     FPS shell         55.2 / 55.8      53.1 / 50.1      56.6 / 55.6
+                     qs % / Hyprland % 6.0/1.3 - 6.4/1.3  5.9/1.2 - 5.8/1.2  9.3/3.9 - 10.1/4.0
+osd                  pior ms           27 / 26          27 / 26          24 / 36
+                     p95 ms            25 / 17          25 / 25          13 / 13
+                     longos            69 / 32          46 / 42          8 / 16
+                     FPS shell         56.0 / 58.7      57.3 / 56.8      55.5 / 54.8
+                     qs % / Hyprland % 3.0/1.0 - 3.2/1.1  3.0/1.0 - 3.0/1.0  5.3/3.2 - 5.9/3.6
+parado (10 s)        quadros           0 / 0            0 / 0            0 / 0
+                     qs % / Hyprland % 0.7/0.1 - 0.7/0.1  0.7/0.1 - 0.7/0.2  0.6/0.3 - 0.7/0.3
+
+Achado: o 1º quadro depois da mudança de tamanho custa 0-2 ms em toda
+abertura de S. Os quadros longos são o ritmo do swap, do índice 5 em diante
+(OSD: 100 de 101 no índice 5+; 14/25/14/25 ms alternando no meio da mola),
+e o F, que nunca muda de tamanho, tem os mesmos (OSD 46/42 contra 69/32,
+central 6/5 contra 8/11) e o mesmo pior ms. A base também nunca enviou a
+regra `no_anim` (só no Component.onCompleted, com o usingLua ainda falso):
+o FPS tela dela passa do FPS do qs e o Hyprland gasta 3.2-4.6 %.
+
+Latência do IPC até a mola começar (readyOn), mediana (mín-máx) em ms:
+
+                     S                F
+painel superior      8 (5-18)         0 (0-1)
+central              4 (3-26)         0 (0-1)
+OSD                  2 (1-45)         0 (0-1)
+
+Decisão: a janela continua encolhendo; o recuo para tela cheia não se
+aplica (o engasgo não vem da troca de tamanho, F tem o mesmo pior quadro).
+O swap lento do OSD (14/25 ms alternando) é igual em S e F e fica nas
+Pendências.
