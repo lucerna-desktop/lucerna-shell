@@ -46,6 +46,7 @@ import "central.test.js" as CentralTest
 import "clipboard.test.js" as ClipboardTest
 import "clipboardstate.test.js" as ClipboardStateTest
 import "format.test.js" as FormatTest
+import "gamemode.test.js" as GameModeTest
 import "frame.test.js" as FrameTest
 import "input.test.js" as InputTest
 import "inputactions.test.js" as InputActionsTest
@@ -126,6 +127,7 @@ ShellRoot {
         ["weatherstate", WeatherStateTest],
         ["credits", CreditsTest],
         ["web", WebTest],
+        ["gamemode", GameModeTest],
         ["themeswitcher", ThemeSwitcherTest],
         ["lucernaclient", LucernaClientTest]
     ]
@@ -276,6 +278,7 @@ ShellRoot {
             get VideoWallpapers() { return VideoWallpapers; },
             get Weather() { return Weather; },
             get Web() { return Web; },
+            get GameMode() { return GameMode; },
             get MediaState() { return MediaState; },
             get SettingsState() { return SettingsState; },
             get WeatherState() { return WeatherState; },
