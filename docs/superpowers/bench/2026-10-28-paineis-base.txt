@@ -1,0 +1,62 @@
+# Bench dos painéis: a base (main 9afba51), 2026-10-28
+
+Código medido: worktree em 9afba51 (main, "Animação: sem corte seco na expansão
+dos painéis (#61)"), com os três arquivos do bench copiados sem commit.
+
+Ambiente (repetir igual na medição final, Tarefa 8):
+- container lucerna-polish recriado com `dev/test.sh up` (config nova) logo antes;
+- janela de teste 1920x1080 (LUCERNA_TEST_SIZE sem definir: o padrão), saída
+  WAYLAND-1 1920x1080@60, host KDE, GPU /dev/dri/renderD129;
+- desfoque: performance (o padrão do config novo, `blur get`);
+- papel de parede: auto (animado no container); o bench o põe estático fora do
+  caso `papel` e devolve `auto` no fim;
+- tema catppuccin-mocha; brilho falso "Tela integrada (backlight): 50%".
+
+Comando (duas rodadas seguidas, 8 s entre elas):
+  dev/test.sh up
+  dev/test.sh run 'bash ~/.config/quickshell/lucerna/dev/bench-paineis.sh 10 10'
+
+Como ler: FPS shell e FPS mín por fatia (0,6 s depois de cada IPC, a partir de
+logo antes dele) nos casos de ciclo e sobre os 10 s nos contínuos; pior ms é o
+maior entre `frame rendered in` e polish+lock+blockedForSync+animations;
+longos são os quadros > 20 ms; quadros é o total do qs no caso; FPS tela vem de
+uma passada separada só gravando (wf-recorder guiado por dano), com as fatias
+alinhadas pelo lançamento do wf-recorder (erro ~40 ms).
+
+## Rodada 1
+
+caso             FPS shell  FPS mín  pior ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior       40.2     19.0       53      21      930  11.4         3.3      72.3
+central               39.0     20.8       22       3      933   6.4         2.6      72.0
+osd                   50.8     49.6        9       0     1254   4.1         2.4      73.0
+papel                 67.4     67.4       14       0      674  11.8         3.0         -
+janela                 0.0      0.0        0       0        0   0.6         2.9         -
+parado                 0.1      0.1        0       0        1   1.0         0.3         -
+parado-painel         67.2     67.2       21       1      672  11.8         3.0         -
+RSS do qs: 311 MB antes, 323 MB depois
+
+## Rodada 2
+
+caso             FPS shell  FPS mín  pior ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior       39.6     19.0       57      22      925  12.2         3.7      73.0
+central               38.6     19.2       24       3      931   6.7         3.0      71.7
+osd                   50.6     49.5        9       0     1253   4.2         2.6      71.3
+papel                 67.7     67.7       20       0      678  11.7         3.1         -
+janela                 0.0      0.0        0       0        0   0.6         3.2         -
+parado                 0.0      0.0        0       0        0   0.7         0.1         -
+parado-painel         67.5     67.5       16       0      675  11.6         3.1         -
+RSS do qs: 312 MB antes, 316 MB depois
+
+## Observações
+
+- `parado`: 0 a 1 quadro em 10 s (critério do "sem redesenho parado" atendido
+  na base).
+- `parado-painel` e `papel`: o painel superior aberto e parado redesenha a ~67
+  quadros/s (alguma coisa nele anima sempre); é da base, não do bench.
+- `janela`: 0 quadros do qs. O kitty lado a lado encolhe para a esquerda da
+  central (ela reserva a área), então nada dele fica atrás do vidro; o custo
+  aparece só no Hyprland.
+- FPS tela: 72 a 73 nas duas rodadas da base; numa rodada de validação no
+  container de ~1 h de vida (mesmo código, antes do `up`) deu 44,7 / 40,0 /
+  54,0. A gravação muda com o estado do Hyprland aninhado: compare só com
+  rodadas feitas logo depois de um `dev/test.sh up`.
