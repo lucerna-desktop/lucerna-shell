@@ -157,17 +157,16 @@ Singleton {
         windows = windows.filter(w => w !== window);
     }
 
-    // O tamanho de cada tela (pelo nome) medido pelas janelas em tela cheia
-    // dela (a da forma e as dos painéis da moldura), com o tamanho que a tela
-    // informava na hora: { screenWidth, screenHeight, width, height }. A tela
-    // do Qt pode ficar velha quando a saída muda de tamanho (o Hyprland
-    // aninhado não manda o tamanho lógico novo), mas a janela mapeada depois
-    // recebe o de verdade; a forma, numa janela, e o conteúdo, na outra, se
-    // medem pelo mesmo número.
+    // O tamanho de cada tela (pelo nome) medido pela janela da forma dela
+    // (FrameWindow), com o tamanho que a tela informava na hora:
+    // { screenWidth, screenHeight, width, height }. A tela do Qt pode ficar
+    // velha quando a saída muda de tamanho (o Hyprland aninhado não manda o
+    // tamanho lógico novo), mas a janela mapeada depois recebe o de verdade; a
+    // forma e o conteúdo, na mesma janela, se medem pelo mesmo número.
     property var measured: ({})
 
-    // Grava o tamanho de uma janela em tela cheia dessa tela. Escondida, a
-    // janela tem 0 x 0: não mede. Largura 0 com altura (a janela da forma
+    // Grava o tamanho da janela da forma dessa tela. Escondida, a janela tem
+    // 0 x 0: não mede. Largura 0 com altura (a janela da forma
     // estreita, na coluna da direita) mede só a altura.
     function measure(screen: var, width: real, height: real): void {
         if (!screen || (width <= 0 && height <= 0))

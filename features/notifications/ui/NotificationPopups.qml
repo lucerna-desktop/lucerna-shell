@@ -67,7 +67,7 @@ Item {
         width: 380
         height: root.height - margin
         // Os cartões que saem pela direita somem na beira da coluna, como na
-        // antiga janela própria.
+        // antiga janela dos popups.
         clip: true
         spacing: ThemeManager.spacing.small
         interactive: false

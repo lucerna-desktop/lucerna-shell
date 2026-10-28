@@ -2,7 +2,7 @@ import QtQuick
 import qs.core.theme
 
 // Um pedaço da forma da tela (ver Frame): o retângulo, em coordenadas da tela,
-// que a janela da barra desenha na cor da barra, fundido com a moldura e com
+// que a janela da forma (FrameWindow) desenha na cor da barra, fundido com a moldura e com
 // os outros pedaços. Fica registrado enquanto existe.
 QtObject {
     id: root
