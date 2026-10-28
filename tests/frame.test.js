@@ -93,24 +93,18 @@ function run(t) {
         t.check(!F.wantedOn("A"), "a barra escondida não conta");
     });
 
-    scenario("frame: os painéis esperam a janela da forma à mostra", [], () => {
-        const w = { targetScreen: "A", visible: false };
+    scenario("frame: as janelas da forma registradas", [], () => {
+        const w = { targetScreen: "A", visible: true };
         F.addWindow(w);
-        t.check(!F.isReady("A"), "escondida, ainda não");
-        w.visible = true;
-        t.check(F.isReady("A") && !F.isReady("B"), "à mostra, na tela dela");
+        t.check(F.windows.includes(w), "registrada");
         F.removeWindow(w);
-        t.check(!F.isReady("A"), "tirada, não");
+        t.check(!F.windows.includes(w), "tirada");
     });
 
-    t.test("frame: a moldura, a suavização e o conteúdo com a abertura", () => {
+    t.test("frame: a moldura e a suavização com a abertura", () => {
         t.eq([F.clamp(-1), F.clamp(0.4), F.clamp(2)], [0, 0.4, 1]);
         t.eq([F.thicknessAt(0), F.thicknessAt(0.5), F.thicknessAt(1.2)], [0, F.thickness / 2, F.thickness]);
         t.eq([F.smoothingAt(0), F.smoothingAt(0.25), F.smoothingAt(0.5), F.smoothingAt(1)], [0, F.smoothing / 2, F.smoothing, F.smoothing]);
-        t.eq(F.contentOpacity(0.3), 0, "antes de ~70%, sem conteúdo");
-        t.eq(F.contentOpacity(F.contentStart), 0);
-        t.near(F.contentOpacity(0.85), 0.5, 1e-9, "entra entre 70% e 100%");
-        t.eq(F.contentOpacity(1.1), 1);
     });
 
     t.test("frame: de que borda cada painel sai", () => {

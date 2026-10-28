@@ -8,10 +8,10 @@ import qs.core.widgets
 // o conteúdo desliza com ele desde o 1º quadro. Entra deslizando da direita e
 // sai pelo mesmo caminho, com a mesma mola (que passa do zero na volta: só
 // esconde). Com os dois abrindo juntos, a entrada vai em cascata, com um
-// atraso pela ordem (`order`: 40 ms por passo, na escala das animações). Os filhos vão para dentro da margem
-// interna (`padding`). `reveal` (0 a 1) é quanto da altura está à mostra, de
-// cima para baixo: o bloco da forma vai até `shownHeight`, e o conteúdo é
-// cortado nela.
+// atraso pela ordem (`order`: 40 ms por passo, na escala das animações). Os
+// filhos vão para dentro da margem interna (`padding`). `reveal` (0 a 1) é
+// quanto da altura está à mostra, de cima para baixo: o bloco da forma vai até
+// `shownHeight`, e o conteúdo é cortado nela.
 Item {
     id: root
 

@@ -187,11 +187,11 @@ function run(t) {
         }
     });
 
-    t.test("themeswitcher: os painéis da moldura sem o esmaecer de camada", () => {
+    t.test("themeswitcher: a janela da forma sem o esmaecer de camada", () => {
         const rule = S.noAnimLua();
         t.check(rule.startsWith("hl.layer_rule("), "uma regra de camada");
         t.check(rule.includes("no_anim = true"), "sem animação");
-        t.check(rule.includes('"^lucerna-(panel-frame|frame-.*)$"'), "a janela da forma e os painéis que ainda saem da moldura em janela própria");
+        t.check(rule.includes('"^lucerna-panel-frame$"'), "só a janela da forma");
     });
 
     t.test("themeswitcher: desempenho é desfoque com xray", () => {

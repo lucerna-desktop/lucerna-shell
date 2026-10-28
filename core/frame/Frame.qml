@@ -5,25 +5,24 @@ import Quickshell
 
 // A moldura da tela e o que sai dela: uma forma só por monitor, desenhada
 // pelo core/widgets/FrameShape (união suave por SDF) na janela da forma
-// (core/widgets/FrameWindow, uma por tela, sempre aberta).
+// (core/widgets/FrameWindow, uma por tela, sempre aberta). O conteúdo dos
+// painéis que saem da borda (a barra, o painel superior, a central, o OSD e
+// os popups de notificação) fica na mesma janela, por cima da forma, e
+// desliza com o fundo desde o 1º quadro.
 //
 // Cada pedaço da forma é um FrameBlob, registrado aqui: a pílula da barra e o
 // fundo de cada painel que sai de uma borda (o painel superior, a central e o
-// OSD; os popups de notificação são cartões soltos, fora da forma). O
-// conteúdo deles fica nas próprias janelas,
-// por cima. A moldura nos quatro lados aparece com os pedaços "da moldura"
-// (`framed`: a barra, o painel superior e a central): engrossa de 0 até
-// `thickness` junto com a abertura deles e some quando fecham; a barra é uma
-// aba fundida à borda de cima dela, e o painel superior é essa aba
-// transformada (`fromBar`): ela se alarga e cresce para baixo, e o conteúdo da
-// barra esmaece.
+// OSD; os popups de notificação são cartões soltos, fora da forma). A moldura
+// nos quatro lados aparece com os pedaços "da moldura" (`framed`: a barra, o
+// painel superior e a central): engrossa de 0 até `thickness` junto com a
+// abertura deles e some quando fecham; a barra é uma aba fundida à borda de
+// cima dela, e o painel superior é essa aba transformada (`fromBar`): ela se
+// alarga e cresce para baixo, e o conteúdo da barra esmaece.
 //
 // A janela da forma fica sempre aberta e muda de largura só entre quatro
 // níveis (extentOn): 1 px na borda direita sem nada à mostra, a coluna, a
 // coluna larga e a tela inteira. Ela recebe o mouse só nas áreas de entrada
-// (FrameInput) ativas da tela, e o teclado só com uma delas pedindo. As
-// janelas dos painéis que ainda têm a sua esperam por ela (`isReady`), para
-// ficarem por cima (no Hyprland, a camada criada depois fica na frente).
+// (FrameInput) ativas da tela, e o teclado só com uma delas pedindo.
 Singleton {
     id: root
 
@@ -40,13 +39,6 @@ Singleton {
     // ficar fora do arco do canto de dentro da moldura, com qualquer raio de
     // canto no cartão (o pior é o canto reto, na diagonal do arco).
     readonly property real cornerClear: thickness + radius * (1 - Math.SQRT1_2)
-    // O conteúdo de um painel entra quando a forma dele passa disto: a forma
-    // e o conteúdo ficam em janelas diferentes e podem chegar à tela com um
-    // quadro de diferença; entrando tarde, a forma já está à frente dele.
-    readonly property real contentStart: 0.7
-    // Quanto o conteúdo fica recuado da beira da forma que o recorta (o
-    // painel superior): um quadro de atraso da forma não o deixa sem fundo.
-    readonly property real contentInset: 4
     // Quanto um lado preso a uma borda passa dela: os cantos desse lado ficam
     // fora da tela, e a junção com a borda vira o arco côncavo.
     readonly property real overhang: 64
@@ -165,11 +157,6 @@ Singleton {
         windows = windows.filter(w => w !== window);
     }
 
-    // A janela da forma dessa tela já existe (à mostra).
-    function isReady(screen: var): bool {
-        return windows.some(w => w.targetScreen === screen && w.visible);
-    }
-
     // O tamanho de cada tela (pelo nome) medido pelas janelas em tela cheia
     // dela (a da forma e as dos painéis da moldura), com o tamanho que a tela
     // informava na hora: { screenWidth, screenHeight, width, height }. A tela
@@ -227,11 +214,6 @@ Singleton {
     // cheia na metade (fixa, faria um calombo com o painel fechado).
     function smoothingAt(p: real): real {
         return smoothing * clamp(p * 2);
-    }
-
-    // A opacidade do conteúdo de um painel com a forma em `p`.
-    function contentOpacity(p: real): real {
-        return clamp((p - contentStart) / (1 - contentStart));
     }
 
     // O retângulo esticado para fora da tela pelos lados presos à borda

@@ -8,7 +8,7 @@ import qs.features.osd.state
 // o número em cima, a trilha e o ícone embaixo (o aviso do modo jogo troca o
 // número e a trilha por um texto deitado). O fundo é um pedaço da forma da
 // tela (Frame), preso à borda com os arcos côncavos, que cresce dela para fora
-// com mola; o conteúdo entra quando ele passa de ~70%. Não recebe cliques.
+// com mola; o conteúdo desliza com ele desde o 1º quadro. Não recebe cliques.
 Item {
     id: root
 
