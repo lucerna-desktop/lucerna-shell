@@ -166,6 +166,14 @@ Adiadas na revisão final da branch `feat/desfoque` (níveis do desfoque, xray, 
 - [ ] **8×2 em vez de 12×1:** com uma passada o desfoque saía em blocos, então os temas ficaram com as mesmas duas passadas da `main` e raio maior (32 em vez de 24, um pouco mais desfocado). O ganho de custo vem do xray e da pausa do papel, não de menos passadas.
 - [ ] **A prévia do vidro (`GlassPreview`) não simula o xray** no nível Desempenho; só a intensidade.
 
+## Sobras do modo jogo
+
+Da implementação do modo jogo no shell (branch `feat/modo-jogo`, com o `lucernad` do PR #19).
+
+- [ ] **O ícone da barra não tem dica flutuante:** a barra não tem um componente de dica. O ícone mostra "Desligar" ao lado com o mouse em cima, e o texto completo ("Modo jogo ligado: tela cheia, jogo. Clique para desligar.") fica no `BarState.gameTooltip` (o `Accessible.name`). Fazer a dica quando houver um componente para isso.
+- [ ] **A lista "nunca" de fábrica está copiada** do `DEFAULT_NEVER` do `lucernad` no padrão do `Config.gameNever`: o shell sempre manda a lista dele no `game.configure`. Se a lista do daemon mudar, mudar aqui também (ou um botão "voltar à lista de fábrica" que a peça ao daemon).
+- [ ] **O resumo das notificações conta as que ainda estão na lista:** uma notificação dispensada durante o jogo (pelo app ou na central) não entra (decisão D20 do spec).
+
 ## Depois
 
 - [ ] Aba Desempenho: um medidor de bateria em forma de pilha, só no notebook. Rascunhos de três encaixes (ao lado de CPU e GPU, em pé ao lado da Memória, faixa embaixo) em `.superpowers/brainstorm/436361-1792526405/content/bateria-desempenho.html`; o usuário quer planejar melhor antes.
@@ -205,6 +213,7 @@ No ambiente de teste não dá para simular cliques, e o Hyprland ignora teclado 
 - [ ] Painel superior: as setas do calendário (a bolha some em outro mês e volta no atual), o clique nos cards de GPU e de Disco trocando de GPU e de disco (com o esmaecimento), o "4,8 / 224 GiB" do `sda`, o clique numa linha da letra pulando para o trecho, a troca de player pelo ícone.
 - [ ] Aba Desempenho: a temperatura da RTX (lida pela NVML do `lucernad`, só com a placa em uso; o container de teste não tem a NVIDIA) e o uso da Intel pelo fdinfo do `lucernad` na máquina real.
 - [ ] Painéis da moldura: o clique de verdade na barra fundida (a fumaça e o roteiro usam um ponteiro virtual), a barra e a moldura em dois monitores (o painel abre no monitor com foco e sai da barra dele; com o painel superior, a central, o OSD ou um popup à mostra, passar o mouse para o outro monitor não os leva junto), e a barra se transformando no painel superior com o mouse de verdade (o conteúdo esmaecendo, sem clique perdido).
+- [ ] Modo jogo: entrar com um jogo de verdade (Steam/Proton, Wine, Lutris) e pela tela cheia de um jogo; o clique no ícone da barra desligando; a chave das ações rápidas com o mouse; o atalho (a ação "Ligar/desligar o modo jogo" com uma tecla escolhida em Atalhos) e a ação "Mostrar/esconder a barra" com o teclado de verdade; o clique no cartão de resumo abrindo as notificações; o perfil de desempenho e o GameMode da Feral numa máquina com os dois; a medição (`dev/bench-game.sh`) numa sessão Hyprland real.
 - [ ] Central: os ícones da barra abrindo as ações na página certa e fechando no mesmo ícone (sem fechar as notificações), o sino abrindo e fechando só as notificações, e o foco voltando ao painel (o `Esc` fecha) depois de fechar as ações com a senha do Wi-Fi sendo digitada; os tiles (o corpo liga e desliga, a setinha abre a página), os sliders de volume e brilho e os volumes do microfone e de cada app; a troca de dispositivo, conectar a uma rede com senha, parear, os perfis de energia, a engrenagem e o "Limpar".
 
 ## Ambiente de teste
