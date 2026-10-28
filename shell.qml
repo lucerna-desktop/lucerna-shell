@@ -36,8 +36,8 @@ ShellRoot {
             required property var modelData
 
             targetScreen: modelData
-
-            NotificationPopups {
+            // Abaixo da forma: os painéis cobrem os popups.
+            underlay: NotificationPopups {
                 screen: frameWindow.modelData
             }
 

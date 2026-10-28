@@ -9,7 +9,8 @@ import qs.core.panels
 // A janela da forma de um monitor (ver Frame): sempre aberta, desenha a forma
 // da tela (a moldura, a aba da barra e os fundos dos painéis que saem das
 // bordas, numa peça só) e, por cima dela, o que as features põem nela (a
-// barra, e depois o conteúdo dos painéis da moldura), em coordenadas da tela.
+// barra, e depois o conteúdo dos painéis da moldura), em coordenadas da tela;
+// por baixo da forma, o que fica abaixo dos painéis (os popups).
 // A composição fica no shell.qml (uma feature não importa outra).
 //
 // Presa à direita, muda de largura só entre os níveis do Frame.extentOn: 1 px
@@ -38,6 +39,9 @@ PanelWindow {
     // O que as features põem na janela, em coordenadas da tela, por cima da
     // forma; os primeiros ficam embaixo.
     default property alias content: layer.data
+    // O que fica por baixo da forma, também em coordenadas da tela: os
+    // fundos e o conteúdo dos painéis cobrem o que está aqui (os popups).
+    property alias underlay: under.data
 
     screen: targetScreen
     visible: true
@@ -91,6 +95,14 @@ PanelWindow {
             width: modelData.rect.width
             height: modelData.rect.height
         }
+    }
+
+    Item {
+        id: under
+
+        x: root.width - root.screenSize.width
+        width: root.screenSize.width
+        height: root.screenSize.height
     }
 
     FrameShape {
