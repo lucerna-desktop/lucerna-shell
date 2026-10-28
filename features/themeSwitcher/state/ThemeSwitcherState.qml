@@ -169,9 +169,10 @@ Singleton {
         }
     }
 
-    // Os painéis que saem da moldura ("lucerna-frame-*") e a barra, que desenha
-    // a forma deles, não ganham o esmaecer de camada do Hyprland: a forma e o
-    // conteúdo entram juntos, sem a camada inteira começar transparente.
+    // A janela da forma ("lucerna-panel-frame", sempre aberta) e os painéis
+    // que ainda saem da moldura em janela própria ("lucerna-frame-*") não
+    // ganham o esmaecer de camada do Hyprland: a forma e o conteúdo entram
+    // juntos, sem a camada inteira começar transparente.
     readonly property string frameRule: Hypr.usingLua ? noAnimLua() : ""
 
     Component.onCompleted: {
@@ -211,7 +212,7 @@ Singleton {
     }
 
     function noAnimLua(): string {
-        return `hl.layer_rule({ match = { namespace = "^lucerna-(panel-bar|frame-.*)$" }, no_anim = true })`;
+        return `hl.layer_rule({ match = { namespace = "^lucerna-(panel-frame|frame-.*)$" }, no_anim = true })`;
     }
 
     // Desfoque atrás dos painéis do shell ("lucerna-panel-*"), pelo nível

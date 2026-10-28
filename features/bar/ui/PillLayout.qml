@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import qs.core.frame
 import qs.core.theme
 import qs.core.widgets
@@ -15,9 +14,6 @@ Item {
     required property real progress
     required property real morph
 
-    readonly property Region mask: Region {
-        item: root.morph > 0 ? null : pill
-    }
     // O fundo, que a forma da tela desenha (Frame).
     readonly property rect shape: Qt.rect(pill.x, pill.y, pill.width, pill.height)
 
@@ -39,6 +35,7 @@ Item {
             spacing: ThemeManager.spacing.small
             opacity: Frame.barContentOpacity(root.morph)
             visible: opacity > 0
+            enabled: root.morph <= 0
 
             Workspaces {
                 anchors.verticalCenter: parent.verticalCenter

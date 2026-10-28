@@ -260,14 +260,6 @@ Singleton {
         }
     }
 
-    function registerSurface(window: var): void {
-        Panels.register(window);
-    }
-
-    function unregisterSurface(window: var): void {
-        Panels.unregister(window);
-    }
-
     function togglePanel(name: string): void {
         Panels.toggle(name);
     }

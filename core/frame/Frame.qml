@@ -4,7 +4,8 @@ import QtQuick
 import Quickshell
 
 // A moldura da tela e o que sai dela: uma forma só por monitor, desenhada
-// pelo core/widgets/FrameShape (união suave por SDF) na janela da barra.
+// pelo core/widgets/FrameShape (união suave por SDF) na janela da forma
+// (core/widgets/FrameWindow, uma por tela, sempre aberta).
 //
 // Cada pedaço da forma é um FrameBlob, registrado aqui: a pílula da barra e o
 // fundo de cada painel que sai de uma borda (o painel superior, a central e o
@@ -17,9 +18,12 @@ import Quickshell
 // transformada (`fromBar`): ela se alarga e cresce para baixo, e o conteúdo da
 // barra esmaece.
 //
-// A janela da barra só existe enquanto há algum pedaço ativo na tela dela;
-// as janelas dos painéis esperam por ela (`isReady`), para ficarem por cima
-// (no Hyprland, a camada criada depois fica na frente).
+// A janela da forma fica sempre aberta e muda de largura só entre quatro
+// níveis (extentOn): 1 px na borda direita sem nada à mostra, a coluna, a
+// coluna larga e a tela inteira. Ela recebe o mouse só nas áreas de entrada
+// (FrameInput) ativas da tela, e o teclado só com uma delas pedindo. As
+// janelas dos painéis que ainda têm a sua esperam por ela (`isReady`), para
+// ficarem por cima (no Hyprland, a camada criada depois fica na frente).
 Singleton {
     id: root
 
@@ -50,9 +54,12 @@ Singleton {
     readonly property int slotCount: 6
     // Quantas faixas a forma usa no máximo (um ShaderEffect cada; ver regions).
     readonly property int regionCount: 16
-    // A coluna da direita, onde o OSD sai sem a moldura: a janela da forma
-    // encolhe para ela (ver compactOn).
+    // A coluna da direita, onde o OSD sai sem a moldura, e a coluna larga,
+    // onde cabem os popups de notificação: a janela da forma encolhe para
+    // elas, e para 1 px sem nada à mostra (ver extentOn).
     readonly property real column: 128
+    readonly property real wideColumn: 420
+    readonly property real idleWidth: 1
 
     // De que borda cada um sai.
     readonly property var edges: ({
@@ -62,8 +69,10 @@ Singleton {
         })
 
     property var blobs: []
-    // As janelas da forma (a da barra de cada tela), com `targetScreen` e `visible`.
+    // As janelas da forma (uma por tela), com `targetScreen`, `visible` e `parts`.
     property var windows: []
+    // As áreas de entrada (FrameInput) da janela da forma, de todas as telas.
+    property var inputs: []
 
     function register(blob: var): void {
         blobs = blobs.concat([blob]);
@@ -71,6 +80,24 @@ Singleton {
 
     function unregister(blob: var): void {
         blobs = blobs.filter(b => b !== blob);
+    }
+
+    function registerInput(input: var): void {
+        inputs = inputs.concat([input]);
+    }
+
+    function unregisterInput(input: var): void {
+        inputs = inputs.filter(i => i !== input);
+    }
+
+    // As áreas de entrada ativas de uma tela: a máscara da janela da forma.
+    function inputsOn(screen: var): var {
+        return inputs.filter(i => i.screen === screen && i.active);
+    }
+
+    // Alguma área ativa da tela pede o teclado (um painel que digita).
+    function keyboardOn(screen: var): bool {
+        return inputsOn(screen).some(i => i.keyboard);
     }
 
     // Aberto, ou ainda animando o fechamento.
@@ -227,13 +254,22 @@ Singleton {
         return Qt.rect(x, y, w, h);
     }
 
-    // Sem a moldura e com todos os pedaços (e a folga do arco) na coluna da
-    // direita, a janela da forma ocupa só a coluna: o Hyprland desfoca e
-    // recompõe a cada quadro só ela, não a tela inteira (o OSD por cima de
-    // um vídeo). Muda só na passagem entre com e sem moldura.
-    function compactOn(on: var, frame: real, size: size): bool {
-        const pad = reach;
-        return frame <= 0 && on.length > 0 && on.every(b => b.rect.x - pad >= size.width - column);
+    // A largura da janela da forma (presa à direita), num dos quatro níveis:
+    // a tela inteira com a moldura à mostra; senão, a menor coluna (a do OSD
+    // ou a larga, dos popups) que cobre todos os pedaços (com a folga do
+    // arco) e todas as áreas de entrada; a tela inteira se nenhuma cobre; e
+    // 1 px sem nada. O Hyprland desfoca e recompõe a cada quadro só a janela,
+    // e ela não muda de tamanho a cada quadro, só na troca de nível.
+    function extentOn(parts: var, inputs: var, frame: real, size: size): real {
+        if (frame > 0)
+            return size.width;
+        if (!parts.length && !inputs.length)
+            return idleWidth;
+        const left = Math.min(...parts.map(b => b.rect.x - reach), ...inputs.map(i => i.rect.x));
+        for (const width of [column, wideColumn])
+            if (left >= size.width - width)
+                return width;
+        return size.width;
     }
 
     // A área que a forma ocupa na janela (tamanho `size`): a janela toda com a

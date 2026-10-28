@@ -15,8 +15,8 @@ import qs.core.config
 //   sem cobrir a barra;
 // - base (settings): abrir fecha os outros, mas o acompanhante aberto depois
 //   fica por cima dela.
-// Um clique fora de todos (numa janela) fecha os não modais; Esc fecha só o
-// que está com o teclado.
+// Um clique fora de todos (numa janela) fecha os não modais e os da moldura
+// (grabWanted); Esc fecha só o que está com o teclado.
 Singleton {
     id: root
 
@@ -61,6 +61,17 @@ Singleton {
         return !isCompanion(name) && !bases.includes(name);
     }
 
+    // Os painéis cujo conteúdo fica na janela da forma (a moldura), sem uma
+    // janela em tela cheia para pegar o clique fora: mesmo modais, fecham
+    // pelo grab.
+    readonly property var framedPanels: ["dashboard", "central"]
+
+    // O grab vale com algum painel aberto, se todo modal aberto é da moldura
+    // (os modais centralizados pegam o clique fora na janela deles).
+    function grabWanted(opened: var): bool {
+        return opened.length > 0 && opened.every(n => !isModal(n) || framedPanels.includes(n));
+    }
+
     // Um painel fechado vai abrir: avisa antes de `opened` mudar, para quem
     // grava a tela da abertura (os painéis da moldura) já ter a nova quando
     // o painel aparecer como aberto.
@@ -94,7 +105,7 @@ Singleton {
     }
 
     // Janelas que não fecham os acompanhantes ao receber um clique: as dos
-    // painéis e as da barra. Cada uma se registra ao ser criada.
+    // painéis e as da forma (com a barra). Cada uma se registra ao ser criada.
     property var surfaces: []
 
     function register(window: var): void {
@@ -157,7 +168,7 @@ Singleton {
     HyprlandFocusGrab {
         id: grab
 
-        active: root.anyOpen && !root.modalOpen && !root.rearming
+        active: root.grabWanted(root.opened) && !root.rearming
         windows: root.surfaces
         onCleared: {
             // Desativar o grab (fechar o último painel) também avisa; não é clique fora.

@@ -293,6 +293,28 @@ function run(t) {
         t.check(!P.surfaces.includes(w), "fora");
     });
 
+    // O clique fora fecha pelo grab também com os painéis da moldura (o
+    // conteúdo deles vai para a janela da forma, sem a tela inteira para
+    // pegar o clique). Os modais centralizados seguem com a janela deles.
+    t.test("panels: o grab também nos painéis da moldura", () => {
+        const opened0 = P.opened;
+        try {
+            C.panelsTogether = [];
+            t.check(!P.grabWanted([]), "nada aberto: sem grab");
+            t.check(P.grabWanted(["dashboard"]), "o painel superior (modal, da moldura)");
+            t.check(P.grabWanted(["central"]), "a central (modal, da moldura)");
+            t.check(!P.grabWanted(["launcher"]), "um modal centralizado: a janela dele pega o clique");
+            t.check(P.grabWanted(["settings"]), "a base sozinha (não modal): como hoje");
+            C.panelsTogether = ["dashboard"];
+            t.check(P.grabWanted(["dashboard"]), "o painel superior acompanhante");
+            t.check(P.grabWanted(["settings", "dashboard"]), "a base com o acompanhante");
+            t.eq(P.framedPanels, ["dashboard", "central"]);
+        } finally {
+            P.opened = opened0;
+            C.panelsTogether = ["dashboard"];
+        }
+    });
+
     P.close();
     C.panelsTogether = together0;
     t.test("panels: a tela fica onde o painel abriu", () => {
