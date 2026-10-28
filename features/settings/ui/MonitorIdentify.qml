@@ -15,7 +15,12 @@ Variants {
         required property var modelData
         property real shown: MonitorsState.identifying ? 1 : 0
 
-        Behavior on shown { Anim { type: MonitorsState.identifying ? Anim.Spatial : Anim.EmphasizedAccel } }
+        // A curva pelo alvo do Behavior, não pelo estado (ver OverlayPanel).
+        Behavior on shown {
+            id: shownBehavior
+
+            Anim { type: shownBehavior.targetValue > 0 ? Anim.Spatial : Anim.EmphasizedAccel }
+        }
 
         screen: modelData
         visible: shown > 0

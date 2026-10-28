@@ -21,9 +21,12 @@ PanelWindow {
     readonly property real bodyHeight: 220
     property real shown: OsdState.shown ? 1 : 0
 
+    // A curva pelo alvo do Behavior, não pelo estado (ver OverlayPanel).
     Behavior on shown {
+        id: shownBehavior
+
         Anim {
-            type: OsdState.shown ? Anim.Spatial : Anim.EmphasizedAccel
+            type: shownBehavior.targetValue > 0 ? Anim.Spatial : Anim.EmphasizedAccel
         }
     }
 

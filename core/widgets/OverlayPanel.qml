@@ -48,10 +48,14 @@ PanelWindow {
     property real shown: open ? 1 : 0
 
     // Abre com mola (curva expressiva) e fecha acelerando, sem passar do zero:
-    // passar do zero esconderia a janela e ela piscaria.
+    // passar do zero esconderia a janela e ela piscaria. A curva sai do alvo
+    // do Behavior, não de `open`: o Behavior dispara antes de a escolha ser
+    // reavaliada, e a abertura saía com a curva da saída (um salto no 1º quadro).
     Behavior on shown {
+        id: shownBehavior
+
         Anim {
-            type: root.open ? Anim.Spatial : Anim.EmphasizedAccel
+            type: shownBehavior.targetValue > 0 ? Anim.Spatial : Anim.EmphasizedAccel
         }
     }
 
