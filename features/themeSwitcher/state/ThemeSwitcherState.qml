@@ -174,6 +174,14 @@ Singleton {
     // a camada inteira começar transparente.
     readonly property string frameRule: Hypr.usingLua ? noAnimLua() : ""
 
+    // O `usingLua` do Quickshell pode chegar depois do Component.onCompleted:
+    // a regra vai quando ele chega (sem ela, o Hyprland anima e estica a
+    // janela da forma a cada troca de largura).
+    onFrameRuleChanged: {
+        if (frameRule)
+            Hypr.evalLua(frameRule);
+    }
+
     Component.onCompleted: {
         blurDelay.start();
         if (frameRule)
