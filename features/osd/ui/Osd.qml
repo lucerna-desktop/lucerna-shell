@@ -1,6 +1,4 @@
 import QtQuick
-import Quickshell
-import Quickshell.Wayland
 import qs.core.frame
 import qs.core.theme
 import qs.core.widgets
@@ -11,15 +9,17 @@ import qs.features.osd.state
 // número e a trilha por um texto deitado). O fundo é um pedaço da forma da
 // tela (Frame), preso à borda com os arcos côncavos, que cresce dela para fora
 // com mola; o conteúdo entra quando ele passa de ~70%. Não recebe cliques.
-PanelWindow {
-    id: window
+Item {
+    id: root
 
-    readonly property real flare: Frame.smoothing
+    required property var screen
+    readonly property bool here: OsdState.screen === screen
     // A espessura da moldura entra só com ela à mostra (o painel superior
     // aberto); sozinho, o OSD sai da borda sem moldura.
-    readonly property real bodyWidth: 52 + Frame.thicknessAt(Frame.progressOn(OsdState.screen))
+    readonly property real bodyWidth: 52 + Frame.thicknessAt(Frame.progressOn(screen))
     readonly property real bodyHeight: 220
-    property real shown: OsdState.shown ? 1 : 0
+    readonly property bool open: OsdState.shown && here
+    property real shown: open ? 1 : 0
 
     // A curva pelo alvo do Behavior, não pelo estado (ver OverlayPanel).
     Behavior on shown {
@@ -30,38 +30,27 @@ PanelWindow {
         }
     }
 
-    screen: OsdState.screen
-    visible: shown > 0 && Frame.isReady(OsdState.screen)
-    anchors.right: true
-    // Fixa (com a moldura inteira): a janela não muda de tamanho a cada quadro.
-    implicitWidth: 52 + Frame.thickness + flare
-    implicitHeight: bodyHeight + flare * 2
-    color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
-    mask: Region {}
-    WlrLayershell.layer: WlrLayer.Overlay
-    // Sem o desfoque: o fundo é a forma, na janela da barra (ver OverlayPanel).
-    WlrLayershell.namespace: "lucerna-frame-osd"
+    anchors.fill: parent
+    visible: shown > 0
 
-    // O bloco, em coordenadas da tela (a janela fica no meio da borda direita).
+    // O bloco, em coordenadas da tela (no meio da borda direita).
     FrameBlob {
-        readonly property size area: Frame.sizeOn(OsdState.screen)
-        readonly property real edge: area.width
-        readonly property real top: (area.height - window.implicitHeight) / 2 + window.flare
-        readonly property real grown: window.bodyWidth * Math.max(0, window.shown)
+        readonly property real edge: root.width
+        readonly property real top: (root.height - root.bodyHeight) / 2
+        readonly property real grown: root.bodyWidth * Math.max(0, root.shown)
 
-        screen: OsdState.screen
-        open: OsdState.shown
-        progress: window.shown
-        rect: Frame.attach(Qt.rect(edge - grown, top, grown, window.bodyHeight), Frame.edges.osd)
+        screen: root.screen
+        open: root.open
+        progress: root.shown
+        rect: Frame.attach(Qt.rect(edge - grown, top, grown, root.bodyHeight), Frame.edges.osd)
     }
 
     Item {
-        x: window.width - window.bodyWidth * window.shown
-        y: window.flare
+        x: root.width - root.bodyWidth * root.shown
+        y: (root.height - root.bodyHeight) / 2
         width: 52
-        height: window.bodyHeight
-        opacity: Frame.contentOpacity(window.shown)
+        height: root.bodyHeight
+        opacity: Frame.clamp(root.shown)
 
         Txt {
             anchors.centerIn: parent

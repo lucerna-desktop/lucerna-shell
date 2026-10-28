@@ -37,6 +37,10 @@ ShellRoot {
 
             targetScreen: modelData
 
+            Osd {
+                screen: frameWindow.modelData
+            }
+
             BarLayer {
                 screen: frameWindow.modelData
             }
@@ -53,7 +57,6 @@ ShellRoot {
     Launcher {}
     NightLight {}
     NotificationPopups {}
-    Osd {}
     PowerMenu {}
     Settings {}
     MonitorConfirm {}
