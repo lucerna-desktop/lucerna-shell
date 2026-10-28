@@ -20,7 +20,9 @@ Item {
     // Frame.progressIn), separados uma vez pela janela.
     required property var parts
     required property real fuse
-    readonly property size screenSize: Qt.size(screen?.width ?? width, screen?.height ?? height)
+    // O tamanho medido pelas janelas (Frame.sizeOn), o mesmo do conteúdo dos
+    // painéis: a tela informada pode estar velha.
+    readonly property size screenSize: screen ? Frame.sizeOn(screen) : Qt.size(width, height)
     // Onde a janela começa na tela (presa à direita).
     readonly property real originX: screenSize.width - width
     readonly property var regions: Frame.regions(parts, fuse, screenSize)

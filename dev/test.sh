@@ -317,6 +317,12 @@ up() {
     setc 'dict(idleEnabled=False)'
     echo "de pé: $name (GPU $render), capturas em $out"
     place_window
+    # Redimensionada a janela, o Hyprland aninhado não manda o tamanho lógico
+    # novo da saída (só o modo) nem reconfigura as camadas já abertas: o papel
+    # de parede e a moldura ficariam no tamanho de antes até alguma camada nova
+    # aparecer. Um shell novo pega o tamanho certo desde o começo.
+    start_shell
+    wait_loaded
 }
 
 case "${1:-}" in

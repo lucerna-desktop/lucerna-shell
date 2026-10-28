@@ -143,6 +143,50 @@ Singleton {
         return windows.some(w => w.targetScreen === screen && w.visible);
     }
 
+    // O tamanho de cada tela (pelo nome) medido pelas janelas em tela cheia
+    // dela (a da forma e as dos painéis da moldura), com o tamanho que a tela
+    // informava na hora: { screenWidth, screenHeight, width, height }. A tela
+    // do Qt pode ficar velha quando a saída muda de tamanho (o Hyprland
+    // aninhado não manda o tamanho lógico novo), mas a janela mapeada depois
+    // recebe o de verdade; a forma, numa janela, e o conteúdo, na outra, se
+    // medem pelo mesmo número.
+    property var measured: ({})
+
+    // Grava o tamanho de uma janela em tela cheia dessa tela. Escondida, a
+    // janela tem 0 x 0: não mede. Largura 0 com altura (a janela da forma
+    // estreita, na coluna da direita) mede só a altura.
+    function measure(screen: var, width: real, height: real): void {
+        if (!screen || (width <= 0 && height <= 0))
+            return;
+        const old = sizeIn(measured[screen.name], screen);
+        const entry = {
+            screenWidth: screen.width,
+            screenHeight: screen.height,
+            width: width > 0 ? width : old.width,
+            height: height > 0 ? height : old.height
+        };
+        const prev = measured[screen.name];
+        if (prev && prev.screenWidth === entry.screenWidth && prev.screenHeight === entry.screenHeight && prev.width === entry.width && prev.height === entry.height)
+            return;
+        const next = Object.assign({}, measured);
+        next[screen.name] = entry;
+        measured = next;
+    }
+
+    // O tamanho de layout da tela: o medido pelas janelas, ou o informado.
+    function sizeOn(screen: var): size {
+        return sizeIn(screen ? measured[screen.name] : undefined, screen);
+    }
+
+    // A medida vale enquanto a tela informa o mesmo tamanho de quando foi
+    // tomada: se a tela mudou (outra resolução ou escala, avisada), a nova
+    // manda até uma janela medir de novo.
+    function sizeIn(entry: var, screen: var): size {
+        const width = screen?.width ?? 0, height = screen?.height ?? 0;
+        const valid = !!entry && entry.screenWidth === width && entry.screenHeight === height;
+        return Qt.size(valid && entry.width > 0 ? entry.width : width, valid && entry.height > 0 ? entry.height : height);
+    }
+
     function clamp(value: real): real {
         return Math.max(0, Math.min(1, value));
     }

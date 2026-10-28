@@ -222,6 +222,38 @@ function run(t) {
         t.check(!inside(t.ThemeManager.spacing.small, 0), "a margem antiga (só o espaço) entrava no arco");
     });
 
+    // A tela que o Qt informa pode ficar velha (o compositor muda a saída sem
+    // mandar o tamanho lógico novo); as janelas em tela cheia recebem o de
+    // verdade. O tamanho de layout é o medido por elas, enquanto a tela
+    // informada não muda.
+    t.test("frame: o tamanho da tela segue o medido pelas janelas", () => {
+        const sizes0 = F.measured;
+        try {
+            F.measured = ({});
+            const a = { name: "A", width: 1600, height: 900 };
+            const b = { name: "B", width: 1280, height: 720 };
+            const same = (s, w, h) => s.width === w && s.height === h;
+            t.check(same(F.sizeOn(a), 1600, 900), "sem medida: o tamanho da tela");
+            t.check(same(F.sizeOn(null), 0, 0), "sem tela: vazio");
+            F.measure(a, 1920, 1080);
+            t.check(same(F.sizeOn(a), 1920, 1080), "a tela velha: vale o medido");
+            t.check(same(F.sizeOn(b), 1280, 720), "cada tela tem a sua medida");
+            F.measure(a, 0, 0);
+            t.check(same(F.sizeOn(a), 1920, 1080), "a janela escondida (0 x 0) não mede");
+            F.measure(a, 0, 1000);
+            t.check(same(F.sizeOn(a), 1920, 1000), "só a altura (a janela estreita da coluna): a largura fica");
+            F.measure(null, 10, 10);
+            t.eq(Object.keys(F.measured).length, 1, "sem tela: não mede");
+            const c = { name: "A", width: 1280, height: 720 };
+            t.check(same(F.sizeOn(c), 1280, 720), "a tela informada mudou: a medida antiga não vale mais");
+            F.measure(c, 1280, 720);
+            t.check(same(F.sizeOn(c), 1280, 720), "e a nova vale");
+            t.check(same(F.sizeIn(undefined, a), 1600, 900) && same(F.sizeIn({ screenWidth: 1600, screenHeight: 900, width: 0, height: 500 }, a), 1600, 500), "medida parcial: completa com a tela");
+        } finally {
+            F.measured = sizes0;
+        }
+    });
+
     t.test("frame: o conteúdo da barra esmaece no começo da transformação", () => {
         t.eq(F.barContentOpacity(0), 1, "barra inteira");
         t.near(F.barContentOpacity(0.2), 0.5, 1e-9, "na metade do esmaecer");
