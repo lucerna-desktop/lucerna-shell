@@ -225,6 +225,20 @@ Singleton {
     readonly property bool doNotDisturb: Notifications.doNotDisturb
     readonly property string bellIcon: doNotDisturb ? Icons.bellSleep : notificationCount > 0 ? Icons.bellBadge : Icons.bellOutline
 
+    // Modo jogo: um ícone discreto à esquerda do sino enquanto ligado; o
+    // clique desliga (pelo daemon).
+    readonly property bool gameIcon: GameMode.active
+    readonly property string gameTooltip: {
+        if (!GameMode.active)
+            return "";
+        const why = GameMode.reasonsText(GameMode.reasons);
+        return why ? `Modo jogo ligado: ${why}. Clique para desligar.` : "Modo jogo ligado. Clique para desligar.";
+    }
+
+    function stopGame(): void {
+        GameMode.set(false);
+    }
+
     // Painéis
     readonly property bool dashboardOpen: Panels.isOpen("dashboard")
 

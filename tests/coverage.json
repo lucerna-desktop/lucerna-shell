@@ -20,7 +20,7 @@
         "services/Media.qml": ["select", "nextPlayer", "cycle", "albumShown", "seekTo"],
         "services/Monitors.qml": ["keyOf", "parseMode", "normalize", "logicalSize", "luaFor", "lua"],
         "services/Network.qml": ["isSecure", "needsPassword"],
-        "services/Notifications.qml": ["hidePopup", "clearPopups", "timeoutFor", "timeOf"],
+        "services/Notifications.qml": ["hidePopup", "clearPopups", "popsUp", "timeoutFor", "timeOf"],
         "services/Session.qml": ["lock", "unlock"],
         "services/Spectrum.qml": ["pairMax", "wantedTopics", "sync", "playerParam", "configure", "apply", "applyBands", "applyStatus", "connectionChanged"],
         "services/SystemStats.qml": ["wantedTopics", "sync", "configure", "apply", "applyInfo", "applyStats", "applyDisks", "applyGpus", "applyStatus", "connectionChanged", "machineText"],

@@ -3,10 +3,11 @@ import qs.core.theme
 import qs.core.widgets
 import qs.features.bar.state
 
-// Ações da barra: rede, volume, bateria e notificações. Rede, volume e
-// bateria abrem as Ações da central pela sua entrada (o mesmo ícone de novo
-// fecha; outro troca a página); o sino abre e fecha só as Notificações.
-// Gravando a tela, aparece antes o tempo, que para ao clicar.
+// Ações da barra: rede, volume, bateria, o modo jogo (só ligado) e
+// notificações. Rede, volume e bateria abrem as Ações da central pela sua
+// entrada (o mesmo ícone de novo fecha; outro troca a página); o sino abre e
+// fecha só as Notificações; o modo jogo desliga no clique. Gravando a tela,
+// aparece antes o tempo, que para ao clicar.
 Row {
     anchors.verticalCenter: parent?.verticalCenter
     spacing: 2
@@ -97,6 +98,18 @@ Row {
         active: BarState.entryOpen("energia")
         foreground: active ? ThemeManager.colors.accentText : BarState.batteryLow ? ThemeManager.colors.danger : ThemeManager.colors.textMuted
         onClicked: BarState.toggleEntry("energia")
+    }
+
+    // O modo jogo ligado: o clique desliga (o rótulo aparece com o mouse em cima).
+    IconButton {
+        anchors.verticalCenter: parent.verticalCenter
+        icon: "sports_esports"
+        visible: BarState.gameIcon
+        iconSize: 18
+        label: hovered ? "Desligar" : ""
+        foreground: ThemeManager.colors.accent
+        Accessible.name: BarState.gameTooltip
+        onClicked: BarState.stopGame()
     }
 
     IconButton {

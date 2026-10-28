@@ -142,4 +142,33 @@ function run(t) {
         }
         t.eq([G.active, C.gameBar], [was.active, was.bar], "estado original restaurado");
     });
+
+    t.test("bar: o ícone do modo jogo e o clique que desliga", () => {
+        const G = t.GameMode;
+        const was = { client: G.client, active: G.active, reasons: G.reasons };
+        const c = t.lucernaClient();
+        try {
+            G.active = false;
+            t.eq([B.gameIcon, B.gameTooltip], [false, ""]);
+            G.active = true;
+            G.reasons = ["fullscreen", "game"];
+            t.eq([B.gameIcon, B.gameTooltip], [true, "Modo jogo ligado: tela cheia, jogo. Clique para desligar."]);
+            G.reasons = [];
+            t.eq(B.gameTooltip, "Modo jogo ligado. Clique para desligar.");
+            G.client = c;
+            c.opened();
+            const hello = Object.keys(c.pending).map(Number)[0];
+            c.receive(JSON.stringify({ jsonrpc: "2.0", id: hello, result: { protocol: "1.0", app: "lucernad", version: "0.1.0", topics: ["game.state"], streams: [], methods: [] } }));
+            c.pending = {};
+            B.stopGame();
+            t.eq(Object.values(c.pending).map(p => [p.method, p.params]), [["game.set", { on: false }]]);
+        } finally {
+            G.client = was.client;
+            G.active = was.active;
+            G.reasons = was.reasons;
+            G.seenState = false;
+            c.destroy();
+        }
+        t.eq([G.active, G.reasons], [was.active, was.reasons], "estado original restaurado");
+    });
 }

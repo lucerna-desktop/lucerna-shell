@@ -42,6 +42,12 @@ Singleton {
             n.dismiss();
     }
 
+    // Se uma notificação que chega vira popup: sempre, menos com o não
+    // perturbe (do usuário ou do modo jogo); a crítica aparece mesmo assim.
+    function popsUp(notification: var): bool {
+        return !doNotDisturb || notification.urgency === NotificationUrgency.Critical;
+    }
+
     // Milissegundos que o popup fica na tela; 0 = até o usuário fechar.
     function timeoutFor(notification: var): int {
         if (notification.urgency === NotificationUrgency.Critical)
@@ -87,7 +93,7 @@ Singleton {
                 return;
             root.receivedAt[notification.id] = Date.now();
             persist.receivedAt = JSON.stringify(root.receivedAt);
-            if (!root.doNotDisturb || notification.urgency === NotificationUrgency.Critical)
+            if (root.popsUp(notification))
                 root.popups = [notification, ...root.popups.filter(n => n.id !== notification.id)];
         }
     }
