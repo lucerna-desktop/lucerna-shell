@@ -15,7 +15,9 @@ import qs.features.central.state
 // direita (em cascata, se os dois abrem juntos) e sai mais rápido; as
 // Notificações sobem e descem junto com a entrada e a saída das Ações. O fundo
 // do bloco é um pedaço da forma da tela (Frame), do tamanho dos painéis à
-// mostra; o conteúdo de cada um entra quando ele passa de ~70%. A pílula fundida
+// mostra; o conteúdo de cada um entra quando ele passa de ~70%. Abaixo das
+// Ações, as Notificações crescem para baixo a partir delas ao entrar (e
+// encolhem até elas ao sair): o bloco não pula de altura num quadro. A pílula fundida
 // continua clicável por cima. Esc ou o clique fora dos painéis fecham os dois.
 OverlayPanel {
     id: panel
@@ -113,7 +115,7 @@ OverlayPanel {
                 return Qt.rect(0, 0, 0, 0);
             const x = Math.min(...parts.map(c => c.x));
             const top = Math.min(...parts.map(c => c.y));
-            const bottom = Math.max(...parts.map(c => c.y + c.height));
+            const bottom = Math.max(...parts.map(c => c.y + c.shownHeight));
             const edge = (top <= CentralState.top + 0.5 ? "top-" : "") + Frame.edges.central + (bottom >= panel.areaHeight - panel.margin - 0.5 ? "-bottom" : "");
             return Frame.attach(Qt.rect(x, top, panel.areaWidth - x, bottom - top), edge);
         }
@@ -139,5 +141,8 @@ OverlayPanel {
         areaWidth: panel.areaWidth
         y: CentralState.top + panel.reserve * (actions.height + panel.gap)
         height: Math.max(0, panel.areaHeight - y - panel.margin)
+        // Com o lugar das Ações reservado, cresce a partir delas junto com a
+        // entrada (a mola, cortada em 1); sozinhas, entram já na altura toda.
+        reveal: 1 - panel.reserve * (1 - Math.min(1, Math.max(0, shown)))
     }
 }

@@ -9,7 +9,9 @@ import qs.core.widgets
 // direita e sai, mais rápido, pelo mesmo caminho. Com os dois abrindo juntos,
 // a entrada vai em cascata, com um atraso pela ordem (`order`: 40 ms por
 // passo, na escala das animações). Os filhos vão para dentro da margem
-// interna (`padding`).
+// interna (`padding`). `reveal` (0 a 1) é quanto da altura está à mostra, de
+// cima para baixo: o bloco da forma vai até `shownHeight`, e o conteúdo é
+// cortado nela.
 Item {
     id: root
 
@@ -26,6 +28,8 @@ Item {
     property bool cascade: false
     readonly property real padding: ThemeManager.spacing.normal
     readonly property real travel: width + margin + 24
+    property real reveal: 1
+    readonly property real shownHeight: height * reveal
     default property alias content: body.data
 
     width: panelWidth
@@ -66,12 +70,19 @@ Item {
         type: Anim.StandardAccel
     }
 
+    // Corta só enquanto cresce: com tudo à mostra, sem recorte.
     Item {
-        id: body
+        width: root.width
+        height: root.shownHeight
+        clip: root.reveal < 1
 
-        x: root.padding
-        y: root.padding
-        width: root.width - root.padding * 2
-        height: root.height - root.padding * 2
+        Item {
+            id: body
+
+            x: root.padding
+            y: root.padding
+            width: root.width - root.padding * 2
+            height: root.height - root.padding * 2
+        }
     }
 }
