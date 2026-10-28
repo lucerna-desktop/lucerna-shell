@@ -1,0 +1,197 @@
+# Bench dos painéis: a medição final (feat/conteudo-janela-forma 42c429c), 2026-10-28
+
+Código medido: a branch em 42c429c ("Moldura: a captura do painel superior no
+repositório e os comentários da janela única"), com a barra, o OSD, o painel
+superior, a central e os popups na janela da forma (lucerna-panel-frame).
+
+Ambiente: o mesmo da base (2026-10-28-paineis-base.txt):
+- container lucerna-polish recriado com `dev/test.sh up` logo antes;
+- janela de teste 1920x1080 (padrão), saída WAYLAND-1 1920x1080@60, host KDE,
+  GPU /dev/dri/renderD129;
+- desfoque: performance (`blur get`); papel de parede auto (estático fora do
+  caso `papel`); tema catppuccin-mocha; brilho falso 50%.
+
+Comando (duas rodadas seguidas, 8 s entre elas; a 2ª com BENCH_OUT próprio
+só para guardar o log da 1ª):
+  dev/test.sh up
+  dev/test.sh run 'bash ~/.config/quickshell/lucerna/dev/bench-paineis.sh 10 10'
+  dev/test.sh run 'BENCH_OUT=/tmp/lucerna-bench2 bash ~/.config/quickshell/lucerna/dev/bench-paineis.sh 10 10'
+
+Como ler: igual à base.
+
+## Rodada 1
+
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        62.7     61.9       34       1       2      393  10.2         2.1      57.9
+painel-superior:fechar       24.6     21.8        3       2       0      154  10.2         2.1      18.6
+central:abrir                54.6     54.1       21       1       1      342   5.6         1.1      49.3
+central:fechar               22.2     20.7        2       1       0      139   5.6         1.1      20.2
+osd:abrir                    59.8     54.1       26      13       4      750   4.1         1.1      53.4
+papel                        56.1     56.1       26      13       5      561  12.0         3.0         -
+janela                        0.0      0.0        0       -       0        0   0.7         3.2         -
+parado                        0.0      0.0        0       -       0        0   0.7         0.0         -
+parado-painel                66.4     66.4       17      13       0      664  15.3         4.1         -
+RSS do qs: 335 MB antes, 353 MB depois
+
+## Rodada 2
+
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        63.0     56.0       13      13       0      393   9.3         1.8      63.4
+painel-superior:fechar       24.6     23.9        3       1       0      154   9.3         1.8      21.8
+central:abrir                54.0     46.5       26       1       1      337   5.1         1.1      52.4
+central:fechar               22.5     22.4        1       1       0      140   5.1         1.1      20.9
+osd:abrir                    58.6     46.5       26      19      26      731   3.5         0.9      53.0
+papel                        67.3     67.3       26      13       3      673  12.3         2.8         -
+janela                        0.0      0.0        0       -       0        0   0.6         2.5         -
+parado                        0.1      0.1        0       0       0        1   0.7         0.0         -
+parado-painel                66.9     66.9       13      13       0      669  12.4         3.0         -
+RSS do qs: 335 MB antes, 339 MB depois
+
+## Base × final, por linha
+
+Cada célula: base r1/r2 -> final r1/r2.
+
+painel-superior:abrir
+  FPS shell 59.8/60.3 -> 62.7/63.0   FPS mín 57.7/57.8 -> 61.9/56.0
+  pior ms   67/50     -> 34/13       p95 ms  13/13     -> 1/13
+  longos    23/25     -> 2/0         quadros 683/684   -> 393/393
+  qs %      12.0/11.1 -> 10.2/9.3    Hyprland % 3.7/3.1 -> 2.1/1.8
+  FPS tela  73.1/72.4 -> 57.9/63.4
+painel-superior:fechar
+  FPS shell 19.7/19.7 -> 24.6/24.6   FPS mín 19.2/19.2 -> 21.8/23.9
+  pior ms   1/1       -> 3/3         p95 ms  1/1       -> 2/1
+  longos    0/0       -> 0/0         quadros 243/243   -> 154/154
+  qs % / Hyprland %: os do caso (acima)
+  FPS tela  72.3/73.9 -> 18.6/21.8
+central:abrir
+  FPS shell 57.0/57.3 -> 54.6/54.0   FPS mín 56.1/56.1 -> 54.1/46.5
+  pior ms   25/22     -> 21/26       p95 ms  13/13     -> 1/1
+  longos    7/2       -> 1/1         quadros 695/697   -> 342/337
+  qs %      6.5/6.4   -> 5.6/5.1     Hyprland % 2.8/2.7 -> 1.1/1.1
+  FPS tela  71.9/71.3 -> 49.3/52.4
+central:fechar
+  FPS shell 20.9/20.9 -> 22.2/22.5   FPS mín 20.8/20.8 -> 20.7/22.4
+  pior ms   3/3       -> 2/1         p95 ms  0/0       -> 1/1
+  longos    0/0       -> 0/0         quadros 240/240   -> 139/140
+  qs % / Hyprland %: os do caso (acima)
+  FPS tela  73.6/72.7 -> 20.2/20.9
+osd:abrir
+  FPS shell 50.8/50.7 -> 59.8/58.6   FPS mín 49.6/49.5 -> 54.1/46.5
+  pior ms   9/9       -> 26/26       p95 ms  1/1       -> 13/19
+  longos    0/0       -> 4/26        quadros 1254/1253 -> 750/731
+  qs %      4.1/4.1   -> 4.1/3.5     Hyprland % 2.5/2.5 -> 1.1/0.9
+  FPS tela  73.6/72.2 -> 53.4/53.0
+papel
+  FPS shell 67.6/67.5 -> 56.1/67.3   FPS mín 67.6/67.5 -> 56.1/67.3
+  pior ms   26/15     -> 26/26       p95 ms  13/13     -> 13/13
+  longos    2/0       -> 5/3         quadros 676/675   -> 561/673
+  qs %      11.6/11.3 -> 12.0/12.3   Hyprland % 2.8/3.0 -> 3.0/2.8
+janela
+  quadros   0/0       -> 0/0         qs %    0.5/0.5   -> 0.7/0.6
+  Hyprland % 2.4/2.7  -> 3.2/2.5
+parado
+  quadros   1/0       -> 0/1         pior ms 1/0       -> 0/0
+  qs %      0.7/0.7   -> 0.7/0.7     Hyprland % 0.0/0.0 -> 0.0/0.0
+parado-painel
+  FPS shell 66.8/66.6 -> 66.4/66.9   pior ms 13/14     -> 17/13
+  p95 ms    13/13     -> 13/13       quadros 668/667   -> 664/669
+  qs %      11.3/11.9 -> 15.3/12.4   Hyprland % 2.8/3.2 -> 4.1/3.0
+RSS do qs
+  base: 312 -> 327 (+15), 313 -> 316 (+3)
+  final: 335 -> 353 (+18), 335 -> 339 (+4)   (parte 23 MB acima da base)
+
+## Regra de decisão do usuário (da base): DISPARADA
+
+Pior das 2 rodadas, base -> final:
+
+  abertura                pior ms        p95 ms        p95 limite  resultado
+  painel-superior:abrir   67 -> 34       13 -> 13      15          passa
+  central:abrir           25 -> 26       13 -> 1       15          dispara (pior 26 > 25)
+  osd:abrir                9 -> 26        1 -> 19       3          dispara (pior 26 > 9; p95 19 > 3)
+
+Pela regra escrita na base, a decisão é recuar para a janela em tela cheia.
+Ver abaixo: no ambiente do bench a janela da forma já está em tela cheia o
+tempo todo, então o recuo não muda a condição medida.
+
+## Os outros critérios do plano
+
+- FPS shell ≥: falha em central:abrir (57 -> 54) e em papel r1 (67.6 -> 56.1;
+  a r2 deu 67.3). Melhora no painel superior, no osd e nos fechamentos.
+- FPS mín ≥: falha em central:abrir r2 e osd:abrir r2 (46.5) e painel r2
+  (56.0 contra 57.7).
+- FPS tela ≥: falha em todos os casos de ciclo (base 71 a 74, final 49 a 63 nas
+  aberturas e 19 a 22 nos fechamentos). Na base a tela tinha ~72 quadros/s
+  mesmo nos fechamentos, com o qs em ~20: algo além do qs danificava a saída
+  o tempo todo; na final o FPS tela acompanha o FPS do qs. Não investiguei
+  a causa do lado da base.
+- pior ms < 20 nos casos de ciclo: falha (painel 34 na r1, só no 1º ciclo:
+  render=29 ms, a 1ª vez do conteúdo; central 21/26; osd 26/26). A base também
+  falhava (67/50 e 25/22).
+- qs % e Hyprland % ≤ (±1): passa nos casos de ciclo (todos menores). Fora da
+  tolerância só parado-painel r1 (qs 15.3 contra 11.3/11.9, Hyprland 4.1
+  contra 2.8/3.2); a r2 ficou dentro (12.4 / 3.0).
+- quadros dos parado* em 0 a 2: `parado` 0 e 1, passa. `parado-painel`
+  664/669, igual à base (66.8/66.6 FPS): o painel superior aberto redesenha
+  a ~67 quadros/s, já era assim na base.
+- RSS ≤ +5 MB: falha na r1 (+18; a base também, +15), passa na r2 (+4).
+
+## Análise dos quadros longos das aberturas
+
+Por quadro, o log do render loop dá `frame rendered in T ms, sync, render,
+swap`. Em todos os quadros > 15 ms do osd:abrir (11 na r1, 47 na r2) e da
+central (o 26 da r2: sync=1, swap=24), o tempo é todo do swap: sync=0,
+render=0, polish/lock/animations=0 do lado da GUI. É o eglSwapBuffers
+esperando o compositor (o frame callback / o buffer de volta), não trabalho
+do qs. 12-13 ms é o passo normal de um quadro; 18-26 ms é esperar dois.
+No osd os longos aparecem do 3º ao 34º quadro da fatia, muitas vezes
+alternando 25/14 por vários quadros seguidos: uma cadência do compositor,
+não um engasgo único. O único longo com trabalho do qs é o 34 ms do painel
+superior na r1 (render=29, blockedForSync=32), no 1º ciclo.
+
+Na base, a janela própria do OSD não esperava no swap (p95 1). Na final, a
+janela da forma espera (p95 13 a 19) no osd; no painel superior é o contrário
+(base p95 13, final 1 na r1). O bench conta o tempo do swap como custo do
+quadro, então o p95 de 13 é "pacing" do compositor, nos dois lados.
+
+Não é o redimensionamento 1 px -> nível:
+- No bench a área de trabalho fica vazia e a barra aparece (barOnEmpty), e a
+  barra é um pedaço `framed`: a moldura fica à mostra e a janela da forma
+  fica em 1920x1080 o tempo todo (conferido com `hyprctl layers -j` em
+  repouso e durante o OSD). Nenhum caso do bench redimensiona a janela.
+- Medição extra (fora do bench, script no scratchpad, container novo): um
+  kitty parado na área de trabalho (a barra some), 10 ciclos do OSD. A janela
+  fica em 1 px em repouso e vai a 128 (a coluna) no OSD (conferido). Deu:
+    osd:abrir  FPS 59.7  mín 56.2  pior 26  p95 13  longos 4  quadros 746
+               qs 3.1 %  Hyprland 2.7 %
+  O mesmo pior e o mesmo p95 da janela em tela cheia, também só swap.
+
+Ou seja: o pior e o p95 do OSD vêm do OSD estar na janela da forma (o swap
+dela espera o compositor), seja ela em tela cheia, seja na coluna. A janela
+em tela cheia sempre aberta (o recuo da regra) é exatamente o que o bench
+mediu aqui; o recuo não deve melhorar o osd:abrir.
+
+## Tiras e capturas (Tarefa 8, passo 3)
+
+BENCH_REC=1 com 3 ciclos; dev/tira.sh na 2ª e na 3ª abertura e num
+fechamento de cada (no scratchpad da sessão, tiras/final-*):
+- painel superior: desce do topo desde o 1º quadro com conteúdo, o conteúdo
+  dentro do fundo, assenta em ~8 quadros; fecha subindo com a mesma mola
+  (~7 quadros), sem resto.
+- central: entra pela direita com o fundo e o conteúdo juntos desde o 1º
+  quadro com conteúdo; fecha saindo para a direita, o fundo encurtando de
+  baixo, o conteúdo dentro.
+- OSD (recorte em resolução cheia): entra pela borda direita em ~3 quadros,
+  o conteúdo junto com o fundo; some saindo pela direita em ~5 quadros.
+- central com animationScale 5: a cascata visível (os blocos aparecem em
+  sequência, as barras de volume e brilho por último); no fechamento lento,
+  o conteúdo sai junto com o fundo.
+- desfoque full|performance|off com a central aberta: os cantos côncavos nos
+  três. O fundo da central é quase opaco nesse tema: a diferença entre os
+  níveis é pequena (média de pixel no painel: full e performance iguais a
+  0.1; off ~0.8 mais escuro).
+
+## Configurações abertas e troca de área de trabalho
+
+Só as Configurações abertas, `hyprctl dispatch 'hl.dsp.focus({ workspace = 2 })'`
+(o mesmo do atalho Super+2): as Configurações continuam abertas (panels get =
+settings) na área 2 e de volta na 1. Não fecham.
