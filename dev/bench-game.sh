@@ -8,9 +8,10 @@
 # desliga o modo, fecha o kitty e compara as cinco opções com as guardadas:
 # qualquer diferença sai com 1 e diz qual. Rode-o no container de teste
 # (dev/test.sh run 'bash ~/.config/quickshell/lucerna/dev/bench-game.sh') ou
-# numa sessão Hyprland de verdade. Nunca mexe no perfil de energia: só roda com
-# o "Perfil de desempenho" desligado na página Modo jogo (gameProfile false no
-# config.json do shell; o dev/test.sh up já grava assim).
+# numa sessão Hyprland de verdade. Nunca mexe no perfil de energia de
+# verdade: só roda com o lucernad numa raiz de teste (LUCERNAD_POWER_ROOT no
+# ambiente dele, como no container), onde o perfil e o GameMode são falsos em
+# arquivos. Numa máquina real, suba o lucernad assim antes (veja o dev/test.sh).
 #   dev/bench-game.sh [segundos]   (padrão 20 por fase)
 set -euo pipefail
 
@@ -20,13 +21,15 @@ secs=${1:-20}
 command -v kitty > /dev/null || { echo "ERRO: o kitty não está instalado" >&2; exit 1; }
 lucernad jogo > /dev/null 2>&1 || { echo "ERRO: o lucernad não respondeu (lucernad jogo)" >&2; exit 1; }
 
-# O config.json do shell (o mais recente, se houver mais de um) com o
-# gameProfile em false; senão, o modo jogo seguraria o perfil de energia.
-state=${XDG_STATE_HOME:-$HOME/.local/state}/quickshell/by-shell
-config=$(find "$state" -mindepth 2 -maxdepth 2 -name config.json -printf '%T@ %p\n' 2> /dev/null | sort -rn | head -n1 | cut -d' ' -f2- || true)
-profile=$(python3 -I -c 'import json, sys; print(json.load(open(sys.argv[1])).get("gameProfile", True))' "$config" 2> /dev/null || echo "?")
-if [ "$profile" != False ]; then
-    echo "ERRO: desligue o \"Perfil de desempenho\" em Configurações → Modo jogo antes (gameProfile em $config: $profile); a medição não mexe no perfil de energia" >&2
+# O lucernad numa raiz de teste (o LUCERNAD_POWER_ROOT no ambiente do
+# processo): o perfil de energia e o GameMode são os falsos dela.
+lucernad_root=""
+for pid in $(pgrep -x lucernad || true); do
+    lucernad_root=$(tr '\0' '\n' < "/proc/$pid/environ" 2> /dev/null | sed -n 's/^LUCERNAD_POWER_ROOT=//p' | head -n1)
+    [ -n "$lucernad_root" ] && break
+done
+if [ -z "$lucernad_root" ]; then
+    echo "ERRO: o lucernad não roda com o LUCERNAD_POWER_ROOT (a raiz de teste): a medição seguraria o perfil de energia de verdade" >&2
     exit 1
 fi
 
