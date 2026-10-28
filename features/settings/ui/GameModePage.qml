@@ -304,7 +304,7 @@ Column {
             key: "gameNotices"
             icon: Icons.info
             title: "Avisos ao entrar e ao sair"
-            description: "Um aviso na borda e o ícone na barra"
+            description: "Um aviso na borda ao entrar e ao sair; o resumo das notificações, com o não perturbe ligado"
         }
     }
 

@@ -128,10 +128,11 @@ Singleton {
         Panels.openNotifications();
     }
 
-    // Uma troca do modo jogo vista pelo GameMode: ao sair, o resumo (com o item
-    // dos avisos ligado).
+    // Uma troca do modo jogo vista pelo GameMode: ao sair, o resumo, só com o
+    // não perturbe do modo e os avisos ligados (sem o não perturbe, as
+    // notificações já apareceram como popup).
     function gameChanged(active: bool, list: var): void {
-        if (!active && Config.gameNotices)
+        if (!active && Config.gameQuiet && Config.gameNotices)
             showSummary(GameMode.lastSince, list);
     }
 

@@ -123,10 +123,11 @@ function run(t) {
     // reconectar; ao sair, conta também as de antes do reinício.
     t.test("notifications: o resumo conta desde o since depois de um reinício", () => {
         const S = t.NotificationsState, G = t.GameMode, C = t.Config;
-        const client0 = G.client, notices0 = C.gameNotices, received0 = N.receivedAt;
+        const client0 = G.client, notices0 = C.gameNotices, quiet0 = C.gameQuiet, received0 = N.receivedAt;
         const c = t.lucernaClient();
         try {
             C.gameNotices = true;
+            C.gameQuiet = true;
             G.client = c;
             c.opened();
             const hello = Object.keys(c.pending).map(Number)[0];
@@ -145,6 +146,10 @@ function run(t) {
             C.gameNotices = false;
             S.gameChanged(false, list);
             t.eq(S.summary, null, "com o item dos avisos desligado, nada");
+            C.gameNotices = true;
+            C.gameQuiet = false;
+            S.gameChanged(false, list);
+            t.eq(S.summary, null, "sem o não perturbe do modo, as notificações já apareceram: nada");
         } finally {
             G.client = client0;
             G.active = false;
@@ -154,6 +159,7 @@ function run(t) {
             G.seenState = false;
             G.effects = G.offEffects();
             C.gameNotices = notices0;
+            C.gameQuiet = quiet0;
             N.receivedAt = received0;
             t.Panels.opened = [];
             t.Panels.setCentral(false, false);
