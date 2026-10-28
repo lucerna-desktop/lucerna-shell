@@ -29,7 +29,14 @@
 # brilho` precisa mostrar a `backlight` em 50% (5 s), a tecla `brightness up`
 # precisa levar o arquivo da árvore a 550 (2 s, com a captura do OSD) e dez
 # teclas seguidas, a 1000 (2 s, a rajada juntada no limite); a central é
-# capturada com o slider. Depois do brilho, a fase "rede": a busca de cidade
+# capturada com o slider. Depois do brilho, a fase "modo jogo": o lucernad
+# fala com um Hyprland falso (ci/hypr-fake.py, nos sockets de
+# $XDG_RUNTIME_DIR/hypr/fumaca, pelo HYPRLAND_INSTANCE_SIGNATURE=fumaca só no
+# ambiente dele: o shell no sway não o vê); o `lucernad jogo ligar` precisa
+# deixar o desfoque, as sombras e as animações do falso desligados e o `ipc
+# call game get` do shell começando com "ligado" (5 s, com a captura do aviso e
+# do ícone na barra); o `lucernad jogo desligar`, as cinco opções iguais às do
+# começo e o `game get` em "desligado" (5 s). Depois do modo jogo, a fase "rede": a busca de cidade
 # "Cacau" pelo IPC weather (o servidor falso responde três cidades) e a escolha
 # da primeira, que precisa ser "Cacaulândia, Rondônia, BR" (5 s); com a aba
 # Clima aberta, o web.weather do `lucernad --json status` precisa chegar a
@@ -54,7 +61,10 @@
 # sem miniatura, senha que entra, busca sem o texto ou sem o trecho, colar de
 # volta que não devolve o texto), o brilho (lucernad sem o aviso da árvore de
 # teste no log, a tela falsa que não aparece em 50% em 5 s, a tecla que não
-# leva o arquivo a 550 ou a rajada que não chega a 1000, cada uma em 2 s), a rede
+# leva o arquivo a 550 ou a rajada que não chega a 1000, cada uma em 2 s), o
+# modo jogo (o Hyprland falso sem socket em 10 s, os efeitos que não desligam
+# ou não voltam ao estado do começo, ou o `game get` que não acompanha, cada
+# um em 5 s), a rede
 # (o servidor falso que não grava o porto em 10 s, o lucernad sem o aviso "a rede é
 # de teste" no log, a cidade escolhida diferente de "Cacaulândia, Rondônia, BR",
 # a previsão que não chega a ready com 7 dias, a letra que não chega a found da
@@ -68,7 +78,7 @@
 # 10 s (timeout, com o fim do shell.log na saída).
 #
 # Só encerra os próprios processos (os grupos do shell, dos lucernad-selecao,
-# do mpv, do lucernad, do servidor falso, do WirePlumber, do PipeWire, do D-Bus e
+# do mpv, do lucernad, dos servidores falsos, do WirePlumber, do PipeWire, do D-Bus e
 # do sway, por PID), nunca por nome:
 # rodada fora do container, não derruba a sessão do usuário.
 #
@@ -78,8 +88,8 @@
 # que não abre só aparece como erro no log (o logcheck) e na captura.
 #
 # Saída em $CI_OUT: shell.log, sway.log, dbus.log, pipewire.log,
-# wireplumber.log, mpv.log, web-fake.log, lucernad.log, kill.log, unit-smoke.log, shots/NN-<passo>.png,
-# coverage.md e summary.md (tabela passo, esperado, veio).
+# wireplumber.log, mpv.log, web-fake.log, hypr-fake.log, lucernad.log,
+# kill.log, unit-smoke.log, shots/NN-<passo>.png, coverage.md e summary.md (tabela passo, esperado, veio).
 set -euo pipefail
 
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -102,6 +112,7 @@ wireplumber_pid=""
 mpv_pid=""
 lucernad_pid=""
 web_pid=""
+hypr_pid=""
 selecao_pids=()
 qs_pid=""
 shell_pid=""
@@ -135,6 +146,7 @@ cleanup() {
     stop_group "$mpv_pid"
     stop_group "$lucernad_pid"
     stop_group "$web_pid"
+    stop_group "$hypr_pid"
     stop_group "$wireplumber_pid"
     stop_group "$pipewire_pid"
     stop_group "$dbus_pid"
@@ -287,7 +299,9 @@ row "player de teste" "org.mpris.MediaPlayer2.mpv* em 10 s" "$mpris"
 # manda no clipboard.configure (o caminho do daemon sem sessão no ambiente).
 # O brilho é o de uma árvore falsa (LUCERNAD_POWER_ROOT, criada pelo
 # ci/power-root.sh): a fumaça rodada fora do container nunca toca o brilho de
-# verdade.
+# verdade. O barramento do sistema do lucernad aponta para um socket que não
+# existe (DBUS_SYSTEM_BUS_ADDRESS): rodada no host, a fase "modo jogo" não
+# segura o perfil de energia de verdade.
 # O servidor falso de letras e clima (ci/web-fake.py), no próprio grupo: grava
 # o porto livre que pegou em 127.0.0.1, e o lucernad vai a ele pelo
 # LUCERNAD_WEB_BASE (nunca às fontes de verdade).
@@ -305,11 +319,29 @@ fi
 web_base="http://127.0.0.1:$(cat "$work/web-porto")"
 row "servidor falso de letras e clima" "porto em 10 s" "$web_base"
 
+# O Hyprland falso do modo jogo (ci/hypr-fake.py), no próprio grupo: os
+# sockets da instância "fumaca" no XDG_RUNTIME_DIR da fumaça. Só o lucernad o
+# vê (o HYPRLAND_INSTANCE_SIGNATURE vai só no ambiente dele).
+setsid python3 -I "$repo/ci/hypr-fake.py" "$XDG_RUNTIME_DIR" > "$out/hypr-fake.log" 2>&1 &
+hypr_pid=$!
+hypr_state="$XDG_RUNTIME_DIR/hypr/fumaca/estado.json"
+for _ in $(seq 50); do
+    [ -S "$XDG_RUNTIME_DIR/hypr/fumaca/.socket.sock" ] && [ -s "$hypr_state" ] && break
+    kill -0 "$hypr_pid" 2> /dev/null || break
+    sleep 0.2
+done
+if [ ! -S "$XDG_RUNTIME_DIR/hypr/fumaca/.socket.sock" ]; then
+    row "Hyprland falso" "socket em 10 s" "(não veio)"
+    fail "o ci/hypr-fake.py não abriu o socket em 10 s (veja hypr-fake.log)"
+fi
+row "Hyprland falso" "socket em 10 s" "hypr/fumaca/.socket.sock"
+hypr_before=$(cat "$hypr_state")
+
 lucernad_sock="$XDG_RUNTIME_DIR/lucerna/lucernad.sock"
 power_root="$XDG_RUNTIME_DIR/power"
 bash "$repo/ci/power-root.sh" "$power_root" || fail "o ci/power-root.sh não criou a árvore falsa do brilho em $power_root"
 power_file="$power_root/sys/class/backlight/lucerna_teste/brightness"
-LUCERNAD_WEB_BASE=$web_base LUCERNAD_POWER_ROOT=$power_root LUCERNA_IDLE_TIMEOUT_MS=600000 setsid env -u WAYLAND_DISPLAY lucernad serve > "$out/lucernad.log" 2>&1 &
+HYPRLAND_INSTANCE_SIGNATURE=fumaca DBUS_SYSTEM_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/sem-sistema LUCERNAD_WEB_BASE=$web_base LUCERNAD_POWER_ROOT=$power_root LUCERNA_IDLE_TIMEOUT_MS=600000 setsid env -u WAYLAND_DISPLAY lucernad serve > "$out/lucernad.log" 2>&1 &
 lucernad_pid=$!
 for _ in $(seq 50); do
     [ -S "$lucernad_sock" ] && break
@@ -713,6 +745,51 @@ ipc central open "" > /dev/null || fail "ipc call central open falhou: $(why $?)
 sleep 1
 shot "$out/shots/$(printf '%02d' "$n")-central-brilho.png" || fail "o grim não capturou a central com o brilho: $(why $?)"
 ipc panels close > /dev/null || fail "ipc call panels close falhou: $(why $?)"
+
+# Fase "modo jogo". game_effects: "sim" com o desfoque, as sombras e as
+# animações do Hyprland falso desligados (o estado.json dele), senão o estado.
+game_effects() {
+    python3 -I -c '
+import json, sys
+try:
+    s = json.load(open(sys.argv[1]))
+except (OSError, ValueError):
+    print("(sem estado)")
+    sys.exit()
+keys = ["decoration:blur:enabled", "decoration:shadow:enabled", "animations:enabled"]
+print("sim" if all(s.get(k) is False for k in keys) else " ".join(f"{k}={s.get(k)}" for k in keys))
+' "$hypr_state"
+}
+# wait_game <estado esperado do Hyprland falso> <começo do game get>: espera
+# até 5 s os dois; o último lido fica em $hypr e $game.
+wait_game() {
+    for _ in $(seq 25); do
+        if [ "$1" = desligado ]; then
+            hypr=$(cat "$hypr_state" 2> /dev/null || true)
+            [ "$hypr" = "$hypr_before" ] && hypr="igual ao começo"
+        else
+            hypr=$(game_effects)
+        fi
+        game=$(ipc game get 2> /dev/null || true)
+        [ "$hypr" = "$2" ] && [[ $game == "$1"* ]] && return 0
+        sleep 0.2
+    done
+    return 1
+}
+timeout "$CMD_TIMEOUT" lucernad jogo ligar > /dev/null || fail "o lucernad jogo ligar falhou (veja lucernad.log)"
+wait_game ligado sim || true
+row "modo jogo" "ligar: os efeitos do Hyprland falso desligados e o game get ligado em 5 s" "$hypr; ${game:-(sem resposta)}"
+[ "$hypr" = sim ] || fail "depois do lucernad jogo ligar, o Hyprland falso não ficou sem desfoque, sombras e animações em 5 s (veio \"$hypr\"; veja hypr-fake.log e lucernad.log)"
+[[ $game == ligado* ]] || fail "depois do lucernad jogo ligar, o ipc call game get não começou com \"ligado\" em 5 s (veio \"$game\")"
+sleep 1
+n=$((n + 1))
+shot "$out/shots/$(printf '%02d' "$n")-modo-jogo.png" || fail "o grim não capturou o modo jogo: $(why $?)"
+timeout "$CMD_TIMEOUT" lucernad jogo desligar > /dev/null || fail "o lucernad jogo desligar falhou (veja lucernad.log)"
+wait_game desligado "igual ao começo" || true
+row "modo jogo" "desligar: as cinco opções como no começo e o game get desligado em 5 s" "$hypr; ${game:-(sem resposta)}"
+[ "$hypr" = "igual ao começo" ] || fail "depois do lucernad jogo desligar, o Hyprland falso não voltou ao estado do começo em 5 s (começo: $hypr_before; veio: $hypr)"
+[ "$game" = desligado ] || fail "depois do lucernad jogo desligar, o ipc call game get não voltou a \"desligado\" em 5 s (veio \"$game\")"
+alive || fail "o shell caiu na fase do modo jogo"
 
 # Fase "rede". web_state <tópico>: o resumo do web.weather ("<state> <dias>
 # dias") ou do web.lyrics ("<state> <source> <linhas> linhas") no `lucernad

@@ -25,6 +25,8 @@ import qs.features.bar.state
 import qs.features.central.state
 import qs.features.clipboard.state
 import qs.features.dashboard.state
+import qs.features.idle.state
+import qs.features.input.state
 import qs.features.notifications.state
 import qs.features.osd.state
 import qs.features.settings.state
@@ -46,6 +48,9 @@ import "central.test.js" as CentralTest
 import "clipboard.test.js" as ClipboardTest
 import "clipboardstate.test.js" as ClipboardStateTest
 import "format.test.js" as FormatTest
+import "idle.test.js" as IdleTest
+import "gamemode.test.js" as GameModeTest
+import "gamemodestate.test.js" as GameModeStateTest
 import "frame.test.js" as FrameTest
 import "input.test.js" as InputTest
 import "inputactions.test.js" as InputActionsTest
@@ -126,6 +131,9 @@ ShellRoot {
         ["weatherstate", WeatherStateTest],
         ["credits", CreditsTest],
         ["web", WebTest],
+        ["gamemode", GameModeTest],
+        ["gamemodestate", GameModeStateTest],
+        ["idle", IdleTest],
         ["themeswitcher", ThemeSwitcherTest],
         ["lucernaclient", LucernaClientTest]
     ]
@@ -276,8 +284,12 @@ ShellRoot {
             get VideoWallpapers() { return VideoWallpapers; },
             get Weather() { return Weather; },
             get Web() { return Web; },
+            get GameMode() { return GameMode; },
+            get IdleState() { return IdleState; },
+            get InputState() { return InputState; },
             get MediaState() { return MediaState; },
             get SettingsState() { return SettingsState; },
+            get GameModeState() { return GameModeState; },
             get WeatherState() { return WeatherState; },
             weatherSample: root.weatherSample,
             get ThemeSwitcherState() { return ThemeSwitcherState; },

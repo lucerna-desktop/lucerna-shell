@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import qs.core.config
 import qs.core.panels
 import qs.core.widgets
 import qs.services
@@ -9,6 +10,8 @@ import qs.services
 // Mostra o OSD quando o volume ou o brilho mudam, venha a mudança de onde vier
 // (atalho, outro app, a própria barra). Com a central aberta, não: ele sairia
 // da mesma borda, por cima dela, e os controles dela já mostram o valor.
+// O tipo "game" avisa a entrada e a saída do modo jogo (sem valor nem barra),
+// só numa troca vista com o lucernad conectado e com o item ligado.
 Singleton {
     id: root
 
@@ -21,10 +24,13 @@ Singleton {
     // Panels.screenFor).
     property var shownOn: null
     readonly property var screen: Panels.screenFor(shownOn, Quickshell.screens, Hypr.focusedScreen)
-    readonly property real value: kind === "volume" ? Audio.volume : Brightness.shownValue
+    readonly property real value: kind === "volume" ? Audio.volume : kind === "brightness" ? Brightness.shownValue : 0
+    // O modo jogo do último aviso "game".
+    property bool gameOn: false
+    readonly property string text: kind === "game" ? (gameOn ? "Modo jogo ligado" : "Modo jogo desligado") : ""
     readonly property bool muted: kind === "volume" && Audio.muted
     readonly property int percent: Math.round(value * 100)
-    readonly property string icon: kind === "brightness"
+    readonly property string icon: kind === "game" ? "sports_esports" : kind === "brightness"
         ? (value < 0.34 ? Icons.brightnessLow : value < 0.67 ? Icons.brightnessMedium : Icons.brightnessHigh)
         : (muted || value === 0 ? Icons.volumeOff : value < 0.34 ? Icons.volumeLow : value < 0.67 ? Icons.volumeMedium : Icons.volumeHigh)
 
@@ -36,6 +42,25 @@ Singleton {
             shownOn = Hypr.focusedScreen;
         shown = true;
         hideTimer.restart();
+    }
+
+    function showGame(on: bool): void {
+        gameOn = on;
+        show("game");
+    }
+
+    // Uma troca do modo jogo vista pelo GameMode (nunca o primeiro estado).
+    function gameChanged(on: bool): void {
+        if (Config.gameNotices)
+            showGame(on);
+    }
+
+    Connections {
+        target: GameMode
+
+        function onChangedByDaemon(active: bool): void {
+            root.gameChanged(active);
+        }
     }
 
     Connections {
@@ -73,7 +98,7 @@ Singleton {
     Timer {
         id: hideTimer
 
-        interval: 1600
+        interval: root.kind === "game" ? 2200 : 1600
         onTriggered: root.shown = false
     }
 }

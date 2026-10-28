@@ -11,11 +11,12 @@ import qs.features.notifications.state
 //
 // A janela ocupa a coluna inteira, mas só a área dos cartões recebe cliques
 // (máscara), e ela só existe enquanto há popups (mais o tempo da animação de
-// saída do último).
+// saída do último). O resumo do modo jogo é um cartão próprio no topo da
+// pilha, que abre as notificações no clique.
 PanelWindow {
     id: window
 
-    readonly property bool hasPopups: NotificationsState.popups.length > 0
+    readonly property bool hasPopups: NotificationsState.popups.length > 0 || NotificationsState.summary !== null
 
     onHasPopupsChanged: {
         if (!hasPopups)
@@ -55,6 +56,56 @@ PanelWindow {
         anchors.fill: parent
         spacing: ThemeManager.spacing.small
         interactive: false
+
+        // O cabeçalho fica dentro do contentItem: a máscara já o inclui.
+        header: Item {
+            width: ListView.view.width
+            height: NotificationsState.summary ? summaryCard.height + ThemeManager.spacing.small : 0
+            visible: NotificationsState.summary !== null
+
+            Surface {
+                id: summaryCard
+
+                width: parent.width
+                level: 0
+                implicitHeight: summaryRow.implicitHeight + ThemeManager.spacing.normal * 2
+                radius: ThemeManager.radius.normal
+                border.color: ThemeManager.colors.border
+                border.width: ThemeManager.outlines ? 1 : 0
+
+                Clickable {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    onClicked: NotificationsState.openSummary()
+                }
+
+                Row {
+                    id: summaryRow
+
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                        verticalCenter: parent.verticalCenter
+                        margins: ThemeManager.spacing.normal
+                    }
+                    spacing: ThemeManager.spacing.normal
+
+                    Icon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        icon: "sports_esports"
+                        size: 22
+                        color: ThemeManager.colors.accent
+                    }
+
+                    Txt {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - 22 - ThemeManager.spacing.normal
+                        text: NotificationsState.summaryText
+                        wrapMode: Text.Wrap
+                    }
+                }
+            }
+        }
 
         model: ScriptModel {
             values: NotificationsState.popups

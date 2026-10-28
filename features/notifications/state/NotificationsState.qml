@@ -20,7 +20,10 @@ Singleton {
     // visto os popups. Com só as Ações, o que chega fica para depois.
     readonly property bool listOpen: Panels.notificationsOpen
 
-    onListOpenChanged: Notifications.clearPopups()
+    onListOpenChanged: {
+        Notifications.clearPopups();
+        dismissSummary();
+    }
 
     // O que chega com as Notificações abertas já está na lista: sai na hora,
     // sem sobrar popup para piscar quando elas fecham.
@@ -49,11 +52,110 @@ Singleton {
     readonly property var list: Notifications.list
     readonly property bool doNotDisturb: Config.doNotDisturb
 
-    // O "não perturbe" e o tempo dos popups são salvos na config e repassados ao serviço.
+    // O "não perturbe" do serviço: o do usuário (salvo na config) ou o do modo
+    // jogo, um segundo interruptor que não grava nada (o do usuário continua
+    // dele quando o modo sai).
+    function quietFor(userDnd: bool, gameActive: bool, gameQuiet: bool): bool {
+        return userDnd || (gameActive && gameQuiet);
+    }
+
+    // O resumo do modo jogo: ao sair dele (uma troca vista, nunca o primeiro
+    // estado), um cartão na pilha de popups conta as notificações não críticas
+    // que chegaram desde o `since` da sessão (as críticas já apareceram). Conta
+    // pela lista e pelo horário de chegada persistido, então sobrevive a um
+    // reinício do shell no meio do jogo. `summary`: { count, apps, more } ou null.
+    property var summary: null
+    readonly property string summaryText: summary ? summaryTextOf(summary) : ""
+
+    // { app, critical, at } de cada notificação da lista.
+    function summaryItems(list: var): var {
+        return Array.from(list ?? []).map(n => ({
+                    app: String(n.appName ?? ""),
+                    critical: isCritical(n),
+                    at: Number(Notifications.receivedAt[n.id] ?? 0)
+                }));
+    }
+
+    // Puro: as não críticas com `at` entre `since` e `now`, até três apps (na
+    // ordem de chegada) e quantos outros; null sem nenhuma.
+    function summaryOf(items: var, since: real, now: real): var {
+        const counted = Array.from(items ?? []).filter(i => !i.critical && i.at >= since && i.at <= now).sort((a, b) => a.at - b.at);
+        if (counted.length === 0)
+            return null;
+        const apps = [];
+        for (const i of counted) {
+            const app = i.app || "Notificação";
+            if (!apps.includes(app))
+                apps.push(app);
+        }
+        return {
+            count: counted.length,
+            apps: apps.slice(0, 3),
+            more: Math.max(0, apps.length - 3)
+        };
+    }
+
+    // "Enquanto você jogava: 4 notificações — Discord, Steam e mais 1".
+    function summaryTextOf(s: var): string {
+        const names = Array.from(s.apps);
+        let who = "";
+        if (s.more > 0)
+            who = `${names.join(", ")} e mais ${s.more}`;
+        else if (names.length > 1)
+            who = `${names.slice(0, -1).join(", ")} e ${names[names.length - 1]}`;
+        else
+            who = names[0] ?? "";
+        const count = s.count === 1 ? "1 notificação" : `${s.count} notificações`;
+        return `Enquanto você jogava: ${count} — ${who}`;
+    }
+
+    function showSummary(since: real, list: var): void {
+        if (since <= 0)
+            return;
+        summary = summaryOf(summaryItems(list), since, Date.now());
+        if (summary)
+            summaryTimer.restart();
+    }
+
+    function dismissSummary(): void {
+        summary = null;
+        summaryTimer.stop();
+    }
+
+    // O clique no cartão abre o painel das notificações.
+    function openSummary(): void {
+        dismissSummary();
+        Panels.openNotifications();
+    }
+
+    // Uma troca do modo jogo vista pelo GameMode: ao sair, o resumo, só com o
+    // não perturbe do modo e os avisos ligados (sem o não perturbe, as
+    // notificações já apareceram como popup).
+    function gameChanged(active: bool, list: var): void {
+        if (!active && Config.gameQuiet && Config.gameNotices)
+            showSummary(GameMode.lastSince, list);
+    }
+
+    Connections {
+        target: GameMode
+
+        function onChangedByDaemon(active: bool): void {
+            root.gameChanged(active, Notifications.list);
+        }
+    }
+
+    Timer {
+        id: summaryTimer
+
+        interval: Notifications.defaultTimeout
+        onTriggered: root.dismissSummary()
+    }
+
+    // O tempo dos popups é salvo na config e repassado ao serviço.
     Binding {
         target: Notifications
         property: "doNotDisturb"
-        value: Config.doNotDisturb
+        value: root.quietFor(Config.doNotDisturb, GameMode.active, Config.gameQuiet)
     }
 
     Binding {

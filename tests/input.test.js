@@ -115,6 +115,42 @@ function run(t) {
         t.eq(none, head.concat(["\tkey <CAPS> { type= \"ONE_LEVEL\", symbols[1]= [ NoSymbol ] };"], tail).join("\n"));
     });
 
+    // As ações novas do shell (features/input/state): `game` alterna o modo
+    // jogo pelo daemon (um cliente de teste no GameMode) e `bar` pede a barra
+    // pelo Panels (a feature input não importa a barra).
+    t.test("input: a ação game alterna o modo jogo", () => {
+        const G = t.GameMode;
+        const client0 = G.client;
+        const c = t.lucernaClient();
+        try {
+            G.client = c;
+            c.opened();
+            const hello = Object.keys(c.pending).map(Number)[0];
+            c.receive(JSON.stringify({ jsonrpc: "2.0", id: hello, result: { protocol: "1.0", app: "lucernad", version: "0.1.0", topics: ["game.state"], streams: [], methods: [] } }));
+            c.pending = {};
+            t.InputState.run("game");
+            t.eq(Object.values(c.pending).map(p => p.method), ["game.toggle"]);
+        } finally {
+            G.client = client0;
+            c.destroy();
+        }
+        t.check(G.client === client0, "estado original restaurado");
+    });
+
+    t.test("input: a ação bar pede a barra na tela com foco", () => {
+        const P = t.Panels;
+        const asked = [];
+        const record = screen => asked.push(screen);
+        P.barToggleRequested.connect(record);
+        try {
+            t.InputState.run("bar");
+        } finally {
+            P.barToggleRequested.disconnect(record);
+        }
+        t.eq(asked.length, 1);
+        t.check(asked[0] === t.Hypr.focusedScreen, "a tela com foco");
+    });
+
     I.keyNames = originalKeyNames;
     I.keySymbols = originalKeySymbols;
 

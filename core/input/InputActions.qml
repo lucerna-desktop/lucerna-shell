@@ -31,6 +31,8 @@ Singleton {
         { id: "power", group: "Lucerna", label: "Menu de energia", icon: Icons.power, kind: "shell" },
         { id: "lock", group: "Lucerna", label: "Bloquear a tela", icon: Icons.lock, kind: "shell" },
         { id: "dnd", group: "Lucerna", label: "Ligar/desligar o não perturbe", icon: Icons.bellSleep, kind: "shell" },
+        { id: "game", group: "Lucerna", label: "Ligar/desligar o modo jogo", icon: "sports_esports", kind: "shell" },
+        { id: "bar", group: "Lucerna", label: "Mostrar/esconder a barra", icon: Icons.toolbar, kind: "shell" },
         { id: "play-pause", group: "Mídia", label: "Tocar/pausar", icon: Icons.play, kind: "shell", locked: true },
         { id: "next", group: "Mídia", label: "Próxima faixa", icon: Icons.next, kind: "shell", locked: true },
         { id: "previous", group: "Mídia", label: "Faixa anterior", icon: Icons.previous, kind: "shell", locked: true },

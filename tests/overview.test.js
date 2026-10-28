@@ -124,13 +124,13 @@ function run(t) {
             C.offline = false;
             C.idleInhibit = false;
             C.idleEnabled = true;
-            t.eq(O.togglesFor({ nightlight: true, awake: true }).map(x => x.id), ["nightlight", "dnd", "offline", "awake"]);
+            t.eq(O.togglesFor({ nightlight: true, awake: true, game: true }).map(x => x.id), ["nightlight", "dnd", "game", "offline", "awake"]);
             const bare = O.togglesFor({ nightlight: false, awake: false });
-            t.eq(bare.map(x => x.id), ["dnd", "offline", "awake"], "sem o hyprsunset a luz noturna some; a cafeína fica");
+            t.eq(bare.map(x => x.id), ["dnd", "game", "offline", "awake"], "sem o hyprsunset a luz noturna some; a cafeína e o modo jogo ficam");
             const off = bare.find(x => x.id === "awake");
             t.eq([off.enabled, off.on], [false, false], "sem a ociosidade do shell, a cafeína apagada");
             t.check(off.label.includes("ligue a ociosidade nas configurações"), "e a dica diz como ligar");
-            t.check(O.togglesFor({ nightlight: true, awake: true }).every(x => x.enabled), "com tudo, todas acionáveis");
+            t.check(O.togglesFor({ nightlight: true, awake: true, game: true }).every(x => x.enabled), "com tudo, todas acionáveis");
             t.eq(["dnd", "offline", "awake"].map(id => toggle(id).on), [false, false, false]);
             for (const id of ["dnd", "offline", "awake"])
                 O.toggle(id);
@@ -163,5 +163,36 @@ function run(t) {
         } finally {
             [C.nightLightEnabled, C.nightLightOverride] = saved;
         }
+    });
+
+    t.test("overview: a chave do modo jogo", () => {
+        const game = has => O.togglesFor(Object.assign({ nightlight: false, awake: true }, has)).find(x => x.id === "game");
+        t.eq(game({ game: true, gameOn: true }), { id: "game", label: "Modo jogo", icon: "sports_esports", on: true, enabled: true });
+        t.eq(game({ game: true, gameOn: false }).on, false);
+        const off = game({ game: false, gameOn: true });
+        t.eq([off.enabled, off.on, off.label], [false, false, "Modo jogo: indisponível sem o lucernad"], "sem o lucernad, apagada");
+        t.eq(game({ game: false, gameNote: "Indisponível: sem hyprland" }).label, "Modo jogo — Indisponível: sem hyprland", "o módulo com erro: o motivo dele");
+    });
+
+    t.test("overview: a chave do modo jogo chama o daemon", () => {
+        const G = t.GameMode;
+        const client0 = G.client;
+        const c = t.lucernaClient();
+        try {
+            G.client = c;
+            O.toggle("game");
+            t.eq(Object.keys(c.pending).length, 0, "sem o lucernad, nada");
+            c.opened();
+            const hello = Object.keys(c.pending).map(Number)[0];
+            c.receive(JSON.stringify({ jsonrpc: "2.0", id: hello, result: { protocol: "1.0", app: "lucernad", version: "0.1.0", topics: ["game.state"], streams: [], methods: [] } }));
+            t.eq(O.quickToggles.find(x => x.id === "game")?.enabled, true, "a lista viva: disponível");
+            c.pending = {};
+            O.toggle("game");
+            t.eq(Object.values(c.pending).map(p => p.method), ["game.toggle"]);
+        } finally {
+            G.client = client0;
+            c.destroy();
+        }
+        t.check(G.client === client0, "estado original restaurado");
     });
 }

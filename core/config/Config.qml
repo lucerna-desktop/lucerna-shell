@@ -103,6 +103,21 @@ Singleton {
     property alias captureFps: adapter.captureFps
     property alias captureFolder: adapter.captureFolder
     property alias recordFolder: adapter.recordFolder
+    property alias gameAutoFullscreen: adapter.gameAutoFullscreen
+    property alias gameAutoGames: adapter.gameAutoGames
+    property alias gameAlways: adapter.gameAlways
+    property alias gameNever: adapter.gameNever
+    property alias gameEffects: adapter.gameEffects
+    property alias gameVrr: adapter.gameVrr
+    property alias gameTearing: adapter.gameTearing
+    property alias gameProfile: adapter.gameProfile
+    property alias gameGamemode: adapter.gameGamemode
+    property alias gameLight: adapter.gameLight
+    property alias gameWallpaper: adapter.gameWallpaper
+    property alias gameQuiet: adapter.gameQuiet
+    property alias gameBar: adapter.gameBar
+    property alias gameIdle: adapter.gameIdle
+    property alias gameNotices: adapter.gameNotices
 
     FileView {
         path: Quickshell.statePath("config.json")
@@ -291,6 +306,30 @@ Singleton {
             property int captureFps: 30
             property string captureFolder: ""
             property string recordFolder: ""
+            // Modo jogo (o estado é do lucernad; aqui só as preferências).
+            // Entrada automática por tela cheia de verdade e por jogo detectado.
+            property bool gameAutoFullscreen: true
+            property bool gameAutoGames: true
+            // Classes (do Hyprland) que sempre ligam e que nunca contam; a
+            // "nunca" de fábrica é cópia do config::DEFAULT_NEVER do lucernad
+            // (crates/lucernad-game/src/config.rs, na rev f320647): mudar junto.
+            property var gameAlways: []
+            property var gameNever: ["mpv", "vlc", "io.github.celluloid_player.celluloid", "org.gnome.totem", "org.kde.haruna", "smplayer", "firefox", "firefox-esr", "librewolf", "floorp", "zen", "zen-browser", "chromium", "google-chrome", "brave-browser", "vivaldi-stable", "microsoft-edge", "opera"]
+            // Compositor: desfoque, sombras e animações; VRR em tela cheia; tearing.
+            property bool gameEffects: true
+            property bool gameVrr: true
+            property bool gameTearing: false
+            // Sistema: perfil de desempenho, GameMode da Feral e o lucernad mais leve.
+            property bool gameProfile: true
+            property bool gameGamemode: true
+            property bool gameLight: true
+            // Shell: pausar o papel, não perturbe com resumo, barra presa,
+            // não apagar a tela e os avisos ao entrar e sair.
+            property bool gameWallpaper: true
+            property bool gameQuiet: true
+            property bool gameBar: true
+            property bool gameIdle: true
+            property bool gameNotices: true
         }
     }
 }

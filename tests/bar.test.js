@@ -12,7 +12,7 @@ function run(t) {
     function withFrame(name, open, body) {
         t.test(name, () => {
             const blobs0 = F.blobs, opened0 = P.opened, revealed0 = B.revealedScreen;
-            const peeking0 = B.peeking, hovering0 = B.hovering;
+            const peeking0 = B.peeking, hovering0 = B.hovering, pinned0 = B.pinnedScreen, pinHovered0 = B.pinHovered;
             try {
                 F.blobs = [{ screen: "A", role: "panel", framed: true, open: open, progress: open ? 1 : 0, rect: Qt.rect(0, 0, 10, 10) }];
                 body();
@@ -22,6 +22,8 @@ function run(t) {
                 B.revealedScreen = revealed0;
                 B.peeking = peeking0;
                 B.hovering = hovering0;
+                B.pinnedScreen = pinned0;
+                B.pinHovered = pinHovered0;
             }
         });
     }
@@ -85,5 +87,94 @@ function run(t) {
         t.eq(B.pillY(h, 1), 0, "aberta: encostada na borda de cima");
         t.eq(B.pillY(h, 0.5), -h / 2, "no meio do caminho");
         t.eq(B.pillY(h, 0), -h, "escondida: acima da tela");
+    });
+
+    t.test("bar: no modo jogo, o mouse e a troca de workspace não trazem", () => {
+        const base = { fused: false, panelOpen: false, revealed: false, peeking: false, pinned: false, gameLocked: true, empty: false, fullscreen: true };
+        const at = over => B.decide(Object.assign({}, base, over));
+        t.check(!at({ revealed: true }), "o mouse no topo, preso");
+        t.check(!at({ revealed: true, peeking: true, fullscreen: false }), "a troca de workspace, presa");
+        t.check(at({ empty: true, fullscreen: false }), "o workspace vazio continua");
+        t.check(at({ fused: true }), "fundida a um painel da moldura, sempre");
+    });
+
+    t.test("bar: a ação bar revela, também no modo jogo", () => {
+        const base = { fused: false, panelOpen: false, revealed: false, peeking: false, pinned: true, gameLocked: true, empty: false, fullscreen: true };
+        const at = over => B.decide(Object.assign({}, base, over));
+        t.check(at({}), "no modo jogo, sobre a tela cheia");
+        t.check(at({ gameLocked: false }), "fora do modo jogo");
+        t.check(!at({ panelOpen: true }), "um painel centralizado ainda esconde");
+    });
+
+    t.test("bar: fora do modo jogo, a regra de sempre", () => {
+        const base = { fused: false, panelOpen: false, revealed: false, peeking: false, pinned: false, gameLocked: false, empty: false, fullscreen: false };
+        const at = over => B.decide(Object.assign({}, base, over));
+        t.check(at({ revealed: true, fullscreen: true }), "o mouse no topo sobre a tela cheia");
+        t.check(at({ revealed: true, peeking: true }), "a troca de workspace");
+    });
+
+    withFrame("bar: a ação bar alterna pelo Panels, e o modo jogo prende o mouse", false, () => {
+        const G = t.GameMode, C = t.Config;
+        const was = { active: G.active, bar: C.gameBar };
+        try {
+            P.opened = [];
+            B.revealedScreen = null;
+            B.pinnedScreen = null;
+            P.requestBarToggle("A");
+            t.eq(B.pinnedScreen, "A", "o pedido chega à barra");
+            t.check(B.shownOn("A"), "à mostra");
+            P.requestBarToggle("A");
+            t.eq(B.pinnedScreen, null, "o segundo toque esconde");
+            B.togglePinned("A");
+            B.togglePinned("B");
+            t.eq(B.pinnedScreen, "B", "noutra tela, muda de tela");
+            B.setHovering(false);
+            t.eq(B.pinHovered, false, "o mouse saindo da faixa do topo sem passar pela barra não solta o pino");
+            B.setHovering(true);
+            t.eq(B.pinHovered, true, "o mouse passou pela barra: a saída solta o pino (o hideDelay)");
+            B.setHovering(false);
+            B.pinnedScreen = null;
+            C.gameBar = true;
+            G.active = true;
+            t.check(B.gameLocked, "presa no modo jogo");
+            B.reveal("A");
+            B.peek("A");
+            t.eq(B.revealedScreen, null, "nem o mouse nem a troca de workspace");
+            C.gameBar = false;
+            t.check(!B.gameLocked, "com o item desligado, solta");
+        } finally {
+            G.active = was.active;
+            C.gameBar = was.bar;
+        }
+        t.eq([G.active, C.gameBar], [was.active, was.bar], "estado original restaurado");
+    });
+
+    t.test("bar: o ícone do modo jogo e o clique que desliga", () => {
+        const G = t.GameMode;
+        const was = { client: G.client, active: G.active, reasons: G.reasons };
+        const c = t.lucernaClient();
+        try {
+            G.active = false;
+            t.eq([B.gameIcon, B.gameTooltip], [false, ""]);
+            G.active = true;
+            G.reasons = ["fullscreen", "game"];
+            t.eq([B.gameIcon, B.gameTooltip], [true, "Modo jogo ligado: tela cheia, jogo. Clique para desligar."]);
+            G.reasons = [];
+            t.eq(B.gameTooltip, "Modo jogo ligado. Clique para desligar.");
+            G.client = c;
+            c.opened();
+            const hello = Object.keys(c.pending).map(Number)[0];
+            c.receive(JSON.stringify({ jsonrpc: "2.0", id: hello, result: { protocol: "1.0", app: "lucernad", version: "0.1.0", topics: ["game.state"], streams: [], methods: [] } }));
+            c.pending = {};
+            B.stopGame();
+            t.eq(Object.values(c.pending).map(p => [p.method, p.params]), [["game.set", { on: false }]]);
+        } finally {
+            G.client = was.client;
+            G.active = was.active;
+            G.reasons = was.reasons;
+            G.seenState = false;
+            c.destroy();
+        }
+        t.eq([G.active, G.reasons], [was.active, was.reasons], "estado original restaurado");
     });
 }

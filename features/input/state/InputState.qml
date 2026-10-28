@@ -203,6 +203,12 @@ Singleton {
         case "dnd":
             Config.doNotDisturb = !Config.doNotDisturb;
             break;
+        case "game":
+            GameMode.toggle();
+            break;
+        case "bar":
+            Panels.requestBarToggle(Hypr.focusedScreen);
+            break;
         case "play-pause":
             Media.togglePlaying();
             break;
@@ -230,6 +236,27 @@ Singleton {
         case "brightness-down":
             Brightness.change(-0.05);
             break;
+        }
+    }
+
+    // O modo jogo pelo terminal: `qs -c lucerna ipc call game toggle|on|off|get`.
+    IpcHandler {
+        target: "game"
+
+        function toggle(): void {
+            GameMode.toggle();
+        }
+
+        function on(): void {
+            GameMode.set(true);
+        }
+
+        function off(): void {
+            GameMode.set(false);
+        }
+
+        function get(): string {
+            return GameMode.statusText(GameMode.available, GameMode.active, GameMode.reasons);
         }
     }
 

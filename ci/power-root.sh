@@ -7,7 +7,11 @@
 # uevent do kernel. Usado pela fumaça (ci/smoke.sh) e pelo container do
 # dev/test.sh (dev/hyprland.lua), onde o D-Bus do sistema e o /sys do host
 # estão à vista: sem a raiz falsa, um ajuste mudaria o brilho de verdade.
-# Recria a tela do zero (valor 500) a cada chamada.
+# Cria também o power-profiles-daemon falso (<pasta>/power-profiles, com o
+# perfil `balanced` em `active`) e o GameMode falso (<pasta>/gamemode), que o
+# lucernad usa no lugar do D-Bus com a raiz definida (os perfis da central e o
+# modo jogo); sem as pastas, os dois ficam indisponíveis.
+# Recria a tela, os perfis e o GameMode do zero a cada chamada.
 #   ci/power-root.sh <pasta>
 set -euo pipefail
 
@@ -34,3 +38,6 @@ printf 'raw\n' > "$screen/type"
 printf '1000\n' > "$screen/max_brightness"
 printf '500\n' > "$screen/brightness"
 printf '500\n' > "$screen/actual_brightness"
+rm -rf "$root/power-profiles" "$root/gamemode"
+mkdir -p "$root/power-profiles" "$root/gamemode"
+printf 'balanced\n' > "$root/power-profiles/active"

@@ -277,6 +277,14 @@ Singleton {
         return actionsOpen && centralEntry === entry;
     }
 
+    // A ação `bar` (mostrar/esconder a barra na tela dada): a barra escuta o
+    // sinal; quem pede (a feature input) não importa a barra.
+    signal barToggleRequested(var screen)
+
+    function requestBarToggle(screen: var): void {
+        barToggleRequested(screen);
+    }
+
     IpcHandler {
         target: "panels"
 

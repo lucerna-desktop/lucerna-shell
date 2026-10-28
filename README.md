@@ -112,6 +112,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 | **Ociosidade** | Escurece, desliga a tela, bloqueia e suspende depois de um tempo sem uso, com tempos próprios na tomada e na bateria, sem precisar do `hypridle`. Segura com mídia tocando, com app em tela cheia e com "Não apagar a tela" (nos tiles da central, para apresentações). |
 | **Luz noturna** | Tela mais quente à noite, do pôr ao nascer do sol (pela cidade do clima, calculado sem rede), num horário fixo ou sempre, entrando e saindo aos poucos. Nos tiles da central, liga ou desliga até a próxima virada. Usa o `hyprsunset`, que muda a cor no hardware, sem custo para a GPU. |
 | **Papel de parede** | Imagem com transição na troca e efeito animado por cima (shader, a 30 ou 60 fps, no ritmo da tela, e em meia resolução). Pausa com app em tela cheia, tela bloqueada ou tela apagada, e opcionalmente com qualquer janela aberta; no automático, fica parado na bateria. Modo e origem por monitor. |
+| **Modo jogo** | Pelo `lucernad`: entra sozinho com um app em tela cheia de verdade ou com um jogo detectado (Steam e Proton, gamescope, Wine, Lutris), pela lista "sempre", pela chave "Modo jogo" das ações rápidas do painel superior ou por um atalho (a ação "Ligar/desligar o modo jogo", sem tecla padrão); o que entrou à mão só sai à mão. Desliga o desfoque, as sombras e as animações do Hyprland e os devolve exatamente como estavam, liga o VRR em tela cheia, põe o perfil de desempenho, avisa o GameMode da Feral e deixa o próprio `lucernad` mais leve. No shell, pausa o papel animado, silencia as notificações (as críticas aparecem) com um resumo ao sair, prende a barra (o mouse no topo não a traz; a ação "Mostrar/esconder a barra" traz) e segura a ociosidade; um ícone na barra mostra que está ligado, e o clique desliga. Sem o `lucernad`, fica indisponível. |
 | **Temas** | Doze prontos, nas paletas oficiais: Catppuccin Mocha (padrão), Tokyo Night, Gruvbox Dark, Rosé Pine, Nord, Everforest, Kanagawa, Dracula, Matte Black e Decay Green, e os claros Catppuccin Latte e Rosé Pine Dawn. Cada um vem com papel estático, efeito animado, fonte própria e bordas do Hyprland. Trocam ao vivo pelo seletor em carrossel (`Super+T`): as setas aplicam o tema do card central depois de uma breve espera, Enter mantém e Esc ou o clique fora desfazem. |
 
 ### Configurações
@@ -134,6 +135,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 | **Barra** | Data, mostrar na área vazia e ao trocar de workspace. |
 | **Painel superior** | Abas, abrir e fechar pelo mouse, cartões, semana, letra, espectro da capa, intervalo do desempenho, GPU, cidade, unidades e **modo offline**. |
 | **Energia e bateria** | Porcentagem na barra, avisos, ação no nível crítico, perfil automático, economia abaixo de um nível e modo leve. |
+| **Modo jogo** | O estado agora, com o efeito de cada item; a entrada por tela cheia e por jogo detectado; as listas "sempre" e "nunca" (pelas janelas abertas ou pela classe); o que desliga no compositor (com o tearing, desligado de fábrica), no shell e no sistema. |
 | **Atalhos** | As teclas do shell (painéis, bloqueio, som, mídia e brilho): trocar, acrescentar, tirar e voltar ao padrão. Avisa quando a tecla era de outro atalho, da aba Teclado ou do `hyprland.lua`. |
 
 ## Requisitos
@@ -205,7 +207,7 @@ Tudo pode ser chamado de fora com `qs -c lucerna ipc call <alvo> <função> [arg
 | `dashboard` | `open <aba>` (`overview`, `media`, `performance`, `weather`), `toggle` |
 | `central` | As ações e as notificações. `open <entrada>` abre as duas (`rede`, `bluetooth`, `som`, `energia`, `microfone` abrem a página do recurso nas ações; `notificacoes`, o estado inicial; `""` não troca a página), `toggle <entrada>` (sem entrada: fecha as duas se as duas estão abertas, senão abre o que falta; com entrada: fecha só se as duas estão abertas por ela), `close` |
 | `controls` | Só as ações: `open <entrada>`, `toggle <entrada>` (a mesma entrada, ou `""`, fecha), `close` |
-| `settings` | `open <tópico>` (`appearance`, `wallpaper`, `displays`, `idle`, `nightlight`, `launcher`, `clipboard`, `capture`, `mouse`, `keyboard`, `glass`, `notifications`, `panels`, `bar`, `dashboard`, `power`, `shortcuts`, `about`) |
+| `settings` | `open <tópico>` (`appearance`, `wallpaper`, `displays`, `idle`, `nightlight`, `launcher`, `clipboard`, `capture`, `mouse`, `keyboard`, `glass`, `notifications`, `panels`, `bar`, `dashboard`, `power`, `game`, `shortcuts`, `about`) |
 | `notifications` | `open`, `toggle`, `close` (o painel das notificações), `clear`, `toggleDnd`, `count` |
 | `launcher` | `open <categoria> <busca>` (`apps`, `files`, `documents`, `images`, `music`, `videos`, `web`; a busca pode ser `""`), `toggle` |
 | `session` | `lock`, `isLocked` |
@@ -218,6 +220,7 @@ Tudo pode ser chamado de fora com `qs -c lucerna ipc call <alvo> <função> [arg
 | `clipboard` | `toggle`, `open`, `clear` (menos os fixados), `count` |
 | `nightlight` | `enable <true\|false>` (liga ou desliga a função), `toggle` (agora, até a próxima virada do horário), `temperature <K>`, `status` |
 | `idle` | `inhibit <true\|false>` (não apagar a tela), `toggle`, `status` |
+| `game` | O modo jogo: `toggle`, `on`, `off`, `get` (`ligado (tela cheia, jogo)`, `desligado` ou `indisponível`). Pelo terminal, também `lucernad jogo [ligar\|desligar\|alternar]` |
 | `wallpaper` | `mode <auto\|animated\|static\|toggle>`, `modeFor <monitor> <modo>` (`default` volta ao geral), `get` |
 | `action` | `run <id>`: as mesmas ações dos botões e teclas mapeados (`launcher`, `play-pause`, `volume-up`, `lock`…; a lista está em [`core/input/InputActions.qml`](core/input/InputActions.qml)) |
 | `battery` | `simulate <0-100> <true\|false>` e `real`, só no ambiente de desenvolvimento |

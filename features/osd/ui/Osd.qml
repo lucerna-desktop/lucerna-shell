@@ -7,7 +7,8 @@ import qs.core.widgets
 import qs.features.osd.state
 
 // Indicador de volume/brilho: sai da borda direita, no meio da altura, em pé:
-// o número em cima, a trilha e o ícone embaixo. O fundo é um pedaço da forma da
+// o número em cima, a trilha e o ícone embaixo (o aviso do modo jogo troca o
+// número e a trilha por um texto deitado). O fundo é um pedaço da forma da
 // tela (Frame), preso à borda com os arcos côncavos, que cresce dela para fora
 // com mola; o conteúdo entra quando ele passa de ~70%. Não recebe cliques.
 PanelWindow {
@@ -59,11 +60,23 @@ PanelWindow {
         opacity: Frame.contentOpacity(window.shown)
 
         Txt {
+            anchors.centerIn: parent
+            anchors.verticalCenterOffset: -(glyph.height + ThemeManager.spacing.normal) / 2
+            visible: OsdState.kind === "game"
+            rotation: -90
+            text: OsdState.text
+            muted: !OsdState.gameOn
+            font.pixelSize: ThemeManager.font.small
+            font.weight: Font.DemiBold
+        }
+
+        Txt {
             id: label
 
             anchors.top: parent.top
             anchors.topMargin: ThemeManager.spacing.normal
             anchors.horizontalCenter: parent.horizontalCenter
+            visible: OsdState.kind !== "game"
             text: OsdState.muted ? "mudo" : OsdState.percent
             mono: true
             muted: OsdState.muted
@@ -80,6 +93,7 @@ PanelWindow {
             }
             width: 6
             radius: 3
+            visible: OsdState.kind !== "game"
             color: ThemeManager.colors.track
 
             Rectangle {
@@ -101,7 +115,7 @@ PanelWindow {
             anchors.horizontalCenter: parent.horizontalCenter
             icon: OsdState.icon
             size: 20
-            color: OsdState.muted ? ThemeManager.colors.textFaint : ThemeManager.colors.accent
+            color: OsdState.muted || (OsdState.kind === "game" && !OsdState.gameOn) ? ThemeManager.colors.textFaint : ThemeManager.colors.accent
         }
     }
 }
