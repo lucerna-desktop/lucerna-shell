@@ -171,6 +171,7 @@ function run(t) {
         t.eq(game({ game: true, gameOn: false }).on, false);
         const off = game({ game: false, gameOn: true });
         t.eq([off.enabled, off.on, off.label], [false, false, "Modo jogo: indisponível sem o lucernad"], "sem o lucernad, apagada");
+        t.eq(game({ game: false, gameNote: "Indisponível: sem hyprland" }).label, "Modo jogo — Indisponível: sem hyprland", "o módulo com erro: o motivo dele");
     });
 
     t.test("overview: a chave do modo jogo chama o daemon", () => {

@@ -190,18 +190,19 @@ Singleton {
     // nightlight (o hyprsunset; sem ele, a chave some) e awake (a ociosidade
     // do shell, que a cafeína segura; desligada, a cafeína fica apagada, sem
     // clique, e a dica diz como ligar); game (o modo jogo do lucernad
-    // disponível; sem ele, a chave apagada, com o motivo) e gameOn (ligado).
+    // disponível; sem ele, a chave apagada, com o motivo), gameOn (ligado) e
+    // gameNote (o aviso de indisponível do GameMode; vazio = sem o lucernad).
     function togglesFor(has: var): var {
         return [
             ...(has.nightlight ? [{ id: "nightlight", label: "Luz noturna", icon: "nightlight", on: NightSchedule.on, enabled: true }] : []),
             { id: "dnd", label: "Não perturbe", icon: Icons.bellSleep, on: Config.doNotDisturb, enabled: true },
-            has.game ? { id: "game", label: "Modo jogo", icon: "sports_esports", on: has.gameOn === true, enabled: true } : { id: "game", label: "Modo jogo: indisponível sem o lucernad", icon: "sports_esports", on: false, enabled: false },
+            has.game ? { id: "game", label: "Modo jogo", icon: "sports_esports", on: has.gameOn === true, enabled: true } : { id: "game", label: has.gameNote ? `Modo jogo — ${has.gameNote}` : "Modo jogo: indisponível sem o lucernad", icon: "sports_esports", on: false, enabled: false },
             { id: "offline", label: "Modo offline", icon: "cloud_off", on: Config.offline, enabled: true },
             has.awake ? { id: "awake", label: "Cafeína: não apagar nem bloquear a tela", icon: "coffee", on: Config.idleInhibit, enabled: true } : { id: "awake", label: "Cafeína: ligue a ociosidade nas configurações para usar", icon: "coffee", on: false, enabled: false }
         ];
     }
 
-    readonly property var quickToggles: togglesFor({ nightlight: NightLight.available, awake: Config.idleEnabled, game: GameMode.available, gameOn: GameMode.active })
+    readonly property var quickToggles: togglesFor({ nightlight: NightLight.available, awake: Config.idleEnabled, game: GameMode.available, gameOn: GameMode.active, gameNote: GameMode.client.connected ? GameMode.unavailableNote : "" })
 
     function toggle(id: string): void {
         if (id === "nightlight")
