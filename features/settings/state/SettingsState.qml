@@ -43,6 +43,7 @@ Singleton {
         { id: "bar", icon: Icons.toolbar, label: "Barra", description: "O que mostra e quando aparece" },
         { id: "dashboard", icon: Icons.dashboard, label: "Painel superior", description: "Abas, cartões, clima e privacidade" },
         { id: "power", icon: Icons.bolt, label: "Energia e bateria", description: "Avisos, perfil e modo leve" },
+        { id: "game", icon: "sports_esports", label: "Modo jogo", description: "Jogos sem efeitos nem interrupções" },
         { id: "shortcuts", icon: Icons.keyboard, label: "Atalhos", description: "As teclas do shell" },
         { id: "credits", icon: Icons.credits, label: "Créditos", description: "Inspiração, dados e base" },
         { id: "about", icon: Icons.info, label: "Sobre", description: "Versões e sistema" }

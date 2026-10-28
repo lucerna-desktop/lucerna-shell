@@ -50,6 +50,7 @@ import "clipboardstate.test.js" as ClipboardStateTest
 import "format.test.js" as FormatTest
 import "idle.test.js" as IdleTest
 import "gamemode.test.js" as GameModeTest
+import "gamemodestate.test.js" as GameModeStateTest
 import "frame.test.js" as FrameTest
 import "input.test.js" as InputTest
 import "inputactions.test.js" as InputActionsTest
@@ -131,6 +132,7 @@ ShellRoot {
         ["credits", CreditsTest],
         ["web", WebTest],
         ["gamemode", GameModeTest],
+        ["gamemodestate", GameModeStateTest],
         ["idle", IdleTest],
         ["themeswitcher", ThemeSwitcherTest],
         ["lucernaclient", LucernaClientTest]
@@ -287,6 +289,7 @@ ShellRoot {
             get InputState() { return InputState; },
             get MediaState() { return MediaState; },
             get SettingsState() { return SettingsState; },
+            get GameModeState() { return GameModeState; },
             get WeatherState() { return WeatherState; },
             weatherSample: root.weatherSample,
             get ThemeSwitcherState() { return ThemeSwitcherState; },
