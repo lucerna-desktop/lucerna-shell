@@ -155,7 +155,7 @@ Item {
         order: 1
         margin: panel.margin
         areaWidth: panel.width
-        y: CentralState.top + panel.reserve * (actions.height + panel.gap)
+        y: CentralState.top + Math.max(0, panel.reserve) * (actions.height + panel.gap)
         height: Math.max(0, panel.height - y - panel.margin)
         // Com o lugar das Ações reservado, cresce a partir delas junto com a
         // entrada (a mola, cortada em 1); sozinhas, entram já na altura toda.

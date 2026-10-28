@@ -80,17 +80,10 @@ function run(t) {
         try {
             t.eq(F.progressOn("A"), 0, "o OSD sai da borda sem moldura");
             t.check(!F.fusedOn("A"), "e a pílula não se funde");
-            t.check(F.wantedOn("A"), "mas a janela da forma existe");
         } finally {
             osd.open = false;
             osd.progress = 0;
         }
-    });
-
-    scenario("frame: a janela da forma", [pill, hiddenPill], () => {
-        t.check(F.wantedOn("A") && !F.wantedOn("B"), "existe onde há pedaço ativo");
-        F.unregister(pill);
-        t.check(!F.wantedOn("A"), "a barra escondida não conta");
     });
 
     scenario("frame: as janelas da forma registradas", [], () => {

@@ -144,11 +144,6 @@ Singleton {
         return blobs.some(b => b.role !== "pill" && b.framed && b.open && b.screen === screen);
     }
 
-    // A tela precisa da janela da forma.
-    function wantedOn(screen: var): bool {
-        return blobsOn(screen).length > 0;
-    }
-
     function addWindow(window: var): void {
         windows = windows.concat([window]);
     }

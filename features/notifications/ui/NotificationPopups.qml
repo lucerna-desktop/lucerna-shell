@@ -125,7 +125,6 @@ Item {
         // Só na tela dos popups: nas outras, nenhum cartão.
         model: root.live && root.here ? popupsModel : []
 
-
         delegate: NotificationCard {
             required property var modelData
 
