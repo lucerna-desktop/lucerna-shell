@@ -299,7 +299,9 @@ row "player de teste" "org.mpris.MediaPlayer2.mpv* em 10 s" "$mpris"
 # manda no clipboard.configure (o caminho do daemon sem sessão no ambiente).
 # O brilho é o de uma árvore falsa (LUCERNAD_POWER_ROOT, criada pelo
 # ci/power-root.sh): a fumaça rodada fora do container nunca toca o brilho de
-# verdade.
+# verdade. O barramento do sistema do lucernad aponta para um socket que não
+# existe (DBUS_SYSTEM_BUS_ADDRESS): rodada no host, a fase "modo jogo" não
+# segura o perfil de energia de verdade.
 # O servidor falso de letras e clima (ci/web-fake.py), no próprio grupo: grava
 # o porto livre que pegou em 127.0.0.1, e o lucernad vai a ele pelo
 # LUCERNAD_WEB_BASE (nunca às fontes de verdade).
@@ -339,7 +341,7 @@ lucernad_sock="$XDG_RUNTIME_DIR/lucerna/lucernad.sock"
 power_root="$XDG_RUNTIME_DIR/power"
 bash "$repo/ci/power-root.sh" "$power_root" || fail "o ci/power-root.sh não criou a árvore falsa do brilho em $power_root"
 power_file="$power_root/sys/class/backlight/lucerna_teste/brightness"
-HYPRLAND_INSTANCE_SIGNATURE=fumaca LUCERNAD_WEB_BASE=$web_base LUCERNAD_POWER_ROOT=$power_root LUCERNA_IDLE_TIMEOUT_MS=600000 setsid env -u WAYLAND_DISPLAY lucernad serve > "$out/lucernad.log" 2>&1 &
+HYPRLAND_INSTANCE_SIGNATURE=fumaca DBUS_SYSTEM_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/sem-sistema LUCERNAD_WEB_BASE=$web_base LUCERNAD_POWER_ROOT=$power_root LUCERNA_IDLE_TIMEOUT_MS=600000 setsid env -u WAYLAND_DISPLAY lucernad serve > "$out/lucernad.log" 2>&1 &
 lucernad_pid=$!
 for _ in $(seq 50); do
     [ -S "$lucernad_sock" ] && break

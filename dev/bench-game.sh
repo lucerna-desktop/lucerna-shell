@@ -8,7 +8,9 @@
 # desliga o modo, fecha o kitty e compara as cinco opções com as guardadas:
 # qualquer diferença sai com 1 e diz qual. Rode-o no container de teste
 # (dev/test.sh run 'bash ~/.config/quickshell/lucerna/dev/bench-game.sh') ou
-# numa sessão Hyprland de verdade.
+# numa sessão Hyprland de verdade. Nunca mexe no perfil de energia: só roda com
+# o "Perfil de desempenho" desligado na página Modo jogo (gameProfile false no
+# config.json do shell; o dev/test.sh up já grava assim).
 #   dev/bench-game.sh [segundos]   (padrão 20 por fase)
 set -euo pipefail
 
@@ -17,6 +19,16 @@ secs=${1:-20}
 [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || { echo "ERRO: rode dentro da sessão Hyprland (sem HYPRLAND_INSTANCE_SIGNATURE)" >&2; exit 1; }
 command -v kitty > /dev/null || { echo "ERRO: o kitty não está instalado" >&2; exit 1; }
 lucernad jogo > /dev/null 2>&1 || { echo "ERRO: o lucernad não respondeu (lucernad jogo)" >&2; exit 1; }
+
+# O config.json do shell (o mais recente, se houver mais de um) com o
+# gameProfile em false; senão, o modo jogo seguraria o perfil de energia.
+state=${XDG_STATE_HOME:-$HOME/.local/state}/quickshell/by-shell
+config=$(find "$state" -mindepth 2 -maxdepth 2 -name config.json -printf '%T@ %p\n' 2> /dev/null | sort -rn | head -n1 | cut -d' ' -f2- || true)
+profile=$(python3 -I -c 'import json, sys; print(json.load(open(sys.argv[1])).get("gameProfile", True))' "$config" 2> /dev/null || echo "?")
+if [ "$profile" != False ]; then
+    echo "ERRO: desligue o \"Perfil de desempenho\" em Configurações → Modo jogo antes (gameProfile em $config: $profile); a medição não mexe no perfil de energia" >&2
+    exit 1
+fi
 
 options=(decoration:blur:enabled decoration:shadow:enabled animations:enabled misc:vrr general:allow_tearing)
 

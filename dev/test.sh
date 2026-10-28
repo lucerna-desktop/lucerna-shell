@@ -37,7 +37,9 @@
 # O lucernad sobe com o Hyprland (dev/hyprland.lua). Para ver o shell sem ele:
 # `dev/test.sh run 'pkill -x lucernad'`; para voltar (sempre pelo `run`, que põe
 # o WAYLAND_DISPLAY do Hyprland aninhado, e sempre com a raiz falsa do brilho:
-# o container monta o D-Bus do sistema do host e vê o /sys dele):
+# o container monta o D-Bus do sistema do host e vê o /sys dele; pelo mesmo
+# motivo, o `up` grava gameProfile=False: o modo jogo não segura o perfil de
+# energia do host):
 # `dev/test.sh run 'bash ~/.config/quickshell/lucerna/ci/power-root.sh /tmp/lucerna-power && setsid -f env LUCERNAD_POWER_ROOT=/tmp/lucerna-power LUCERNA_IDLE_TIMEOUT_MS=86400000 lucernad serve'`
 #
 # Teclas com modificador pelo wtype: o Hyprland aninhado resolve os binds pelo
@@ -312,7 +314,10 @@ up() {
         echo "barramento de sessão: o do host (MPRIS de fora; sem as notificações do shell)"
     fi
     # Sem isso a ociosidade apaga a tela em 5 min e as capturas saem pretas.
-    setc 'dict(idleEnabled=False)'
+    # O gameProfile desligado: o container monta o D-Bus do sistema do host, e
+    # o modo jogo seguraria o perfil de energia do host (até o lucernad ter o
+    # perfil falso).
+    setc 'dict(idleEnabled=False, gameProfile=False)'
     echo "de pé: $name (GPU $render), capturas em $out"
     place_window
 }
