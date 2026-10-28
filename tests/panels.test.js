@@ -309,6 +309,10 @@ function run(t) {
             t.check(P.grabWanted(["dashboard"]), "o painel superior acompanhante");
             t.check(P.grabWanted(["settings", "dashboard"]), "a base com o acompanhante");
             t.eq(P.framedPanels, ["dashboard", "central"]);
+            t.check(P.clearedByCompositor(["dashboard"], false), "o painel superior aberto: o grab caiu por um clique fora");
+            t.check(!P.clearedByCompositor([], false), "o último painel fechou: fomos nós");
+            t.check(!P.clearedByCompositor(["dashboard"], true), "rearmando: fomos nós");
+            t.check(!P.clearedByCompositor(["launcher"], false), "um modal centralizado abriu: fomos nós");
         } finally {
             P.opened = opened0;
             C.panelsTogether = ["dashboard"];

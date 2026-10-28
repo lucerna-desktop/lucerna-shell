@@ -44,12 +44,15 @@ ShellRoot {
             BarLayer {
                 screen: frameWindow.modelData
             }
+
+            Dashboard {
+                screen: frameWindow.modelData
+            }
         }
     }
     CaptureOverlay {}
     Central {}
     Clipboard {}
-    Dashboard {}
     Displays {}
     Energy {}
     Idle {}

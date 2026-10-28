@@ -165,14 +165,21 @@ Singleton {
         }
     }
 
+    // O grab caiu por fora (um clique fora, o teclado saindo), não porque o
+    // desligamos: ainda há painel que o quer e não está rearmando. Quando o
+    // Hyprland o derruba, o `active` dele já vem falso no `cleared`; só o
+    // estado dos painéis diz se fomos nós (fechar o último painel também avisa).
+    function clearedByCompositor(opened: var, rearming: bool): bool {
+        return grabWanted(opened) && !rearming;
+    }
+
     HyprlandFocusGrab {
         id: grab
 
         active: root.grabWanted(root.opened) && !root.rearming
         windows: root.surfaces
         onCleared: {
-            // Desativar o grab (fechar o último painel) também avisa; não é clique fora.
-            if (!grab.active || !root.anyOpen)
+            if (!root.clearedByCompositor(root.opened, root.rearming))
                 return;
             clearedCheck.at = Date.now();
             clearedCheck.snapshot = root.opened.join(" ");
