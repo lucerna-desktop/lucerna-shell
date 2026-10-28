@@ -7,11 +7,15 @@
 #   central          N ciclos de `central open ""` / `panels close`
 #   osd              N ciclos de `brightness up` / `brightness down` (2,5 s cada)
 #   papel            o papel de parede animado e o painel superior aberto, S s
-#   janela           um kitty que escreve a hora a cada 16 ms e a central aberta, S s
+#   janela           um kitty em tela cheia escrevendo a hora em linhas da largura
+#                    da tela a cada 16 ms (passa atrás do vidro) e a central aberta, S s
 #   parado           nada aberto, S s
 #   parado-painel    o painel superior aberto e parado, S s (depois de 2 s)
 # Nos casos de ciclo, cada abertura e cada fechamento é uma fatia: começa logo
-# antes do IPC (para pegar o 1º quadro) e termina 0,6 s depois dele. Nos casos
+# antes do IPC (para pegar o 1º quadro) e termina 0,6 s depois dele; as
+# aberturas e os fechamentos saem em linhas separadas (<caso>:abrir e
+# <caso>:fechar). No osd as duas teclas abrem (ele já se escondeu em 2,5 s):
+# só osd:abrir. Nos casos
 # contínuos, a medição começa 2 s depois de abrir. Fora do caso `papel`, o papel
 # de parede fica estático (o animado redesenha sempre e esconderia o resto).
 # A CPU do qs e do Hyprland vem do /proc, por caso. Depois, se houver o
@@ -162,18 +166,18 @@ rec_stop() {
 # Os três casos de ciclo, medindo (mode=measure) ou gravando (mode=record).
 case_panel() {
     for _ in $(seq "$cycles"); do
-        slice painel-superior panels open dashboard
+        slice painel-superior:abrir panels open dashboard
         sleep 0.6
-        slice painel-superior panels close
+        slice painel-superior:fechar panels close
         sleep 0.6
     done
 }
 
 case_central() {
     for _ in $(seq "$cycles"); do
-        slice central central open ""
+        slice central:abrir central open ""
         sleep 0.6
-        slice central panels close
+        slice central:fechar panels close
         sleep 0.6
     done
 }
@@ -181,10 +185,10 @@ case_central() {
 case_osd() {
     for _ in $(seq "$cycles"); do
         osd_up=1
-        slice osd brightness up
+        slice osd:abrir brightness up
         sleep 1.9
         osd_up=0
-        slice osd brightness down
+        slice osd:abrir brightness down
         sleep 1.9
     done
 }
@@ -195,7 +199,7 @@ cycle_cases() {
     local name
     for name in painel-superior central osd; do
         if [ "$name" = osd ] && ! has_screen; then
-            [ "$mode" = record ] || printf 'skip\tosd\n' >> "$marks"
+            [ "$mode" = record ] || printf 'skip\tosd:abrir\n' >> "$marks"
             continue
         fi
         if [ "$mode" = record ]; then rec_start "$name"; else cpu_start; fi
@@ -271,12 +275,19 @@ ipc panels close > /dev/null
 ipc wallpaper mode static > /dev/null
 sleep 1
 
-kitty --class "$class" -o confirm_os_window_close=0 sh -c 'while :; do date +%T.%N; sleep 0.016; done' > /dev/null 2>&1 &
+# Em tela cheia e com linhas da largura da tela: o texto rola atrás do vidro
+# da central (lado a lado, a central reserva a área e nada passa atrás dela).
+# shellcheck disable=SC2016 # expande no sh do kitty
+kitty --class "$class" -o confirm_os_window_close=0 sh -c \
+    'while :; do t=$(date +%T.%N); echo "$t $t $t $t $t $t $t $t $t $t $t $t $t $t"; sleep 0.016; done' > /dev/null 2>&1 &
 kitty_pid=$!
 for _ in $(seq 50); do
     hyprctl -j clients | grep -q "\"class\": \"$class\"" && break
     sleep 0.2
 done
+hyprctl dispatch "hl.dsp.focus({ window = \"class:$class\" })" > /dev/null 2>&1 || true
+hyprctl dispatch 'hl.dsp.window.fullscreen()' > /dev/null 2>&1 || true
+sleep 1
 ipc central open "" > /dev/null
 sleep 2
 continuous janela
@@ -284,7 +295,10 @@ ipc panels close > /dev/null
 kill "$kitty_pid" 2> /dev/null || true
 wait "$kitty_pid" 2> /dev/null || true
 kitty_pid=""
-sleep 2
+# Depois de uma janela em tela cheia fechar, o qs ainda redesenha por ~10 s
+# (medido na main: 92, 23, 1 e 0 quadros em blocos de 5 s): 15 s para o
+# `parado` não herdar isso.
+sleep 15
 
 continuous parado
 

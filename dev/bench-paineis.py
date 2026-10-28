@@ -9,17 +9,22 @@ vídeos).
 
 As marcas, uma por linha, separadas por tabulação:
     info   CHAVE   VALOR                          (cabeçalho)
-    slice  CASO    LINHA0  LINHA1  MS             (trecho do log: linhas LINHA0+1..LINHA1)
+    slice  LINHA   LINHA0  LINHA1  MS             (trecho do log: linhas LINHA0+1..LINHA1)
     cpu    CASO    TICKS_QS  TICKS_HYPR  HZ  MS
-    skip   CASO                                   (caso sem como medir: linha com -)
+    skip   LINHA                                  (linha sem como medir: sai com -)
     video  CASO    ARQUIVO
-    vslice CASO    INÍCIO_MS  MS                  (fatia do vídeo, a partir do início dele)
+    vslice LINHA   INÍCIO_MS  MS                  (fatia do vídeo, a partir do início dele)
+
+LINHA é a linha da tabela: o caso, ou <caso>:abrir / <caso>:fechar nos casos
+de ciclo. A CPU e o vídeo são do caso inteiro (a parte antes do ":"), então as
+duas linhas de um caso de ciclo mostram a mesma CPU.
     rss    antes|depois  KB
 
 Por quadro de uma janela, o custo é o maior entre o `frame rendered in Xms`
 (render thread) e a soma polish+lock+blockedForSync+animations do `Frame
 prepared` (gui thread) que veio antes dele na mesma janela. Um `Frame prepared`
-sem `frame rendered` depois conta no pior e nos longos, não nos quadros.
+sem `frame rendered` depois conta no pior, no p95 e nos longos, não nos quadros.
+O p95 é o percentil 95 desses custos (pelo posto mais próximo).
 """
 
 import re
@@ -35,7 +40,7 @@ PREPARED = re.compile(
     r"polish=(\d+) ms, lock=(\d+) ms, blockedForSync=(\d+) ms, animations=(\d+) ms"
 )
 
-COLUMNS = ["caso", "FPS shell", "FPS mín", "pior ms", "longos", "quadros", "qs %", "Hyprland %", "FPS tela"]
+COLUMNS = ["caso", "FPS shell", "FPS mín", "pior ms", "p95 ms", "longos", "quadros", "qs %", "Hyprland %", "FPS tela"]
 
 
 def frames(lines):
@@ -95,7 +100,6 @@ def parse_marks(text):
             seen(f[1])
             marks["slices"].setdefault(f[1], []).append((int(f[2]), int(f[3]), int(f[4])))
         elif kind == "cpu":
-            seen(f[1])
             marks["cpu"][f[1]] = tuple(int(x) for x in f[2:6])
         elif kind == "skip":
             seen(f[1])
@@ -107,6 +111,14 @@ def parse_marks(text):
         elif kind == "rss":
             marks["rss"][f[1]] = int(f[2])
     return marks
+
+
+def p95(costs):
+    """O percentil 95 pelo posto mais próximo, ou None sem custos."""
+    if not costs:
+        return None
+    ordered = sorted(costs)
+    return ordered[max(0, -(-95 * len(ordered) // 100) - 1)]
 
 
 def cpu_pct(ticks, hz, ms):
@@ -125,31 +137,34 @@ def screen_fps(times, vslices):
 def row(name, marks, log_lines, video_reader):
     if name in marks["skip"]:
         return [name] + ["-"] * (len(COLUMNS) - 1)
+    case = name.split(":")[0]
     rates = []
-    worst = 0
-    long_frames = 0
+    all_costs = []
     total = 0
     for l0, l1, ms in marks["slices"].get(name, []):
         per_window, costs = frames(log_lines[l0:l1])
         best = max(per_window.values(), default=0)
         rates.append(best / (ms / 1000) if ms > 0 else 0)
-        worst = max([worst] + costs)
-        long_frames += sum(1 for c in costs if c > LONG_MS)
+        all_costs.extend(costs)
         total += sum(per_window.values())
+    worst = max(all_costs, default=0)
+    pct95 = p95(all_costs)
+    pct95 = "-" if pct95 is None else str(pct95)
+    long_frames = sum(1 for c in all_costs if c > LONG_MS)
     fps = f"{sum(rates) / len(rates):.1f}" if rates else "-"
     fps_min = f"{min(rates):.1f}" if rates else "-"
-    if name in marks["cpu"]:
-        q, h, hz, ms = marks["cpu"][name]
+    if case in marks["cpu"]:
+        q, h, hz, ms = marks["cpu"][case]
         qs, hypr = cpu_pct(q, hz, ms), cpu_pct(h, hz, ms)
     else:
         qs = hypr = "-"
     tela = "-"
-    if name in marks["video"] and marks["vslices"].get(name):
+    if case in marks["video"] and marks["vslices"].get(name):
         try:
-            tela = screen_fps(video_reader(marks["video"][name]), marks["vslices"][name])
+            tela = screen_fps(video_reader(marks["video"][case]), marks["vslices"][name])
         except (OSError, subprocess.CalledProcessError):
             tela = "-"
-    return [name, fps, fps_min, str(worst), str(long_frames), str(total), qs, hypr, tela]
+    return [name, fps, fps_min, str(worst), pct95, str(long_frames), str(total), qs, hypr, tela]
 
 
 def table(marks, log_lines, video_reader=video_times):
@@ -185,13 +200,13 @@ INFO: outra coisa qualquer
 
 SAMPLE_MARKS = """\
 info\tblur\tperformance
-slice\tpainel-superior\t0\t5\t500
-slice\tpainel-superior\t5\t9\t1000
+slice\tpainel-superior:abrir\t0\t5\t500
+slice\tpainel-superior:fechar\t5\t9\t1000
 cpu\tpainel-superior\t50\t100\t100\t2000
 video\tpainel-superior\t/x.mkv
-vslice\tpainel-superior\t1000\t500
-vslice\tpainel-superior\t2000\t1000
-skip\tosd
+vslice\tpainel-superior:abrir\t1000\t500
+vslice\tpainel-superior:fechar\t2000\t1000
+skip\tosd:abrir
 slice\tparado\t9\t9\t10000
 cpu\tparado\t0\t10\t100\t10000
 rss\tantes\t204800
@@ -206,19 +221,26 @@ def self_test():
     # 3 (prepared 3), 25 (prepared 25 > rendered 5), 22, 4, e o órfão de 30.
     assert costs == [3, 25, 22, 4, 30], costs
 
+    assert p95([]) is None
+    assert p95([7]) == 7
+    assert p95(list(range(1, 101))) == 95
+    assert p95(list(range(20, 0, -1))) == 19
+
     marks = parse_marks(SAMPLE_MARKS)
-    assert marks["order"] == ["painel-superior", "osd", "parado"], marks["order"]
+    names = ["painel-superior:abrir", "painel-superior:fechar", "osd:abrir", "parado"]
+    assert marks["order"] == names, marks["order"]
     times = [0.0, 1.0, 1.1, 1.2, 1.6, 2.0, 2.5, 2.99, 3.0]
     text = table(marks, lines, video_reader=lambda path: times)
-    rows = {r.split()[0]: r.split()[1:] for r in text.splitlines() if r and r.split()[0] in marks["order"]}
-    # Fatia 1 (linhas 0..5): janela 318c0 com 2 quadros em 0,5 s = 4/s; fatia 2
-    # (5..9): 1 quadro de cada janela em 1 s = 1/s. Média 2,5; mín 1.
-    assert rows["painel-superior"][:5] == ["2.5", "1.0", "30", "3", "4"], rows["painel-superior"]
-    assert rows["painel-superior"][5:7] == ["25.0", "50.0"], rows["painel-superior"]
-    # Vídeo: 3 quadros em [1, 1,5) = 6/s; 3 em [2, 3) = 3/s.
-    assert rows["painel-superior"][7] == "4.5", rows["painel-superior"]
-    assert rows["osd"] == ["-"] * 8, rows["osd"]
-    assert rows["parado"] == ["0.0", "0.0", "0", "0", "0", "0.0", "1.0", "-"], rows["parado"]
+    assert text.splitlines()[2].split()[:6] == ["caso", "FPS", "shell", "FPS", "mín", "pior"], text
+    rows = {r.split()[0]: r.split()[1:] for r in text.splitlines() if r and r.split()[0] in names}
+    # Abrir (linhas 0..5): a janela 318c0 com 2 quadros em 0,5 s = 4/s; custos
+    # 3 e 25. Vídeo: 3 quadros em [1; 1,5) = 6/s. CPU do caso inteiro.
+    assert rows["painel-superior:abrir"] == ["4.0", "4.0", "25", "25", "1", "2", "25.0", "50.0", "6.0"], rows
+    # Fechar (5..9): 1 quadro de cada janela em 1 s = 1/s; custos 22, 4 e o
+    # órfão de 30. Vídeo: 3 quadros em [2; 3) = 3/s.
+    assert rows["painel-superior:fechar"] == ["1.0", "1.0", "30", "30", "2", "2", "25.0", "50.0", "3.0"], rows
+    assert rows["osd:abrir"] == ["-"] * 9, rows["osd:abrir"]
+    assert rows["parado"] == ["0.0", "0.0", "0", "-", "0", "0", "0.0", "1.0", "-"], rows["parado"]
     assert "RSS do qs: 200 MB antes, 210 MB depois" in text, text
     assert "blur: performance" in text, text
     print("self-test: ok")
