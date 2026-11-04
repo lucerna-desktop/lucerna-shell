@@ -199,7 +199,9 @@ Column {
         }
     }
 
+    // Na sessão Lucerna, o arranjo já vale desde o login: sem a opção nem o include.
     SettingSection {
+        visible: !MonitorsState.layered
         title: "Início da sessão"
 
         SettingRow {

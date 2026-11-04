@@ -52,6 +52,7 @@ import "idle.test.js" as IdleTest
 import "gamemode.test.js" as GameModeTest
 import "gamemodestate.test.js" as GameModeStateTest
 import "frame.test.js" as FrameTest
+import "hyprfile.test.js" as HyprFileTest
 import "input.test.js" as InputTest
 import "inputactions.test.js" as InputActionsTest
 import "lucernaclient.test.js" as LucernaClientTest
@@ -113,6 +114,7 @@ ShellRoot {
         ["capture", CaptureTest],
         ["brightness", BrightnessTest],
         ["monitors", MonitorsTest],
+        ["hyprfile", HyprFileTest],
         ["input", InputTest],
         ["systemstats", SystemStatsTest],
         ["videowallpapers", VideoWallpapersTest],
@@ -275,6 +277,7 @@ ShellRoot {
             get Brightness() { return Brightness; },
             get Capture() { return Capture; },
             get Clipboard() { return Clipboard; },
+            get HyprFile() { return HyprFile; },
             get Input() { return Input; },
             get Lyrics() { return Lyrics; },
             get Media() { return Media; },

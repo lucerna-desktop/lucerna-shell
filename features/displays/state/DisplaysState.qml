@@ -6,10 +6,11 @@ import qs.core.config
 import qs.services
 
 // Reaplica o arranjo de monitores salvo para o conjunto conectado: ao iniciar,
-// quando um monitor entra ou sai e depois de um reload do hyprland.lua. Com
-// "desde o login", também grava o arranjo do conjunto conectado num arquivo
-// que o hyprland.lua inclui. Sem interface própria; o arranjo se monta em
-// Configurações → Monitores.
+// quando um monitor entra ou sai e depois de um reload do hyprland.lua. Na
+// sessão Lucerna, o arranjo do conjunto conectado vai sempre para a seção
+// "monitors" do arquivo do shell (HyprFile), que vale desde o login; fora
+// dela, com "desde o login", vai para um arquivo que o hyprland.lua inclui.
+// Sem interface própria; o arranjo se monta em Configurações → Monitores.
 Singleton {
     id: root
 
@@ -31,6 +32,8 @@ Singleton {
         // Só limpa o arquivo quando a opção passa de ligada a desligada (o
         // carregamento da config também avisa, e quem nunca ligou fica sem arquivo).
         function onMonitorsAtLoginChanged() {
+            if (HyprFile.layered)
+                return;
             if (Config.monitorsAtLogin) {
                 root.loginWasOn = true;
                 root.writeLogin();
@@ -41,12 +44,14 @@ Singleton {
         }
     }
 
-    // Um reload do hyprland.lua volta os monitores ao que está no arquivo.
+    // Um reload do hyprland.lua volta os monitores ao que está no arquivo. Na
+    // sessão Lucerna, o arquivo do shell já traz o arranjo: não reaplica.
     Connections {
         target: Hypr
 
         function onConfigReloaded() {
-            reloadDelay.restart();
+            if (!HyprFile.layered)
+                reloadDelay.restart();
         }
     }
 
@@ -65,13 +70,17 @@ Singleton {
         + `-- Para usar, no hyprland.lua: ${Monitors.includeLine}\n`
 
     function writeLogin(): void {
-        if (!Config.monitorsAtLogin)
+        if (!HyprFile.layered && !Config.monitorsAtLogin)
             return;
         const saved = (Config.monitorSetups ?? {})[setup];
         if (!setup || !saved)
             return;
         const specs = Monitors.monitors.filter(m => saved[m.key]).map(m => Object.assign({}, saved[m.key], { name: m.description ? `desc:${m.description}` : m.name }));
-        if (specs.length === Monitors.monitors.length)
+        if (specs.length !== Monitors.monitors.length)
+            return;
+        if (HyprFile.layered)
+            HyprFile.setSection("monitors", `-- Monitores: ${setup}\n${Monitors.lua(specs)}`);
+        else
             Monitors.writeLoginFile(`${loginHeader}-- Monitores: ${setup}\n${Monitors.lua(specs)}\n`);
     }
 

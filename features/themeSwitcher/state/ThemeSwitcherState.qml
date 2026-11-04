@@ -183,6 +183,7 @@ Singleton {
     }
 
     Component.onCompleted: {
+        HyprFile.setSection("theme", fileSection);
         blurDelay.start();
         if (frameRule)
             Hypr.evalLua(frameRule);
@@ -193,14 +194,21 @@ Singleton {
     }
 
     // Um `hyprctl reload` apaga as regras de camada e a config aplicadas por
-    // cima do hyprland.lua: manda tudo de novo.
+    // cima do hyprland.lua: manda tudo de novo. Na sessão Lucerna, a seção
+    // "theme" do arquivo do shell (HyprFile) já vale no reload: não reaplica.
     Connections {
         target: Hypr
 
         function onConfigReloaded() {
-            root.reapply();
+            if (!HyprFile.layered)
+                root.reapply();
         }
     }
+
+    // A seção "theme" do arquivo do shell: as mesmas regras, juntas.
+    readonly property string fileSection: rules(true).join("\n")
+
+    onFileSectionChanged: HyprFile.setSection("theme", fileSection)
 
     function reapply(): void {
         for (const lua of rules(Hypr.usingLua))

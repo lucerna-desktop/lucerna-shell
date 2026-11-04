@@ -11,7 +11,8 @@ import qs.services
 // Aplica os ajustes de mouse e teclado das configurações por cima do
 // hyprland.lua: opções de entrada, velocidade por mouse, layouts e opções do
 // teclado, teclas remapeadas e botões/teclas mapeados para ações. Reaplica ao
-// iniciar, quando a config muda e depois de um reload do Hyprland.
+// iniciar, quando a config muda e depois de um reload do Hyprland (fora da
+// sessão Lucerna: nela, o arquivo do shell, HyprFile, já vale no reload).
 // Sem interface própria; tudo se monta em Configurações → Mouse e Teclado.
 Singleton {
     id: root
@@ -33,12 +34,20 @@ Singleton {
 
     function applyOptions(): void {
         Input.setOptions(Config.inputOptions ?? {});
+        writeInput();
     }
 
     function applyDevices(): void {
         const devices = Config.mouseDevices ?? {};
         for (const name of Object.keys(devices))
             Input.setDevice(name, devices[name]);
+        writeInput();
+    }
+
+    // A seção "input" do arquivo do shell: as opções e os dispositivos.
+    function writeInput(): void {
+        const devices = Config.mouseDevices ?? {};
+        HyprFile.setSection("input", [Input.optionsLua(Config.inputOptions ?? {})].concat(Object.keys(devices).map(name => Input.deviceLua(name, devices[name]))).filter(l => l).join("\n"));
     }
 
     // Layouts do arquivo (quando não foram mudados aqui): "br,us" + ",intl".
@@ -104,7 +113,9 @@ Singleton {
     }
 
     function applyBinds(): void {
-        Input.setBinds(shellEntries().concat(Config.inputBinds ?? []).map(bindFor).filter(b => b));
+        const list = shellEntries().concat(Config.inputBinds ?? []).map(bindFor).filter(b => b);
+        Input.setBinds(list);
+        HyprFile.setSection("binds", Input.bindLua(list));
     }
 
     // Mudanças em sequência (arrastar um slider) viram uma aplicação só.
@@ -154,12 +165,15 @@ Singleton {
         }
     }
 
-    // O reload volta tudo ao hyprland.lua (e tira os binds do Lucerna).
+    // O reload volta tudo ao hyprland.lua (e tira os binds do Lucerna). Na
+    // sessão Lucerna, o arquivo do shell é carregado antes do hyprland.lua do
+    // usuário: não reaplica (o do usuário, lido depois, vence).
     Connections {
         target: Hypr
 
         function onConfigReloaded() {
-            reloadDelay.restart();
+            if (!HyprFile.layered)
+                reloadDelay.restart();
         }
     }
 

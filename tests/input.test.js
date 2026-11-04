@@ -56,6 +56,19 @@ function run(t) {
              'hl.bind("SUPER + d", hl.dsp.exit(), { repeating = true, locked = true })\nhl.bind("ALT + q", x())');
     });
 
+    // O eval (hyprctl) e o arquivo do shell (HyprFile) usam o mesmo Lua.
+    t.test("input: o mesmo Lua no eval e no arquivo", () => {
+        t.eq(I.optionsLua({ "input.touchpad.tap_to_click": true }), "hl.config({ input = { touchpad = { tap_to_click = true } } })");
+        t.eq(I.optionsLua({}), "", "sem opções, nada");
+        t.eq(I.deviceLua("logitech-mouse", { sensitivity: -0.5 }), 'hl.device({ name = "logitech-mouse", sensitivity = -0.5 })');
+        t.eq(I.layoutLua({ layouts: "br,us", variants: ",intl", options: "" }), [
+            'hl.config({ input = { kb_file = "", kb_variant = "", kb_options = "" } })',
+            'hl.config({ input = { kb_layout = "br,us" } })',
+            'hl.config({ input = { kb_variant = ",intl", kb_options = "" } })'
+        ].join("\n"));
+        t.eq(I.keymapFileLua("/tmp/keymap.xkb"), 'hl.config({ input = { kb_file = "/tmp/keymap.xkb" } })');
+    });
+
     t.test("input: nomes e símbolos das teclas do keymap", () => {
         I.parseKeymap(keymap);
         t.eq(I.keyNames, { 9: "ESC", 37: "LCTL", 66: "CAPS" });

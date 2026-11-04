@@ -351,7 +351,10 @@ Singleton {
         }
     }
 
-    // Desde o login: o arranjo vai também para um arquivo que o hyprland.lua inclui.
+    // Desde o login: o arranjo vai também para um arquivo que o hyprland.lua
+    // inclui. Na sessão Lucerna, ele já vale desde o login (pelo arquivo do
+    // shell, HyprFile) e a opção some da página.
+    readonly property bool layered: HyprFile.layered
     readonly property bool atLogin: Config.monitorsAtLogin
     readonly property bool loginIncluded: Monitors.loginIncluded
     readonly property string includeLine: Monitors.includeLine

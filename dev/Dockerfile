@@ -44,7 +44,7 @@ RUN groupadd -g "$GID" dev \
     && useradd -m -u "$UID" -g "$GID" -s /bin/bash dev \
     && echo 'dev:lucerna' | chpasswd \
     && install -d -m 0700 -o "$UID" -g "$GID" "/run/user/$UID" \
-    && install -d -o "$UID" -g "$GID" /home/dev/.config/quickshell /home/dev/.config/hypr
+    && install -d -o "$UID" -g "$GID" /home/dev/.config /home/dev/.config/quickshell /home/dev/.config/hypr
 
 USER dev
 ENV USER=dev \
