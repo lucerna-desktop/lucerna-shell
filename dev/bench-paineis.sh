@@ -96,11 +96,6 @@ set_scale() {
     [ "$got" = "$1" ] || [ "$(awk -v a="$got" -v b="$1" 'BEGIN { print (a == b) }')" = 1 ]
 }
 
-if [ -n "$bench_scale" ]; then
-    scale_before=$(hyprctl -j monitors | python3 -c 'import json, sys; print(json.load(sys.stdin)[0]["scale"])')
-    set_scale "$bench_scale" || { echo "ERRO: não consegui pôr a escala $bench_scale" >&2; exit 1; }
-fi
-
 class=lucerna-bench-paineis
 kitty_pid=""
 tile_pid=""
@@ -138,6 +133,12 @@ restore() {
 }
 trap restore EXIT
 trap 'exit 130' INT TERM
+
+# Depois dos traps: a escala é devolvida mesmo se a troca falhar ou o Ctrl+C vier.
+if [ -n "$bench_scale" ]; then
+    scale_before=$(hyprctl -j monitors | python3 -c 'import json, sys; print(json.load(sys.stdin)[0]["scale"])')
+    set_scale "$bench_scale" || { echo "ERRO: não consegui pôr a escala $bench_scale" >&2; exit 1; }
+fi
 
 # ticks <pid>: utime + stime do processo, em ticks do relógio.
 ticks() {
@@ -347,6 +348,16 @@ janela_case() {
         'while :; do t=$(date +%T.%N); echo "$t $t $t $t $t $t $t $t $t $t $t $t $t $t"; sleep 0.016; done' > /dev/null 2>&1 &
     kitty_pid=$!
     wait_client "$class" || true
+    if [ "$name" = janela-x11 ] && ! hyprctl -j clients | python3 -c '
+import json, sys
+sys.exit(0 if any(c["class"] == sys.argv[1] and c.get("xwayland") for c in json.load(sys.stdin)) else 1)' "$class"; then
+        echo "AVISO: o kitty não abriu em X11 (xwayland: true); caso janela-x11 pulado" >&2
+        printf 'skip\t%s\n' "$name" >> "$marks"
+        kill "$kitty_pid" 2> /dev/null || true
+        wait "$kitty_pid" 2> /dev/null || true
+        kitty_pid=""
+        return 0
+    fi
     hyprctl dispatch "hl.dsp.focus({ window = \"class:$class\" })" > /dev/null 2>&1 || true
     hyprctl dispatch 'hl.dsp.window.fullscreen()' > /dev/null 2>&1 || true
     sleep 1

@@ -132,15 +132,16 @@ Achado visível: na tela de bloqueio em 1,5 sobra uma faixa sem desenho na base 
 (bloqueio-1_5.png, abaixo de ~880 px de 1080), e o campo de senha sai com tamanhos diferentes.
 Em 1,25 e 1,5 as Configurações mostram a lista lateral cortada no fim ("Notificações" pela metade).
 
+=== Nota sobre o janela-x11 ===
+O bench confere, antes de medir, que o kitty abriu em X11 (`hyprctl -j clients`: "xwayland": true
+para a classe); senão pula o caso com aviso. Conferido na saída headless em 1,25 (sem aviso).
+Hyprland %, janela (Wayland) contra janela-x11, nas 4 rodadas: 2,3/2,5 (escala 1, r1),
+6,2/10,6 (1, r2), 2,3/3,4 (1,25, r1) e 5,8/6,0 (1,25, r2): o X11 fica um pouco acima do Wayland
+em todas, dentro do ruído; o 1,25 não acrescenta custo claro ao X11 (a diferença é a mesma em 1).
+
 === Conclusão ===
-Em 1,25 o Hyprland gasta mais que em 1 no bench-blur: 1,5x a 3x (rodada 1: 2,6 a 3,1 % em 1
-contra 6,0 a 10,0 % em 1,25; rodada 2: 6,0 a 6,7 % contra 9,8 a 11,4 %), em qualquer nível de
-blur (full, performance e off parecidos em 1,25, então não é o desfoque). No bench-paineis a
-diferença é menor e instável (rodada 1: 1,8 vs 1,9 % no painel superior; rodada 2: 4,0 vs 6,9 %).
-O qs fica igual (9 a 14 %), o FPS do shell e o p95 também (58 a 60 fps, p95 16 ms): o custo extra
-está no Hyprland (composição/reamostragem da escala fracionária), em valores absolutos pequenos
-(até ~11 % de um núcleo), e não no shell. O app X11 (janela-x11) custa o mesmo que o kitty
-Wayland (2,5 a 10,6 % contra 2,3 a 6,2 %, acompanhando a carga da rodada).
-orienta o padrão: o custo do Hyprland em 1,25 passa de 1,5x o de 1 no bench-blur; na Tarefa 14
-vale preferir a escala pelos apps (escala do compositor em 1) como opção para máquinas fracas,
-e manter 1,25 como padrão só onde o custo absoluto (~11 % de um núcleo) for aceitável.
+Em 1,25 o Hyprland gasta de 1,5x a 3x mais que em 1 no bench-blur, com qualquer nível de blur (não é o desfoque), e pouco mais no bench-paineis (diferença menor e instável).
+O qs, o FPS do shell (58 a 60) e o p95 (16 ms) ficam iguais: o custo extra está no Hyprland (escala fracionária), pequeno em absoluto (até ~11 % de um núcleo).
+O app X11 custa um pouco mais que o Wayland em todas as rodadas, dentro do ruído, e o 1,25 não o agrava.
+orienta o padrão: o custo do Hyprland em 1,25 passa de 1,5x o de 1 (bench-blur); na Tarefa 14, preferir a escala pelos apps (compositor em 1) como opção
+para máquinas fracas e manter 1,25 como padrão só onde ~11 % de um núcleo for aceitável.
