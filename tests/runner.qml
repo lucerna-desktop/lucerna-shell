@@ -55,6 +55,7 @@ import "frame.test.js" as FrameTest
 import "input.test.js" as InputTest
 import "inputactions.test.js" as InputActionsTest
 import "lucernaclient.test.js" as LucernaClientTest
+import "servelauncher.test.js" as ServeLauncherTest
 import "lyrics.test.js" as LyricsTest
 import "media.test.js" as MediaTest
 import "monitors.test.js" as MonitorsTest
@@ -135,7 +136,8 @@ ShellRoot {
         ["gamemodestate", GameModeStateTest],
         ["idle", IdleTest],
         ["themeswitcher", ThemeSwitcherTest],
-        ["lucernaclient", LucernaClientTest]
+        ["lucernaclient", LucernaClientTest],
+        ["servelauncher", ServeLauncherTest]
     ]
 
     function fail(message: string): void {
@@ -249,6 +251,7 @@ ShellRoot {
             get SearchEngines() { return SearchEngines; },
             get NightSchedule() { return NightSchedule; },
             get Panels() { return Panels; },
+            get ServeLauncher() { return ServeLauncher; },
             get Frame() { return Frame; },
             get BarState() { return BarState; },
             get CentralState() { return CentralState; },
