@@ -39,7 +39,10 @@ import os
 import sys
 import time
 
-from gi.repository import Gio, GLib
+import gi
+
+gi.require_version("GLibUnix", "2.0")
+from gi.repository import Gio, GLib, GLibUnix  # noqa: E402
 
 NAME = "org.freedesktop.login1"
 MANAGER_PATH = "/org/freedesktop/login1"
@@ -111,7 +114,7 @@ class Fake:
         self.inhibitors = {}
         self.last_sleep = None
         # O Suspend em andamento: a invocação (respondida no fim), o início
-        # (monotônico) e o id do prazo.
+        # (monotônico), o id do prazo e a fase (asleep: já dormiu, até o wake_up).
         self.sleeping = None
 
     # Estado
@@ -144,7 +147,7 @@ class Fake:
         fds = Gio.UnixFDList.new()
         fds.append(wfd)
         os.close(wfd)
-        watch = GLib.unix_fd_add_full(
+        watch = GLibUnix.fd_add_full(
             GLib.PRIORITY_DEFAULT, rfd, GLib.IOCondition.HUP | GLib.IOCondition.ERR, self.on_released
         )
         self.inhibitors[rfd] = (what, who, why, mode, watch)
@@ -155,7 +158,9 @@ class Fake:
         what, who, _why, mode, _watch = self.inhibitors.pop(fd)
         os.close(fd)
         log(f"inibidor solto: what={what} who={who} mode={mode} (delay de sleep: {self.delay_held()})")
-        if self.sleeping is not None and self.delay_held() == 0:
+        # Só na espera: depois de dormir (o 1 s do sono), soltar um inibidor não
+        # muda o ciclo em andamento.
+        if self.sleeping is not None and not self.sleeping["asleep"] and self.delay_held() == 0:
             self.go_to_sleep(timed_out=False)
         return False
 
@@ -166,7 +171,7 @@ class Fake:
             invocation.return_dbus_error("org.freedesktop.login1.OperationInProgress", "já suspendendo")
             return
         log(f"Suspend: PrepareForSleep(true), {self.delay_held()} inibidor(es) delay de sleep")
-        self.sleeping = {"invocation": invocation, "start": time.monotonic(), "timeout": 0}
+        self.sleeping = {"invocation": invocation, "start": time.monotonic(), "timeout": 0, "asleep": False}
         self.conn.emit_signal(None, MANAGER_PATH, MANAGER, "PrepareForSleep", GLib.Variant("(b)", (True,)))
         if self.delay_held() == 0:
             self.go_to_sleep(timed_out=False)
@@ -180,6 +185,10 @@ class Fake:
         return False
 
     def go_to_sleep(self, timed_out):
+        # Dorme uma vez só por ciclo: a fase "asleep" vai até o wake_up.
+        if self.sleeping is None or self.sleeping["asleep"]:
+            return
+        self.sleeping["asleep"] = True
         if self.sleeping["timeout"]:
             GLib.source_remove(self.sleeping["timeout"])
             self.sleeping["timeout"] = 0
