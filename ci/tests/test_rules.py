@@ -71,6 +71,21 @@ class LayersTest(RepoCase):
         )
         self.assertEqual([n for _, n, _ in rules.check_layers(root)], [2, 3])
 
+    def test_emergencia_nao_importa_nada_do_shell(self):
+        # A tela de emergência (session/) roda sem o shell: nem qs.*, nem pasta.
+        root = self.repo(
+            {
+                "session/emergency/shell.qml": (
+                    'import QtQuick\nimport Quickshell.Io\nimport qs.core.theme\nimport "../../core/widgets"\n'
+                ),
+            }
+        )
+        found = rules.check_layers(root)
+        self.assertEqual(
+            [(p, n) for p, n, _ in found], [("session/emergency/shell.qml", 3), ("session/emergency/shell.qml", 4)]
+        )
+        self.assertIn("sem o shell", found[0][2])
+
 
 class SuppressionsTest(RepoCase):
     CONFIRM = "features/settings/ui/MonitorConfirm.qml"

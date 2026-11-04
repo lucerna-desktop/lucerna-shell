@@ -24,6 +24,14 @@
 #                                   o terminal rodando o comando
 #   lucerna-session detect-apps     os apps instalados de cada tipo, em JSON
 #   lucerna-session logout          sai do Hyprland (fim da sessão)
+#   lucerna-session emergency [--mode crashed|power]
+#                                   a tela de emergência, feita sem o shell
+#                                   (session/emergency/shell.qml, qs -p);
+#                                   se ela não abrir, um aviso do Hyprland
+#   lucerna-session power           o Ctrl+Alt+Delete: o menu de energia do
+#                                   shell, ou a emergência se ele não responder
+#   lucerna-session poweroff|reboot desliga ou reinicia (systemctl ou
+#                                   loginctl); com LUCERNA_DEV=1, só simula
 #   lucerna-session unlock          do TTY, depois de entrar com a senha:
 #                                   libera a tela de bloqueio que caiu
 #                                   (hl.clear_crashed_lockscreen) e, com o
@@ -54,6 +62,8 @@ subcommand=${1:-}
 . "$lib_dir/detect.sh"
 # shellcheck source=session/lib/supervise.sh
 . "$lib_dir/supervise.sh"
+# shellcheck source=session/lib/power.sh
+. "$lib_dir/power.sh"
 
 export LUCERNA_DATA_DIR=${LUCERNA_DATA_DIR:-$default_data_dir}
 
@@ -264,6 +274,12 @@ case "$subcommand" in
         cmd_open "$@"
         ;;
     detect-apps) cmd_detect_apps ;;
+    emergency)
+        shift
+        cmd_emergency "$@"
+        ;;
+    power) cmd_power ;;
+    poweroff | reboot) cmd_power_action "$subcommand" ;;
     logout)
         log "sair da sessão"
         hyprctl dispatch 'hl.dsp.exit()'

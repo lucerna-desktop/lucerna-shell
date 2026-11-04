@@ -24,7 +24,7 @@ SCRIPT = ROOT / "session" / "bin" / "lucerna-session"
 # As ferramentas que o script usa, ligadas às do sistema no PATH falso.
 TOOLS = (
     "bash sh env cat mkdir realpath dirname basename sed grep tr head cut "
-    "readlink date mv rm sort ls setsid kill sleep printf touch tail wc seq"
+    "readlink date mv rm sort ls setsid kill sleep printf touch tail wc seq timeout"
 ).split()
 
 
@@ -416,6 +416,111 @@ class SessionTest(SessionBase):
         proc.wait(timeout=10)
         self.assertIsNotNone(supervisor.wait(timeout=5), "o supervisor recebeu o TERM")
 
+    # emergency_qs(corpo_ipc, corpo_p): um qs falso que anota o modo da
+    # emergência e roda um corpo para o `qs -c … ipc` e outro para o `qs -p`.
+    def emergency_qs(self, ipc="exit 0", panel="exit 0"):
+        self.fake(
+            "qs",
+            f"""if [ "$1" = -p ]; then
+    echo "mode=${{LUCERNA_EMERGENCY_MODE-}} log=${{LUCERNA_EMERGENCY_LOG-}}" >> "{self.tmp / "emergency.txt"}"
+    {panel}
+fi
+{ipc}""",
+        )
+
+    def emergency_modes(self):
+        path = self.tmp / "emergency.txt"
+        return path.read_text().splitlines() if path.exists() else []
+
+    def test_power_uses_shell_menu_when_alive(self):
+        self.emergency_qs()
+        self.run_session("power")
+        self.assertIn("qs -c lucerna ipc call panels open power", self.calls_log())
+        self.assertEqual(self.emergency_modes(), [])
+
+    def test_power_falls_back_to_emergency(self):
+        # O shell morto (o ipc falha): a tela de emergência no modo power. Ela
+        # fica aberta mais de 2 s, então não há a notificação de recurso.
+        self.emergency_qs(ipc="exit 1", panel="sleep 2.3; exit 0")
+        self.run_session("power")
+        calls = self.calls_log()
+        self.assertIn("qs -c lucerna ipc call panels open power", calls)
+        data = SCRIPT.resolve().parents[1]
+        self.assertIn(f"qs -p {data}/emergency/shell.qml", calls)
+        self.assertEqual(len(self.emergency_modes()), 1)
+        self.assertTrue(self.emergency_modes()[0].startswith("mode=power "), self.emergency_modes())
+        self.assertFalse(any(c.startswith("hyprctl eval") for c in calls), calls)
+
+    def test_emergency_falls_back_to_notification(self):
+        # O qs -p que sai na hora (a emergência não abriu): o aviso do Hyprland,
+        # com a saída pelo terminal e o registro mais novo.
+        logs = self.home / ".local" / "state" / "lucerna" / "shell"
+        self.write(logs / "qs-20261104-100000.log", "velho\n")
+        newest = logs / "qs-20261104-110000.log"
+        self.write(newest, "novo\n")
+        os.utime(logs / "qs-20261104-100000.log", (1, 1))
+        self.emergency_qs(panel="exit 1")
+        self.run_session("emergency", "--mode", "crashed", check=False)
+        self.assertEqual(self.emergency_modes(), [f"mode=crashed log={newest}"])
+        evals = [c for c in self.calls_log() if c.startswith("hyprctl eval")]
+        self.assertEqual(len(evals), 1, self.calls_log())
+        self.assertIn("hl.notification.create(", evals[0])
+        self.assertIn("O Lucerna não conseguiu iniciar.", evals[0])
+        self.assertIn("Super+Enter abre um terminal", evals[0])
+        self.assertIn("Ctrl+Alt+Shift+Esc sai da sessão", evals[0])
+        self.assertIn(f"Registro: {newest}", evals[0])
+        # Sem prazo de verdade: no Hyprland 0.56, timeout = 0 some na hora (conferido
+        # no container); um dia inteiro é o "fica até a pessoa agir".
+        self.assertIn("timeout = 86400000", evals[0])
+
+    def test_emergency_rejects_unknown_mode(self):
+        self.emergency_qs()
+        proc = self.run_session("emergency", "--mode", "nada", check=False)
+        self.assertEqual(proc.returncode, 64)
+        self.assertEqual(self.emergency_modes(), [])
+
+    def test_poweroff_simulated_in_dev(self):
+        self.fake("loginctl")
+        env = self.env()
+        env["LUCERNA_DEV"] = "1"
+        for action, label in (("poweroff", "Desligar"), ("reboot", "Reiniciar")):
+            proc = subprocess.run([str(SCRIPT), action], env=env, capture_output=True, text=True, timeout=30)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn(f"notify-send Lucerna {label}: ação simulada.", self.calls_log())
+        calls = self.calls_log()
+        self.assertFalse(any(c.startswith(("systemctl", "loginctl")) for c in calls), calls)
+        self.assertIn("simulad", self.supervisor_log())
+
+    def test_poweroff_simulated_without_notification_server(self):
+        # Com o shell caído não há servidor de notificações: o aviso vai pelo Hyprland.
+        self.fake("notify-send", "exit 1")
+        env = self.env()
+        env["LUCERNA_DEV"] = "1"
+        proc = subprocess.run([str(SCRIPT), "poweroff"], env=env, capture_output=True, text=True, timeout=30)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        evals = [c for c in self.calls_log() if c.startswith("hyprctl eval")]
+        self.assertEqual(len(evals), 1, self.calls_log())
+        self.assertIn('text = "Desligar: ação simulada."', evals[0])
+
+    def test_poweroff_without_systemd_uses_loginctl(self):
+        self.fake("loginctl")
+        self.run_session("poweroff")
+        self.run_session("reboot")
+        calls = self.calls_log()
+        self.assertIn("loginctl poweroff", calls)
+        self.assertIn("loginctl reboot", calls)
+        self.assertNotIn("systemctl poweroff", calls)
+
+    def test_poweroff_with_systemd_uses_systemctl(self):
+        self.fake("loginctl")
+        (self.run_root / "systemd" / "system").mkdir(parents=True)
+        self.run_session("poweroff")
+        self.run_session("reboot")
+        calls = self.calls_log()
+        self.assertIn("systemctl poweroff", calls)
+        self.assertIn("systemctl reboot", calls)
+        self.assertFalse(any(c.startswith("loginctl") for c in calls), calls)
+
     def test_unknown_subcommand_fails(self):
         proc = self.run_session("nada", check=False)
         self.assertEqual(proc.returncode, 64)
@@ -432,12 +537,21 @@ class SupervisorTest(SessionBase):
         self.starts = self.tmp / "starts.txt"
         self.counter = self.tmp / "count.txt"
         self.gone = self.tmp / "gone"
+        # A tela de emergência (qs -p): anota o modo e fica aberta até o TERM.
+        self.emergency = self.tmp / "emergency.txt"
         self.exits.write_text("")
         # Cada linha do exits.txt é uma partida: CÓDIGO, ou CÓDIGO@SEGUNDOS
         # (roda esse tempo e sai). Sem linha, fica rodando até o TERM.
         self.fake(
             "qs",
-            f"""n=$(( $(cat "{self.counter}" 2> /dev/null || echo 0) + 1 )); echo "$n" > "{self.counter}"
+            f"""if [ "$1" = -p ]; then
+    echo "mode=${{LUCERNA_EMERGENCY_MODE-}} log=${{LUCERNA_EMERGENCY_LOG-}} args=$*" >> "{self.emergency}"
+    trap 'kill $s 2> /dev/null; echo fechada >> "{self.emergency}"; exit 143' TERM
+    sleep 600 & s=$!
+    wait $s
+    exit 0
+fi
+n=$(( $(cat "{self.counter}" 2> /dev/null || echo 0) + 1 )); echo "$n" > "{self.counter}"
 echo "start=$n safe=${{LUCERNA_SAFE_MODE:-}} qt=${{QT_SCALE_FACTOR-unset}} handler=${{QS_DISABLE_CRASH_HANDLER-}} args=$*" >> "{self.starts}"
 echo "partida $n"
 line=$(sed -n "${{n}}p" "{self.exits}")
@@ -521,17 +635,30 @@ wait $s""",
         self.assertEqual(self.delays(), ["0.1"] * 5)
         self.assertTrue(all("safe= " in line for line in self.start_lines()), self.start_lines())
 
+    def emergency_lines(self):
+        return self.emergency.read_text().splitlines() if self.emergency.exists() else []
+
     def test_safe_mode_crashes_open_emergency(self):
         self.supervise(["1"] * 6)
-        self.wait_for(lambda: any(c.startswith("hyprctl notify") for c in self.calls_log()), what="a emergência")
+        self.wait_for(lambda: self.emergency_lines(), what="a tela de emergência")
         self.wait_for(lambda: self.status() == "supervised emergency", what="o status emergency")
+        line = self.emergency_lines()[0]
+        self.assertTrue(line.startswith("mode=crashed log="), line)
+        # O registro da última queda (a 6ª partida).
+        log = Path(line.split("log=")[1].split(" args=")[0])
+        self.assertIn("partida 6", log.read_text())
+        self.assertIn(f"args=-p {SCRIPT.resolve().parents[1]}/emergency/shell.qml", line)
+        self.assertFalse(any(c.startswith("hyprctl notify") for c in self.calls_log()), self.calls_log())
         time.sleep(0.5)
         self.assertEqual(len(self.start_lines()), 6, "na emergência, espera o shell start")
-        # O shell start volta ao normal.
+        # O shell start volta ao normal e fecha a tela de emergência que ficou.
         self.run_session("shell", "start")
         self.starts_at_least(7)
         self.assertIn("safe= ", self.start_lines()[6])
         self.assertEqual(self.status(), "supervised running")
+        self.wait_for(lambda: "fechada" in self.emergency_lines(), what="a emergência fechada")
+        # O aviso da queda já foi a emergência: o shell normal não diz "modo de segurança".
+        self.assertFalse((self.runtime / "lucerna" / "crash.json").exists())
 
     def test_compositor_gone_stops_without_restart(self):
         self.gone.touch()

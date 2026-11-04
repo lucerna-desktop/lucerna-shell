@@ -13,8 +13,8 @@
 # `hyprctl -j version` falha) encerra o supervisor, sem reinício. O resto é
 # queda: com n quedas na janela, reinicia depois da n-ésima pausa; passada a
 # última pausa, entra no modo de segurança (LUCERNA_SAFE_MODE=1, a config com
-# os padrões); lá, LUCERNA_SAFE_TRIES quedas na janela abrem a emergência e o
-# supervisor espera o shell start.
+# os padrões); lá, LUCERNA_SAFE_TRIES quedas na janela abrem a tela de
+# emergência (power.sh) e o supervisor espera o shell start, que a fecha.
 
 crash_window=${LUCERNA_CRASH_WINDOW:-30}
 read -ra crash_delays <<< "${LUCERNA_CRASH_DELAYS:-1 2 4}"
@@ -114,12 +114,12 @@ wait_hold() {
     done
 }
 
-# emergency: a tela de emergência (Tarefa 7). Por enquanto, um aviso do
-# Hyprland.
+# emergency: a tela de emergência (lucerna-session emergency --mode crashed),
+# fora do supervisor, com o registro da última queda. O supervisor não espera
+# por ela: segue para o wait_start.
 emergency() {
     log "o shell caiu de novo no modo de segurança: emergência"
-    hyprctl notify 3 3600000 "rgb(ff5555)" "O Lucerna caiu várias vezes, até no modo de segurança. Rode lucerna-session shell start (o registro está em $qs_log)." > /dev/null 2>&1 \
-        || log "o hyprctl notify da emergência falhou"
+    setsid -f env LUCERNA_EMERGENCY_LOG="$qs_log" "$self" emergency --mode crashed > /dev/null 2>&1 < /dev/null
 }
 
 # shellcheck disable=SC2329 # chamada pelo trap
@@ -218,6 +218,10 @@ cmd_supervise() {
             write_crash "$n" true
             emergency
             wait_start
+            close_emergency
+            # A emergência já foi o aviso da queda: o shell que volta ao
+            # normal não avisa de novo (nem diz "modo de segurança").
+            rm -f "$crash_file"
             log "o shell volta ao normal (shell start)"
             safe=0 crashes=()
         else

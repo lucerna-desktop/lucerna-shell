@@ -135,6 +135,24 @@ check_levels() {
     fi
 }
 
+# qmllint_warnings JSON PREFIXO: os avisos da saída --json do qmllint, um por
+# linha (arquivo:linha:coluna: [categoria] mensagem), sem o PREFIXO no nome.
+# shellcheck disable=SC2329 # chamada pelas funções do qmllint
+qmllint_warnings() {
+    python3 - "$1" "$2" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as fh:
+    data = json.load(fh)
+for f in data.get("files", []):
+    name = f["filename"].removeprefix(sys.argv[2])
+    for w in f.get("warnings", []):
+        if w.get("type") != "info":
+            print(f"{name}:{w.get('line', 0)}:{w.get('column', 0)}: [{w.get('id')}] {w.get('message')}")
+PY
+}
+
 # O qmllint precisa da árvore de módulos que o Quickshell monta (a VFS). Uma
 # cópia gravável da config com um .qmlls.ini vazio faz o `qs -p` preencher o
 # buildDir, mesmo abortando sem backend de PanelWindow (código 255). A VFS é
@@ -200,7 +218,8 @@ qmllint_run() {
     fi
     # A árvore precisa ter os mesmos .qml do repositório: uma VFS vazia, pela
     # metade ou com outros arquivos faria o qmllint analisar outra coisa e passar.
-    qml_list "$repo" > "$work/qml-repo.txt"
+    # Sem os de session/ (a tela de emergência, fora do shell: a qmllint_emergency_run).
+    qml_list "$repo" | grep -v '^\./session/' > "$work/qml-repo.txt"
     (cd "$tree/qs" && find . -name '*.qml' | LC_ALL=C sort) > "$work/qml-tree.txt"
     mapfile -t files < "$work/qml-tree.txt"
     if [ ! -s "$work/qml-repo.txt" ]; then
@@ -225,18 +244,7 @@ qmllint_run() {
     qsdir=$(realpath "$tree/qs") || return 1
     files=("${files[@]/#./$qsdir}")
     (cd "$qsdir" && /usr/lib/qt6/bin/qmllint -I "$tree" -I /usr/lib/qt6/qml --json "$out/qmllint.json" "${files[@]}") || rc=$?
-    python3 - "$out/qmllint.json" "$qsdir/" > "$out/qmllint.txt" <<'PY' || return 1
-import json
-import sys
-
-with open(sys.argv[1], encoding="utf-8") as fh:
-    data = json.load(fh)
-for f in data.get("files", []):
-    name = f["filename"].removeprefix(sys.argv[2])
-    for w in f.get("warnings", []):
-        if w.get("type") != "info":
-            print(f"{name}:{w.get('line', 0)}:{w.get('column', 0)}: [{w.get('id')}] {w.get('message')}")
-PY
+    qmllint_warnings "$out/qmllint.json" "$qsdir/" > "$out/qmllint.txt" || return 1
     cat "$out/qmllint.txt"
     # As categorias têm letras maiúsculas e pontos (Quick.attached-property-reuse).
     sed -nE 's/^[^[]*\[([^]]+)\] .*/\1/p' "$out/qmllint.txt" | sort | uniq -c | sort -rn > "$out/qmllint-categorias.txt"
@@ -245,7 +253,29 @@ PY
     [ "$rc" -eq 0 ] && [ ! -s "$out/qmllint.txt" ]
 }
 
+# A tela de emergência (session/emergency/) é uma config própria do Quickshell,
+# rodada sem o shell: o qmllint a vê só com os módulos do Qt e do Quickshell
+# instalados, sem a árvore do shell. Um import do shell não resolve e reprova.
+# shellcheck disable=SC2329 # chamada pela part, logo abaixo
+qmllint_emergency_run() {
+    local dir="$work/emergency" rc=0
+    local -a files
+    mapfile -t files < <(qml_list "$repo" | grep '^\./session/')
+    nonempty "${#files[@]}" "nenhum .qml achado em session/ (a tela de emergência)" || return 1
+    mkdir -p "$dir"
+    cp "$repo/ci/.qmllint.ini" "$dir/.qmllint.ini" || return 1
+    (cd "$repo" && cp --parents -t "$dir" "${files[@]}") || return 1
+    dir=$(realpath "$dir") || return 1
+    files=("${files[@]/#./$dir}")
+    (cd "$dir" && /usr/lib/qt6/bin/qmllint -I /usr/lib/qt6/qml --json "$out/qmllint-emergency.json" "${files[@]}") || rc=$?
+    qmllint_warnings "$out/qmllint-emergency.json" "$dir/" > "$out/qmllint-emergency.txt" || return 1
+    cat "$out/qmllint-emergency.txt"
+    echo "qmllint (emergência): ${#files[@]} arquivos, $(wc -l < "$out/qmllint-emergency.txt") avisos"
+    [ "$rc" -eq 0 ] && [ ! -s "$out/qmllint-emergency.txt" ]
+}
+
 part qmllint qmllint_run
+part qmllint-emergency qmllint_emergency_run
 part shellcheck shellcheck_run
 part ruff-check ruff_check_run
 part ruff-format ruff_format_run

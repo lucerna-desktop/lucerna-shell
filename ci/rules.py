@@ -137,11 +137,13 @@ def check_behaviors(root):
 
 
 IMPORT_QS = re.compile(r"^\s*import\s+qs\.([\w.]+)")
+IMPORT_PATH = re.compile(r'^\s*import\s+"')
 
 
 def check_layers(root):
     """features/*/ui não importa qs.services; uma feature não importa outra;
-    core/ não importa qs.features nem qs.services."""
+    core/ não importa qs.features nem qs.services; os .qml de session/ (a tela
+    de emergência) não importam nada do shell (nem qs.*, nem pasta)."""
     out = []
     for rel in repo_files(root):
         if rel.suffix != ".qml":
@@ -150,6 +152,15 @@ def check_layers(root):
         parts = rel.parts
         lines = (root / rel).read_text(encoding="utf-8").splitlines()
         for number, line in enumerate(lines, 1):
+            if parts[0] == "session" and (IMPORT_QS.match(line) or IMPORT_PATH.match(line)):
+                out.append(
+                    (
+                        where,
+                        number,
+                        "a tela de emergência roda sem o shell: importa só o Qt e o Quickshell, nada do shell",
+                    )
+                )
+                continue
             match = IMPORT_QS.match(line)
             if not match:
                 continue
