@@ -7,6 +7,8 @@ qt6-imageformats
 qt6-multimedia
 qt6-multimedia-ffmpeg
 python
+# O logind falso da fase logind (ci/logind-fake.py, só o Gio).
+python-gobject
 tzdata
 dbus
 sway

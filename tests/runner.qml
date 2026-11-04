@@ -56,6 +56,7 @@ import "hyprfile.test.js" as HyprFileTest
 import "input.test.js" as InputTest
 import "inputactions.test.js" as InputActionsTest
 import "lucernaclient.test.js" as LucernaClientTest
+import "logind.test.js" as LogindTest
 import "lucernasession.test.js" as LucernaSessionTest
 import "servelauncher.test.js" as ServeLauncherTest
 import "lyrics.test.js" as LyricsTest
@@ -131,6 +132,7 @@ ShellRoot {
         ["appinfo", AppInfoTest],
         ["media", MediaTest],
         ["session", SessionTest],
+        ["logind", LogindTest],
         ["lucernasession", LucernaSessionTest],
         ["weather", WeatherTest],
         ["weatherstate", WeatherStateTest],
@@ -287,6 +289,7 @@ ShellRoot {
             get Network() { return Network; },
             get Notifications() { return Notifications; },
             get Session() { return Session; },
+            get Logind() { return Logind; },
             get LucernaSession() { return LucernaSession; },
             get Spectrum() { return Spectrum; },
             get SystemStats() { return SystemStats; },

@@ -155,8 +155,11 @@ unit_run() {
         return 1
     fi
     rc=0
-    env -u LUCERNA_DEV -u WAYLAND_DISPLAY -u QT_QUICK_BACKEND \
-        XDG_RUNTIME_DIR="$base/run" XDG_STATE_HOME="$base/state" XDG_CACHE_HOME="$base/cache" \
+    # LUCERNA_LOGIND=off: o services/Logind fica desligado (nenhum gdbus nem
+    # systemd-inhibit roda; os testes usam só as funções puras e o estado). Sem
+    # ela, fora do modo de desenvolvimento, ele falaria com o logind do sistema.
+    env -u LUCERNA_DEV -u LUCERNA_LOGIND_BUS -u WAYLAND_DISPLAY -u QT_QUICK_BACKEND \
+        LUCERNA_LOGIND=off XDG_RUNTIME_DIR="$base/run" XDG_STATE_HOME="$base/state" XDG_CACHE_HOME="$base/cache" \
         TZ=America/Sao_Paulo QT_QPA_PLATFORM=offscreen \
         timeout -k 10 60 qs -p "$cfg/runner.qml" > "$base/raw.log" 2>&1 || rc=$?
     if ! sed 's/\x1b\[[0-9;]*m//g' "$base/raw.log" > "$log"; then

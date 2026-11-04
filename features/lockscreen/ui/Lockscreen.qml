@@ -7,6 +7,8 @@ import qs.features.lockscreen.state
 // continua bloqueado.
 WlSessionLock {
     locked: LockscreenState.locked
+    // O secure (o compositor confirmou o bloqueio) solta o inibidor de sono.
+    onSecureChanged: LockscreenState.setSecure(secure)
 
     WlSessionLockSurface {
         color: ThemeManager.colors.base
