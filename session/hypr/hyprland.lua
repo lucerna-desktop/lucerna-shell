@@ -5,11 +5,13 @@
 -- arquivo do shell) e o ~/.config/hypr/hyprland.lua (o do usuário). O shell
 -- nunca escreve aqui nem no arquivo do usuário.
 
--- 1. Uma vez só: o hyprland.lua do usuário pode incluir a base de novo.
-if LUCERNA_BASE_LOADED then
+-- 1. Contra a reentrada: o hyprland.lua do usuário pode incluir a base de
+-- novo, e esse include volta logo. A marca só fica ligada enquanto as
+-- camadas carregam (passo 6, sob pcall, então sempre é limpa): se o Hyprland
+-- mantiver o estado Lua entre os reloads, um reload carrega a base inteira.
+if LUCERNA_BASE_LOADING then
     return
 end
-LUCERNA_BASE_LOADED = true
 
 local home = os.getenv("HOME") or ""
 local config_home = os.getenv("XDG_CONFIG_HOME")
@@ -37,10 +39,11 @@ package.path = data_dir() .. "/hypr/?.lua;" .. config_home .. "/hypr/?.lua;" .. 
 local scale = require("lucerna.scale")
 local claims_mod = require("lucerna.claims")
 
--- 2. A regra genérica da base, pelo original (não reivindica nada); depois,
--- o envoltório que anota as regras das outras camadas.
-hl.monitor({ output = "", mode = "highrr", position = "auto", scale = 1 })
+-- 2. O envoltório que anota as regras das outras camadas, e a regra genérica
+-- da base pelo original (não reivindica nada). O install tira um envoltório
+-- de um carregamento anterior, se o estado Lua ficou.
 local claims = claims_mod.install(hl)
+claims.original({ output = "", mode = "highrr", position = "auto", scale = 1 })
 
 -- 3. Os padrões.
 local function env_or(name, default)
@@ -92,6 +95,7 @@ hl.bind("CTRL + ALT + SHIFT + Escape", hl.dsp.exec_cmd("lucerna-session logout")
 -- 6. As camadas de cima: o arquivo do shell e o do usuário. Um arquivo que
 -- não existe é pulado; um erro vira uma notificação, e a sessão segue.
 local function notify(text)
+    io.stderr:write(text .. "\n")
     pcall(hl.notification.create, { text = text, timeout = 15000 })
 end
 
@@ -107,8 +111,10 @@ local function load_layer(path)
     end
 end
 
+LUCERNA_BASE_LOADING = true
 load_layer(config_home .. "/lucerna/hypr/settings.lua")
 load_layer(config_home .. "/hypr/hyprland.lua")
+LUCERNA_BASE_LOADING = nil
 
 -- 7. A escala automática, para cada monitor sem regra de outra camada. No
 -- modo "Escala pelos apps" (a seção scale do settings.lua põe o global
@@ -133,16 +139,34 @@ local function scale_all()
     end
 end
 
-hl.on("hyprland.start", function()
-    scale_all()
-    -- 8. Avisa o lucerna-session que o compositor está de pé.
-    hl.exec_cmd("lucerna-session ready")
-end)
-hl.on("monitor.added", function(m)
+-- safe_scale(m): a escala sem derrubar quem chama. Um erro aqui vira aviso
+-- (stderr e notificação), e os monitores ficam na regra genérica (escala 1).
+local function safe_scale(m)
+    local ok, err
     if m and m.name then
-        scale_monitor(m)
+        ok, err = pcall(scale_monitor, m)
     else
-        scale_all()
+        ok, err = pcall(scale_all)
     end
-end)
-hl.on("config.reloaded", scale_all)
+    if not ok then
+        notify("Lucerna: erro na escala automática: " .. tostring(err))
+    end
+end
+
+-- Os eventos. Se o estado Lua ficar entre os reloads, as inscrições do
+-- carregamento anterior são tiradas antes, para não empilhar.
+for _, subscription in ipairs(LUCERNA_BASE_SUBSCRIPTIONS or {}) do
+    pcall(subscription.remove, subscription)
+end
+LUCERNA_BASE_SUBSCRIPTIONS = {
+    hl.on("hyprland.start", function()
+        safe_scale()
+        -- 8. Avisa o lucerna-session que o compositor está de pé, mesmo com
+        -- erro na escala: sem o ready, o shell não sobe.
+        hl.exec_cmd("lucerna-session ready")
+    end),
+    hl.on("monitor.added", safe_scale),
+    hl.on("config.reloaded", function()
+        safe_scale()
+    end),
+}

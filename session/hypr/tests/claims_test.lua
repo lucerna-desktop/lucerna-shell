@@ -69,4 +69,37 @@ case("claims: o original continua sendo chamado", function()
         "uma regra pelo original (a da escala automática) não reivindica")
 end)
 
+case("claims: desc: casa pelo começo da descrição, como no Hyprland", function()
+    local hl = fake_hl()
+    local claims = claims_mod.install(hl)
+    hl.monitor({ output = "desc:AU Optronics", scale = 1.5 })
+    assert(claims_mod.claimed(claims, edp), "desc:AU Optronics (encurtada) reivindica AU Optronics 0x1234")
+    assert(not claims_mod.claimed(claims, dp), "desc:AU Optronics não reivindica o Dell")
+
+    local hl2 = fake_hl()
+    local claims2 = claims_mod.install(hl2)
+    hl2.monitor({ output = "desc: Dell Inc. DELL U2720Q ", scale = 2 })
+    local with_connector = { name = "DP-2", description = "Dell Inc. DELL U2720Q ABC123 (DP-2)" }
+    assert(claims_mod.claimed(claims2, with_connector),
+        "desc: com espaços nas pontas reivindica a descrição com o sufixo (conector)")
+    assert(not claims_mod.claimed(claims2, { name = "HDMI-A-1", description = "" }),
+        "desc: não reivindica o monitor sem descrição")
+end)
+
+case("claims: instalar de novo não empilha envoltórios", function()
+    local hl = fake_hl()
+    local first = hl.monitor
+    claims_mod.install(hl)
+    hl.monitor({ output = "eDP-1" })
+    -- Um segundo carregamento da base no mesmo estado Lua (um reload que
+    -- mantém o estado): o envoltório velho é tirado, e as reivindicações
+    -- recomeçam do zero.
+    local claims = claims_mod.install(hl)
+    assert(claims.original == first, "o original é o hl.monitor de verdade, não o envoltório velho")
+    assert(not claims_mod.claimed(claims, edp), "as reivindicações do carregamento anterior não ficam")
+    hl.monitor({ output = "DP-2" })
+    assert(#hl.calls == 2, "cada chamada chega uma vez só ao original")
+    assert(claims_mod.claimed(claims, dp), "o envoltório novo anota")
+end)
+
 print(string.format("SUITE claims casos=%d", cases))
