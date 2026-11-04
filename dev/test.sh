@@ -12,6 +12,7 @@
 #   dev/test.sh ipc ARGS...        qs -c lucerna ipc call ARGS...
 #   dev/test.sh setc 'dict(...)'   mescla o dicionário (Python) no config.json do shell
 #   dev/test.sh shot NOME          captura a tela em $LUCERNA_TEST_OUT/NOME.png
+#   dev/test.sh headless on|off    liga/desliga a saída headless HEADLESS-T (veja abaixo)
 #   dev/test.sh see PREFIXO ARGS...  ipc call ARGS, 1 s, captura PREFIXO-ARGS.png, fecha
 #   dev/test.sh run 'COMANDO'      roda um comando na sessão (notify-send, hyprctl...)
 # LUCERNA_TEST_OUT: pasta das capturas (padrão /tmp/lucerna-test).
@@ -34,6 +35,12 @@
 # a maximização e a borda e a centraliza nesse tamanho; sem monitor assim, ela
 # fica onde está. Em escala fracionária a imagem sai borrada. Fora do KDE, não faz nada.
 # LUCERNA_TEST_SIZE=LARGURAxALTURA: o tamanho da janela (padrão 1920x1080).
+# headless on: cria a saída headless HEADLESS-T (1920x1080@60, posição 0x0, escala 1)
+# e desliga a WAYLAND-1: painéis, tela de bloqueio, foco e capturas passam a ser
+# nela. Serve quando a sessão do host está bloqueada ou a janela de teste escondida
+# (o Hyprland aninhado não desenha e o `shot` trava); a headless desenha sempre.
+# headless off: religa a WAYLAND-1 e remove a HEADLESS-T. Se a WAYLAND-1 não voltar,
+# o `dev/test.sh up` de novo é a saída. O `shot` e os benches usam a saída ativa.
 # O lucernad sobe com o Hyprland (dev/hyprland.lua). Para ver o shell sem ele:
 # `dev/test.sh run 'pkill -x lucernad'`; para voltar (sempre pelo `run`, que põe
 # o WAYLAND_DISPLAY do Hyprland aninhado, e sempre com a raiz falsa do brilho:
@@ -218,10 +225,13 @@ print("config:", os.environ["SETC"])
 # aninhado para de desenhar e o grim trava esperando um frame que não vem.
 shot() {
     running
-    ex 'hyprctl monitors | grep -q "^Monitor WAYLAND-1 "' \
+    local mon
+    # A saída ativa: a headless, se estiver ligada, senão a WAYLAND-1.
+    mon=$(ex 'hyprctl monitors | grep -o "^Monitor \(HEADLESS-T\|WAYLAND-1\) " | head -n1 | cut -d" " -f2')
+    [ -n "$mon" ] \
         || fail "a saída WAYLAND-1 sumiu (Hyprland no FALLBACK, depois de um reload ou da janela fechada): rode dev/test.sh up"
     mkdir -p "$out"
-    ex 'timeout 10 grim -o WAYLAND-1 /tmp/lucerna-shot.png' \
+    ex "timeout 10 grim -o $mon /tmp/lucerna-shot.png" \
         || fail "a captura travou: a janela de teste está escondida ou minimizada? Traga-a para a frente (não precisa de foco) e tente de novo."
     docker cp -q "$name:/tmp/lucerna-shot.png" "$out/$1.png"
     echo "$out/$1.png"
@@ -373,13 +383,31 @@ case "${1:-}" in
         shot "$prefix-$(printf '%s-' "$@" | tr -cd 'a-z0-9-' | sed 's/-*$//')"
         ex 'qs -c lucerna ipc call panels close' > /dev/null
         ;;
+    headless)
+        running
+        case "${2:-}" in
+            on)
+                ex 'hyprctl monitors | grep -q "^Monitor HEADLESS-T " || hyprctl output create headless HEADLESS-T > /dev/null
+                    hyprctl eval "hl.monitor({ output = \"HEADLESS-T\", mode = \"1920x1080@60\", position = \"0x0\", scale = 1 })" > /dev/null
+                    hyprctl eval "hl.monitor({ output = \"WAYLAND-1\", disabled = true })" > /dev/null
+                    sleep 2; hyprctl monitors | grep "^Monitor"'
+                ;;
+            off)
+                ex 'hyprctl eval "hl.monitor({ output = \"WAYLAND-1\", mode = \"1920x1080@60\", position = \"0x0\", scale = 1, disabled = false })" > /dev/null
+                    sleep 2
+                    hyprctl output remove HEADLESS-T > /dev/null 2>&1 || true
+                    sleep 1; hyprctl monitors | grep "^Monitor"'
+                ;;
+            *) fail "uso: dev/test.sh headless on|off" ;;
+        esac
+        ;;
     run)
         running
         [ -n "${2:-}" ] || fail "uso: dev/test.sh run 'COMANDO'"
         ex "$2"
         ;;
     *)
-        sed -n '2,41p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+        sed -n '2,42p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
         exit 2
         ;;
 esac
