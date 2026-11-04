@@ -1,3 +1,5 @@
-# Pacotes do job rules (ci/setup.sh). O qsb (qt6-shadertools) recompila os shaders.
+# Pacotes do job rules (ci/setup.sh). O qsb (qt6-shadertools) recompila os shaders;
+# o lua roda os testes da base do Hyprland (ci/tests/test_hypr_lua.py).
 python
 qt6-shadertools
+lua

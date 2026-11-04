@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Análise estática: qmllint (com a árvore de módulos do Quickshell), shellcheck,
-# ruff e os JSON de tema. Roda todas as partes e falha se alguma falhar.
+# ruff, a sintaxe dos .lua da sessão (luac) e os JSON de tema. Roda todas as
+# partes e falha se alguma falhar.
 # Saída em $CI_OUT: um <parte>.log por parte e o summary.md; do qmllint, também
 # qmllint.json (saída crua), qmllint.txt (arquivo:linha:coluna: [categoria]
 # mensagem) e qmllint-categorias.txt (N categoria, da maior para a menor).
@@ -56,6 +57,7 @@ nonempty() {
 cd "$repo" || exit 1
 mapfile -t scripts < <(find ci dev services/scripts -name '*.sh' | sort)
 mapfile -t pyfiles < <(find ci dev -name '*.py' | sort)
+mapfile -t luafiles < <(find session -name '*.lua' | sort)
 
 # shellcheck disable=SC2329 # chamadas pela part, lá embaixo
 shellcheck_run() {
@@ -71,6 +73,15 @@ ruff_check_run() {
 ruff_format_run() {
     nonempty "${#pyfiles[@]}" "nenhum .py achado em ci/ e dev/" &&
         ruff format --no-cache --check "${pyfiles[@]}"
+}
+# shellcheck disable=SC2329
+luac_run() {
+    nonempty "${#luafiles[@]}" "nenhum .lua achado em session/" || return 1
+    local f rc=0
+    for f in "${luafiles[@]}"; do
+        luac -p "$f" || rc=1
+    done
+    [ "$rc" -eq 0 ] && echo "luac: ${#luafiles[@]} arquivos sem erro de sintaxe"
 }
 
 # As categorias que o ci/.qmllint.ini pode desligar (disable): os três falsos
@@ -236,6 +247,7 @@ part qmllint qmllint_run
 part shellcheck shellcheck_run
 part ruff-check ruff_check_run
 part ruff-format ruff_format_run
+part luac luac_run
 part json python3 ci/jsoncheck.py
 
 exit "$status"
