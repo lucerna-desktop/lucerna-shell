@@ -15,6 +15,15 @@
 #   dev/test.sh headless on|off    liga/desliga a saída headless HEADLESS-T (veja abaixo)
 #   dev/test.sh see PREFIXO ARGS...  ipc call ARGS, 1 s, captura PREFIXO-ARGS.png, fecha
 #   dev/test.sh run 'COMANDO'      roda um comando na sessão (notify-send, hyprctl...)
+#   dev/test.sh logind suspend|lock|unlock|lid on|lid off|status
+#                                  comanda o logind falso (ci/logind-fake.py): o
+#                                  suspend emite PrepareForSleep(true), espera os
+#                                  inibidores delay (até 5 s), 1 s depois o false;
+#                                  o status dá o JSON (delayHeld, lockedHint, lid,
+#                                  lastSleep). O shell recebe o endereço privado
+#                                  dele em LUCERNA_LOGIND_BUS; para um cliente do
+#                                  sd-bus (systemd-inhibit), DBUS_SYSTEM_BUS_ADDRESS
+#                                  só no ambiente dele, nunca o barramento do host.
 # LUCERNA_TEST_OUT: pasta das capturas (padrão /tmp/lucerna-test).
 # LUCERNA_TEST_GPU="/dev/dri/renderDN /dev/dri/cardN": força a GPU repassada.
 # LUCERNA_TEST_HOST_BUS=1 (no up): o shell usa o barramento de sessão do host,
@@ -127,6 +136,10 @@ out=${LUCERNA_TEST_OUT:-/tmp/lucerna-test}
 # "dropped operation" fica de fora: é o sintoma do bug do Config (spec linha
 # 112); se voltar, tem que aparecer no log e no errs, não ser filtrado.
 noise='portal'
+# O barramento privado do logind falso (ci/logind-fake.sh, que o
+# dev/hyprland.lua sobe com o Hyprland). Nunca o barramento do sistema: o
+# container monta o do host, onde está o logind de verdade.
+logind_bus=unix:path=/run/user/1000/lucerna-fake-system
 
 fail() {
     echo "ERRO: $*" >&2
@@ -279,12 +292,17 @@ up() {
     local runtime=${XDG_RUNTIME_DIR:-/run/user/$(id -u)} devices render card
     devices=$(gpu) || fail "nenhuma GPU utilizável em /sys/class/drm (a da NVIDIA não funciona no container); use LUCERNA_TEST_GPU"
     read -r render card <<< "$devices"
-    # A imagem é refeita quando falta ou quando o lucernad dela é de outra revisão.
-    local rev
+    # A imagem é refeita quando falta, quando o lucernad dela é de outra revisão
+    # ou quando o dev/Dockerfile mudou (a etiqueta dockerfile.sha). A mesma
+    # regra do dev/run.sh.
+    local rev sha
     rev=$(cat "$repo/dev/lucernad.rev")
+    sha=$(sha256sum "$repo/dev/Dockerfile" | cut -d' ' -f1)
     if ! docker image inspect "$image" &> /dev/null \
-        || [ "$(docker image inspect -f '{{ index .Config.Labels "lucernad.rev" }}' "$image")" != "$rev" ]; then
-        docker build --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" --build-arg LUCERNAD_REV="$rev" -t "$image" "$repo/dev"
+        || [ "$(docker image inspect -f '{{ index .Config.Labels "lucernad.rev" }}' "$image")" != "$rev" ] \
+        || [ "$(docker image inspect -f '{{ index .Config.Labels "dockerfile.sha" }}' "$image")" != "$sha" ]; then
+        docker build --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" --build-arg LUCERNAD_REV="$rev" \
+            --build-arg DOCKERFILE_SHA="$sha" -t "$image" "$repo/dev"
     fi
     local extra=()
     if [ -S "$runtime/pipewire-0" ]; then
@@ -311,6 +329,7 @@ up() {
         --device "$render" --device "$card" \
         -e WAYLAND_DISPLAY=wayland-host \
         -e LUCERNA_DEV=1 \
+        -e LUCERNA_LOGIND_BUS="$logind_bus" \
         -v /etc/localtime:/etc/localtime:ro \
         -v "$runtime/$WAYLAND_DISPLAY:/run/user/1000/wayland-host" \
         -v "$repo:/home/dev/.config/quickshell/lucerna" \
@@ -401,13 +420,29 @@ case "${1:-}" in
             *) fail "uso: dev/test.sh headless on|off" ;;
         esac
         ;;
+    logind)
+        running
+        case "${2:-} ${3:-}" in
+            "suspend ") method=Suspend ;;
+            "lock ") method=LockSession ;;
+            "unlock ") method=UnlockSession ;;
+            "lid on") method="SetLid true" ;;
+            "lid off") method="SetLid false" ;;
+            "status ") method=Status ;;
+            *) fail "uso: dev/test.sh logind suspend|lock|unlock|lid on|lid off|status" ;;
+        esac
+        # O suspend responde só no fim do ciclo (até 5 s de prazo mais 1 s de sono).
+        # O status sai como o JSON puro, sem a tupla do gdbus.
+        ex "gdbus call --address $logind_bus --dest org.freedesktop.login1 --object-path /org/lucerna/Test --method org.lucerna.Test.$method" \
+            | sed -E "s/^\('(.*)',\)$/\1/"
+        ;;
     run)
         running
         [ -n "${2:-}" ] || fail "uso: dev/test.sh run 'COMANDO'"
         ex "$2"
         ;;
     *)
-        sed -n '2,42p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+        sed -n '2,52p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
         exit 2
         ;;
 esac

@@ -19,7 +19,12 @@ hl.on("hyprland.start", function()
     -- aqui mudaria o brilho de verdade do host (o lucernad em container sem a
     -- raiz deixa o módulo indisponível, mas a defesa não depende só dele).
     hl.exec_cmd([[sh -c 'case "$WAYLAND_DISPLAY" in wayland-[0-9]*) bash ~/.config/quickshell/lucerna/ci/power-root.sh /tmp/lucerna-power && exec env LUCERNAD_POWER_ROOT=/tmp/lucerna-power LUCERNA_IDLE_TIMEOUT_MS=86400000 lucernad serve ;; *) echo "hyprland.lua: o lucernad não sobe: WAYLAND_DISPLAY=$WAYLAND_DISPLAY não é o do Hyprland aninhado (wayland-<número>)" >&2 ;; esac']])
-    hl.exec_cmd("qs -c lucerna")
+    -- O logind falso (ci/logind-fake.sh) num barramento privado, antes do
+    -- shell: o shell escuta o logind só nele (LUCERNA_LOGIND_BUS, do
+    -- dev/test.sh); o barramento do sistema montado é o do host. O start espera
+    -- o nome org.freedesktop.login1 (até 10 s); se falhar, o shell sobe assim
+    -- mesmo, sem o logind.
+    hl.exec_cmd([[sh -c 'bash ~/.config/quickshell/lucerna/ci/logind-fake.sh start /run/user/1000 > /dev/null; exec qs -c lucerna']])
 end)
 
 hl.config({

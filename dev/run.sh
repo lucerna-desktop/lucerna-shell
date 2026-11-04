@@ -18,11 +18,16 @@ esac
 : "${WAYLAND_DISPLAY:?precisa de uma sessão Wayland no host}"
 runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
-# A imagem é refeita quando falta ou quando o lucernad dela é de outra revisão.
+# A imagem é refeita quando falta, quando o lucernad dela é de outra revisão ou
+# quando o dev/Dockerfile mudou (a etiqueta dockerfile.sha). A mesma regra do
+# dev/test.sh.
 rev=$(cat "$repo/dev/lucernad.rev")
+sha=$(sha256sum "$repo/dev/Dockerfile" | cut -d' ' -f1)
 if [[ "${1:-}" == --build ]] || ! docker image inspect "$image" &>/dev/null \
-    || [[ "$(docker image inspect -f '{{ index .Config.Labels "lucernad.rev" }}' "$image")" != "$rev" ]]; then
-    docker build --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" --build-arg LUCERNAD_REV="$rev" -t "$image" "$repo/dev"
+    || [[ "$(docker image inspect -f '{{ index .Config.Labels "lucernad.rev" }}' "$image")" != "$rev" ]] \
+    || [[ "$(docker image inspect -f '{{ index .Config.Labels "dockerfile.sha" }}' "$image")" != "$sha" ]]; then
+    docker build --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" --build-arg LUCERNAD_REV="$rev" \
+        --build-arg DOCKERFILE_SHA="$sha" -t "$image" "$repo/dev"
 fi
 
 # Só a GPU Intel é repassada: o container não tem os drivers da NVIDIA.
