@@ -20,8 +20,13 @@ import qs.features.settings.ui
 import qs.features.themeSwitcher.ui
 import qs.features.wallpaper.ui
 import qs.features.workspaces.ui
+import qs.services as Services
 
 ShellRoot {
+    // Cria o serviço da sessão já no começo: ele lê o session.json do
+    // lucerna-session e mostra os avisos (o modeset da NVIDIA).
+    Component.onCompleted: Services.LucernaSession.start()
+
     Wallpaper {}
     WorkspacesOverview {}
     Bar {}

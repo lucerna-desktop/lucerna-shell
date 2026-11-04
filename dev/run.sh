@@ -35,6 +35,8 @@ intel_render="$(readlink -f /dev/dri/by-path/pci-0000:00:02.0-render)"
 intel_card="$(readlink -f /dev/dri/by-path/pci-0000:00:02.0-card)"
 
 # PipeWire e D-Bus do sistema vêm do host, para volume, bateria e rede reais.
+# A sessão entra pelo lucerna-session do repositório montado (a base do
+# Hyprland, com o dev/hyprland.lua como a camada do usuário), como no dev/test.sh.
 # LUCERNA_DEV=1 faz o shell só simular suspender/reiniciar/desligar: com o
 # D-Bus do sistema montado, essas ações chegariam ao host.
 extra=()
@@ -51,5 +53,6 @@ exec docker run --rm -it \
     -v "$runtime/$WAYLAND_DISPLAY:/run/user/1000/wayland-host" \
     -v "$repo:/home/dev/.config/quickshell/lucerna" \
     -v "$repo/dev/hyprland.lua:/home/dev/.config/hypr/hyprland.lua:ro" \
+    -e PATH=/home/dev/.config/quickshell/lucerna/session/bin:/usr/local/sbin:/usr/local/bin:/usr/bin \
     "${extra[@]}" \
-    "$image"
+    "$image" dbus-run-session lucerna-session

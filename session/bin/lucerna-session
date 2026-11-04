@@ -1,0 +1,257 @@
+#!/usr/bin/env bash
+# A entrada da sessão Lucerna (o Exec do lucerna.desktop) e os comandos dela.
+#   lucerna-session                 a sessão: detecta o hardware, exporta o
+#                                   ambiente, sobe o Hyprland com a base
+#                                   (session/hypr/hyprland.lua) e espera; no
+#                                   fim, para o shell
+#   lucerna-session detect          imprime e grava o session.json (GPU, DRM,
+#                                   modeset da NVIDIA, teclado, init)
+#   lucerna-session ready           chamado pela base quando o Hyprland está
+#                                   de pé: sobe o shell (systemd ou supervisor)
+#   lucerna-session supervise       o supervisor do shell (provisório: só o qs)
+#   lucerna-session shell restart   reinicia o shell (provisório)
+#   lucerna-session open terminal|browser|files
+#                                   abre o app do apps.conf ou o primeiro
+#                                   instalado da lista
+#   lucerna-session detect-apps     os apps instalados de cada tipo, em JSON
+#   lucerna-session logout          sai do Hyprland (fim da sessão)
+#   lucerna-session unlock          do TTY, depois de entrar com a senha:
+#                                   libera a tela de bloqueio que caiu
+#                                   (hl.clear_crashed_lockscreen; o efeito é
+#                                   conferido na Tarefa 6)
+# Tudo é anotado em ~/.local/state/lucerna/session.log. As raízes do sistema
+# (LUCERNA_SYSFS, LUCERNA_DEVFS, LUCERNA_ETC, LUCERNA_USR_SHARE, LUCERNA_RUN) só mudam nos
+# testes (ci/tests/test_session.py).
+set -uo pipefail
+
+# A pasta session/ do repositório, achada pelo próprio caminho; senão a
+# instalada (/usr/lib/lucerna/session e /usr/share/lucerna).
+self=$(realpath "${BASH_SOURCE[0]}")
+here=$(dirname "$self")
+if [ -r "$here/../lib/common.sh" ]; then
+    lib_dir=$(realpath "$here/../lib")
+    default_data_dir=$(realpath "$here/..")
+else
+    lib_dir=/usr/lib/lucerna/session
+    default_data_dir=/usr/share/lucerna
+fi
+subcommand=${1:-}
+# shellcheck source=session/lib/common.sh
+. "$lib_dir/common.sh"
+# shellcheck source=session/lib/detect.sh
+. "$lib_dir/detect.sh"
+
+export LUCERNA_DATA_DIR=${LUCERNA_DATA_DIR:-$default_data_dir}
+
+# As listas do open, na ordem de preferência.
+terminals=(kitty foot alacritty wezterm ghostty konsole gnome-terminal xfce4-terminal xterm)
+browsers=(firefox chromium google-chrome-stable brave vivaldi-stable librewolf zen-browser)
+file_managers=(dolphin nautilus thunar nemo pcmanfm-qt pcmanfm)
+
+# As variáveis que o ready passa ao systemd --user (além das da GPU e do
+# session.env).
+session_vars=(WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_ID LUCERNA_SESSION LUCERNA_DATA_DIR)
+gpu_vars=(LIBVA_DRIVER_NAME __GLX_VENDOR_LIBRARY_NAME NVD_BACKEND AQ_DRM_DEVICES)
+
+# usage [CÓDIGO]: o cabeçalho deste arquivo (os comentários antes do set) e
+# sai com o código (64 por padrão: uso errado).
+usage() {
+    sed -n '2,/^set /{/^#/p}' "$self" | sed 's/^# \{0,1\}//' >&2
+    exit "${1:-64}"
+}
+
+# write_session_json: roda a detecção e grava o session.json.
+write_session_json() {
+    detect_all
+    mkdir -p "$runtime_dir"
+    write_file "$runtime_dir/session.json" "$(session_json)"
+}
+
+# session_env_lines: as linhas NOME=valor do ~/.config/lucerna/session.env.
+# Só as que começam por um nome em maiúsculas; o resto (comentários,
+# comandos, `export X=1; y`) é ignorado. Nada é executado: o valor entra como
+# texto.
+session_env_lines() {
+    local file="$config_dir/session.env"
+    [ -r "$file" ] || return 0
+    grep -E '^[A-Z_][A-Z0-9_]*=' "$file" || true
+}
+
+cmd_detect() {
+    write_session_json
+    session_json
+    echo
+}
+
+cmd_session() {
+    local line base status
+    mkdir -p "$state_dir" "$runtime_dir"
+    exec >> "$log_file" 2>&1
+    log "a sessão começa (dados: $LUCERNA_DATA_DIR)"
+    write_session_json
+    log "detecção: $(session_json)"
+    local entry
+    for entry in "${gpu_env[@]}"; do
+        export "${entry?}"
+    done
+    export LUCERNA_KB_LAYOUT="$kb_layout" LUCERNA_KB_VARIANT="$kb_variant" \
+        LUCERNA_KB_MODEL="$kb_model" LUCERNA_KB_OPTIONS="$kb_options"
+    export XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=Hyprland XDG_SESSION_DESKTOP=lucerna
+    export LUCERNA_SESSION=1
+    while IFS= read -r line; do
+        export "${line?}"
+    done < <(session_env_lines)
+    base="$LUCERNA_DATA_DIR/hypr/hyprland.lua"
+    if have start-hyprland; then
+        start-hyprland -- --config "$base"
+    else
+        Hyprland --config "$base"
+    fi
+    status=$?
+    log "o Hyprland saiu (código $status)"
+    stop_shell
+    exit "$status"
+}
+
+# stop_shell: o fim da sessão. Com systemd, para o alvo; sem ele, TERM no
+# supervisor.
+stop_shell() {
+    local pid
+    if [ "$init" = systemd ]; then
+        systemctl --user stop lucerna-session.target || log "não consegui parar o lucerna-session.target"
+    elif [ -r "$runtime_dir/supervisor.pid" ]; then
+        pid=$(cat "$runtime_dir/supervisor.pid")
+        [ -n "$pid" ] && kill -TERM "$pid" 2> /dev/null
+        rm -f "$runtime_dir/supervisor.pid"
+    fi
+}
+
+cmd_ready() {
+    local file="$config_dir/Xresources" line name
+    local -a names=()
+    detect_init
+    log "o Hyprland está de pé (init: $init)"
+    if [ "$init" = systemd ]; then
+        names=("${session_vars[@]}")
+        for name in "${gpu_vars[@]}"; do
+            [ -n "${!name:-}" ] && names+=("$name")
+        done
+        while IFS= read -r line; do
+            names+=("${line%%=*}")
+        done < <(session_env_lines)
+        if have dbus-update-activation-environment; then
+            dbus-update-activation-environment --systemd "${names[@]}" || log "o dbus-update-activation-environment falhou"
+        else
+            systemctl --user import-environment "${names[@]}" || log "o systemctl --user import-environment falhou"
+        fi
+        systemctl --user start lucerna-session.target || log "não consegui subir o lucerna-session.target"
+    else
+        setsid -f "$self" supervise > /dev/null 2>&1 < /dev/null
+    fi
+    if [ -r "$file" ] && have xrdb; then
+        xrdb -merge "$file" || log "o xrdb -merge $file falhou"
+    fi
+}
+
+# O supervisor provisório: só o qs. A Tarefa 6 o troca pelo de verdade (com
+# os reinícios e o modo de segurança).
+cmd_supervise() {
+    mkdir -p "$runtime_dir"
+    echo "$$" > "$runtime_dir/supervisor.pid"
+    log "o shell sobe (${LUCERNA_SHELL_CONFIG:-lucerna})"
+    exec qs -c "${LUCERNA_SHELL_CONFIG:-lucerna}"
+}
+
+# shell restart, provisório (a Tarefa 6 traz o subcomando shell inteiro):
+# para o qs do supervisor e sobe outro.
+cmd_shell() {
+    local pid
+    [ "${1:-}" = restart ] || usage
+    if [ -r "$runtime_dir/supervisor.pid" ]; then
+        pid=$(cat "$runtime_dir/supervisor.pid")
+        if [ -n "$pid" ] && kill -TERM "$pid" 2> /dev/null; then
+            for _ in 1 2 3 4 5 6 7 8 9 10; do
+                kill -0 "$pid" 2> /dev/null || break
+                sleep 0.2
+            done
+        fi
+    fi
+    log "o shell reinicia"
+    setsid -f "$self" supervise > /dev/null 2>&1 < /dev/null
+}
+
+# apps_of TIPO: a lista do tipo, no array `apps`, e o nome dele, em `label`.
+apps_of() {
+    case "$1" in
+        terminal) apps=("${terminals[@]}") label=terminal ;;
+        browser) apps=("${browsers[@]}") label=navegador ;;
+        files) apps=("${file_managers[@]}") label="gerenciador de arquivos" ;;
+        *) return 1 ;;
+    esac
+}
+
+# configured_app TIPO: o valor de TIPO= no apps.conf.
+configured_app() {
+    local file="$config_dir/apps.conf"
+    [ -r "$file" ] || return 0
+    sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*//p" "$file" | sed -n '$s/[[:space:]]*$//p'
+}
+
+cmd_open() {
+    local kind=${1:-} value app label
+    local -a apps=() argv=()
+    apps_of "$kind" || usage
+    value=$(configured_app "$kind")
+    if [ -n "$value" ]; then
+        # Palavras separadas por espaço, sem eval: "kitty -1" vira kitty e -1.
+        read -ra argv <<< "$value"
+        if [ "${#argv[@]}" -gt 0 ] && have "${argv[0]}"; then
+            log "abre $kind: ${argv[*]} (apps.conf)"
+            exec "${argv[@]}"
+        fi
+        log "o $kind do apps.conf ($value) não está instalado; uso a lista"
+    fi
+    for app in "${apps[@]}"; do
+        if have "$app"; then
+            log "abre $kind: $app"
+            exec "$app"
+        fi
+    done
+    log "nenhum $label instalado"
+    notify-send "Lucerna" "Nenhum $label instalado"
+    exit 1
+}
+
+cmd_detect_apps() {
+    local kind app label out=""
+    local -a apps=() found=()
+    for kind in terminal browser files; do
+        apps_of "$kind"
+        found=()
+        for app in "${apps[@]}"; do
+            have "$app" && found+=("$app")
+        done
+        out+="${out:+, }\"$kind\": $(json_list "${found[@]}")"
+    done
+    printf '{%s}\n' "$out"
+}
+
+case "$subcommand" in
+    "") cmd_session ;;
+    detect) cmd_detect ;;
+    ready) cmd_ready ;;
+    supervise) cmd_supervise ;;
+    shell) cmd_shell "${2:-}" ;;
+    open) cmd_open "${2:-}" ;;
+    detect-apps) cmd_detect_apps ;;
+    logout)
+        log "sair da sessão"
+        hyprctl dispatch 'hl.dsp.exit()'
+        ;;
+    unlock)
+        log "liberar a tela de bloqueio caída (pelo TTY)"
+        hyprctl --instance 0 eval 'hl.clear_crashed_lockscreen()'
+        ;;
+    -h | --help | help) usage 0 ;;
+    *) usage ;;
+esac

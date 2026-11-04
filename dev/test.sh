@@ -140,6 +140,10 @@ noise='portal'
 # dev/hyprland.lua sobe com o Hyprland). Nunca o barramento do sistema: o
 # container monta o do host, onde está o logind de verdade.
 logind_bus=unix:path=/run/user/1000/lucerna-fake-system
+# A sessão entra pelo lucerna-session do repositório montado (a entrada real:
+# a base do Hyprland, com o dev/hyprland.lua como a camada do usuário); o
+# PATH o põe à frente, como o /usr/bin no sistema instalado.
+session_path=/home/dev/.config/quickshell/lucerna/session/bin:/usr/local/sbin:/usr/local/bin:/usr/bin
 
 fail() {
     echo "ERRO: $*" >&2
@@ -175,21 +179,27 @@ ex() {
     docker exec -i "$name" bash -c '
         pid=$(pgrep -x Hyprland) || { echo "ERRO: o Hyprland não está rodando no container" >&2; exit 3; }
         export "$(tr "\0" "\n" < "/proc/$pid/environ" | grep ^DBUS_SESSION_BUS_ADDRESS=)"
+        # O ambiente da sessão (o que o lucerna-session exportou): o shell e os
+        # comandos do run veem a mesma sessão que o Hyprland (LUCERNA_SESSION,
+        # LUCERNA_DATA_DIR, o teclado, o PATH com o lucerna-session).
+        while IFS= read -r line; do export "$line"; done < <(tr "\0" "\n" < "/proc/$pid/environ" | grep -E "^(LUCERNA_[A-Z_]*|XDG_SESSION_[A-Z]*|XDG_CURRENT_DESKTOP|PATH)=")
         HYPRLAND_INSTANCE_SIGNATURE=$(ls -t "$XDG_RUNTIME_DIR/hypr" | head -n 1)
         WAYLAND_DISPLAY=$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -type s -name "wayland-[0-9]*" -printf "%f\n" | sort | head -n 1)
         export HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY
         '"$1"
 }
 
-# Sobe o shell; com o barramento do host montado (LUCERNA_TEST_HOST_BUS=1 no
-# up), ele usa esse barramento no lugar do da sessão do container.
+# Sobe o shell pelo supervisor da sessão (lucerna-session supervise, que
+# anota o supervisor.pid: o `lucerna-session shell restart` do ALT + SHIFT + R
+# acha o mesmo qs); com o barramento do host montado (LUCERNA_TEST_HOST_BUS=1
+# no up), ele usa esse barramento no lugar do da sessão do container.
 start_shell() {
     # shellcheck disable=SC2016 # expande dentro do container, não aqui
     ex 'pkill -x qs; sleep 0.5
         if [ -S "$XDG_RUNTIME_DIR/host-bus" ]; then
             export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/host-bus"
         fi
-        setsid -f qs -c lucerna > /dev/null 2>&1 < /dev/null'
+        setsid -f lucerna-session supervise > /dev/null 2>&1 < /dev/null'
 }
 
 running() {
@@ -334,8 +344,9 @@ up() {
         -v "$runtime/$WAYLAND_DISPLAY:/run/user/1000/wayland-host" \
         -v "$repo:/home/dev/.config/quickshell/lucerna" \
         -v "$repo/dev/hyprland.lua:/home/dev/.config/hypr/hyprland.lua:ro" \
+        -e PATH="$session_path" \
         "${extra[@]}" \
-        "$image" > /dev/null
+        "$image" dbus-run-session lucerna-session > /dev/null
     wait_loaded
     if [ "$host_bus" = 1 ]; then
         start_shell

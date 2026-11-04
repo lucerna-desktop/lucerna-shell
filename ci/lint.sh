@@ -55,13 +55,15 @@ nonempty() {
 }
 
 cd "$repo" || exit 1
-mapfile -t scripts < <(find ci dev services/scripts -name '*.sh' | sort)
+# Os .sh e, da sessão, também os scripts sem extensão de session/bin
+# (o lucerna-session).
+mapfile -t scripts < <({ find ci dev services/scripts session -name '*.sh' && find session/bin -type f; } | sort)
 mapfile -t pyfiles < <(find ci dev -name '*.py' | sort)
 mapfile -t luafiles < <(find session -name '*.lua' | sort)
 
 # shellcheck disable=SC2329 # chamadas pela part, lá embaixo
 shellcheck_run() {
-    nonempty "${#scripts[@]}" "nenhum .sh achado em ci/, dev/ e services/scripts/" &&
+    nonempty "${#scripts[@]}" "nenhum .sh achado em ci/, dev/, services/scripts/ e session/" &&
         shellcheck "${scripts[@]}"
 }
 # shellcheck disable=SC2329
