@@ -6,6 +6,45 @@ Cada repositório do ecossistema tem o seu arquivo de pendências na raiz. Até 
 
 ## Em ordem
 
+### Roteiro até o uso diário
+
+Decisão de 2026-11-04: **fechar 100% do shell antes dos apps**, para trocar a sessão KDE pelo Lucerna no dia a dia. A troca só acontece quando tudo estiver funcionando no container e não houver mais o que testar só por ele.
+
+O shell é para **qualquer usuário e qualquer hardware**: notebook ou desktop, tampa fechada, bateria, GPU integrada, dedicada ou híbrida, vários monitores, apps variados. A máquina do usuário (Acer Nitro AN515-57: Intel no painel de 144 Hz com escala 1,25 e RTX 3050 no HDMI do ultrawide 2560x1080@60; o Hyprland roda na Intel) é só um caso de teste, nunca a regra: nada do padrão pode depender dela. A triagem que originou o roteiro (itens, estimativas e o roteiro de teste de 9 etapas) é a base dos sub-itens abaixo; `P` é de horas a 1 dia, `M` de alguns dias (um PR) e `G` pede spec próprio e vários PRs.
+
+Os marcos seguem esta ordem; cada um só começa quando o anterior fecha. Os itens numerados de depois (1 a 17) continuam abaixo, com a nota do marco a que pertencem.
+
+- [ ] **Marco 1: base robusta.** Uma sessão que não deixa o usuário na mão.
+  - [ ] **Configuração padrão do Hyprland para qualquer máquina** (`hyprland.lua` instalado pelo pacote, com um arquivo do usuário opcional por cima): mod Super, atalhos de janela e de workspaces que não colidem com os do shell, `kb_layout`, terminal, `monitors` pelo arranjo salvo, ambiente da sessão importado para o systemd (`WAYLAND_DISPLAY`, `XDG_CURRENT_DESKTOP=Hyprland`). GPU híbrida (`AQ_DRM_DEVICES` e as variáveis da NVIDIA) como trecho opcional por detecção, nunca fixo. Hoje só existe o `dev/hyprland.lua` (ALT, feito para o aninhado). P–M
+  - [ ] **O shell volta sozinho se cair:** unidade de usuário com `Restart=on-failure` e limite de tentativas, aviso "o shell reiniciou", e `misc.allow_session_lock_restore = true` no padrão. Conferir que o `WlSessionLock` reabre bloqueado depois da morte do processo (não só de um reload). Atalhos de pânico do Hyprland (reiniciar o shell, sair da sessão) que funcionam com o `qs` morto. P–M
+  - [ ] **Bloqueio confiável:** bloquear ao fechar a tampa, ao suspender de qualquer origem e com `loginctl lock-session`, e **bloquear antes de dormir** (*delay inhibitor* até a superfície do bloqueio estar desenhada; hoje o `systemctl suspend` do shell corre com o desenho). Comportamento da tampa com e sem monitor externo. A parte do daemon está nas [Pendências do `lucernad`](https://github.com/lucerna-desktop/lucernad/blob/main/lucernad%20%E2%80%94%20Pend%C3%AAncias.md) (bloqueio pelo logind). M
+  - [ ] **Hibernar sem swap:** esconder o botão quando o logind diz que não dá (`CanHibernate`). P
+  - [ ] **Bugs que incomodam todo dia** (seções de sobras e "Depois" abaixo): a **senha do Wi-Fi que some** quando a lista de redes atualiza ("Depois", Central, Wi-Fi), a **barra em repouso desfocando a tela inteira** na bateria ("Sobras do desfoque" e "Sobras dos painéis da moldura"), a **borda borrada em escala fracionária** (`fwidth` em `frame.frag`, "Sobras dos painéis da moldura") e o **painel superior parado redesenhando a ~67 fps** (idem). P–M cada
+- [ ] **Marco 2: greeter próprio.** greetd com um greeter em Quickshell **no mesmo repositório**, no lugar do SDDM; passa por brainstorming, spec e desenho estático antes de qualquer código. G
+  - [ ] **Mesmo visual do shell:** o design do shell, o papel de parede e o fundo animado, e uma **troca animada e rápida para a sessão, sem corte**. A **tela de bloqueio e o greeter são o mesmo componente.**
+  - [ ] **Compositor do greeter:** um Hyprland mínimo, só para ele.
+  - [ ] **Funções:** escolha de sessão (Lucerna ou KDE), energia, layout do teclado, vários monitores, aviso de Caps Lock e digital pelo PAM.
+  - [ ] **Dados do usuário** (tema, papel de parede, avatar, monitores) num lugar que o greeter lê **sem que um usuário possa alterar os de outro**; o AccountsService guarda avatar e fundo.
+  - [ ] **Saída de emergência:** roteiro de volta ao SDDM pelo TTY e o `agreety` como greeter de reserva.
+- [ ] **Marco 3: integrações com o resto do sistema.** Cada uma com spec curto (a bandeja e o polkit) ou só o ajuste na sessão.
+  - [ ] **Bandeja do sistema (StatusNotifierItem)** na barra, com menu (`Quickshell.Services.SystemTray`); Discord e Steam dependem dela. M
+  - [ ] **Agente polkit:** subir um agente na sessão (`hyprpolkitagent`, ou o do KDE), e depois um diálogo próprio do shell. P / M
+  - [ ] **Autostart XDG** (`~/.config/autostart/*.desktop`); a página "Iniciar com a sessão" das Configurações vem depois. P
+  - [ ] **Tema dos apps:** `QT_QPA_PLATFORMTHEME`, tema GTK, cursor e ícones. P
+  - [ ] **Notificações persistentes** em disco (hoje só sobrevivem a um reload; liga com a lista vazia depois de um reinício do `qs`, em "Sobras do modo jogo"). M
+- [ ] **Marco 4: os projetos já aprovados**, antes da troca: a **dock** (item 13), os **temas por papel de parede** (item 17) e o **equalizador** (item 16). Cada um com o spec e as aprovações dos itens abaixo.
+- [ ] **Marco 5: projetos novos.** Cada um começa por brainstorming.
+  - [ ] **Gerenciador de senhas próprio**, no lugar do KWallet. Deve implementar `org.freedesktop.secrets` (o Secret Service) para navegadores e apps; é uma decisão do usuário, **a confirmar no brainstorming**, junto com o repositório e a forma (serviço à parte, módulo do `lucernad`, ou o shell só como interface). G
+  - [ ] **Compartilhamento de tela e som:** o portal do Hyprland (`xdg-desktop-portal-hyprland` e o seletor de tela e janela) e o áudio do sistema na transmissão. Será detalhado depois. G
+- [ ] **Marco 6: pacotes e instalação** (item 14): PKGBUILD e AUR do shell e do `lucernad` (o do daemon está nas Pendências do `lucernad`), versões casadas entre os dois, as dependências do Lucerna (fonte de ícones, portal, agente polkit) e **o roteiro de volta ao KDE** (escolher "Plasma" no login, TTY, desinstalar sem tocar no Plasma; `tar` de `~/.config` antes de começar). M
+- [ ] **Marco 7: verificação no hardware real e a troca.** A seção "Verificar com hardware e entrada reais" inteira na máquina de teste do usuário, mais o roteiro de 9 etapas da triagem (instalar sem usar; primeira sessão só no notebook; monitor externo; energia na bateria; integrações; falhas de propósito; jogo e desempenho; uso real com o KDE de reserva), com as correções que saírem dali. Só então o Lucerna vira a sessão padrão (1 a 2 semanas sem voltar ao KDE por necessidade).
+
+Depois dos marcos, sem pressa e sem bloquear a troca: o item 15 (lógica fora do shell), o porte para o KWin e as outras distros (item 14), os apps e os bugs de gravidade média e baixa que a triagem listou.
+
+### Itens numerados
+
+A lista original, com o histórico dos feitos. As notas em itálico dizem a que marco o item pertence.
+
 1. [x] **Proposta atualizada.** A tabela "Escopo" de `Lucerna — Proposta.md` ainda diz que barra, painel e energia estão por fazer e descreve o launcher como só "abrir aplicativos". Faltam monitores, mouse, teclado, papel de parede animado e vídeo.
 2. [x] **Launcher: o que hoje só o estilo completo tem.** Fixar nos favoritos e ocultar um app (por clique direito ou atalho) no compacto e na tela cheia. Busca em arquivos e na web também fora do estilo completo (por prefixo ou atalho).
 3. [x] **Ociosidade e tela.** Desligar a tela e bloquear depois de X minutos, suspender depois de Y, sem depender do `hypridle` (o Quickshell tem `IdleMonitor`). Com exceções: mídia tocando, app em tela cheia e, no modo apresentação, não apagar.
@@ -18,8 +57,8 @@ Cada repositório do ecossistema tem o seu arquivo de pendências na raiz. Até 
 10. [x] **Visão geral dos workspaces**, com as janelas em miniatura.
 11. [x] **Brilho de monitores externos** por DDC/CI.
 12. [x] **Central.** Dois painéis flutuantes na direita, no lugar da barra lateral: ações (tiles com uma página por recurso, inclusive o volume de cada app, e os sliders de volume e brilho) e notificações, independentes (`Super+A`, `Super+N`; os dois com `Super+C`). Mudança de comportamento: `Super+N` (a ação `notifications`) agora abre só as notificações; a central inteira fica em `Super+C`.
-13. [ ] **Dock**, com spec próprio.
-14. [ ] **Instalação e distribuição:** script de instalação (link, trecho do `hyprland.lua`, atalhos padrão) e pacote no AUR. A verificação no CI já está feita: quatro checks obrigatórios (`ci/`, `dev/ci.sh`).
+13. [ ] **Dock**, com spec próprio. *(Marco 4.)*
+14. [ ] **Instalação e distribuição:** script de instalação (link, trecho do `hyprland.lua`, atalhos padrão) e pacote no AUR. A verificação no CI já está feita: quatro checks obrigatórios (`ci/`, `dev/ci.sh`). *(Marco 6; o AUR e as outras distros depois dele.)*
     - **Outras distros** (o Lucerna não depende do Arch, e sim de Hyprland 0.56+, Quickshell 0.3+ e Qt 6 recente; o `lucernad` compila em qualquer distro com PipeWire, D-Bus e logind). Ordem sugerida:
       1. AUR (o shell e o `lucernad`), a base dos outros;
       2. Nix (flake): NixOS e quem usa Nix em qualquer distro, com as versões fixadas (resolve Qt e Hyprland antigos);
@@ -28,9 +67,9 @@ Cada repositório do ecossistema tem o seu arquivo de pendências na raiz. Até 
       5. sem systemd (Void, Alpine, Artix): o shell inicia o `lucernad` quando não acha o socket (hoje ele sobe por socket do usuário do systemd).
     - Debian e Ubuntu estáveis ficam para depois (fora o Nix): o Hyprland e o Qt deles costumam estar atrás das versões mínimas.
     - **Porte futuro para o KDE Plasma (KWin)**, só se houver interesse. Referência: o [caelestia-kde](https://github.com/ladybug-me/caelestia-kde), que leva o Caelestia ao KDE com um plugin C++ no Quickshell e um efeito do KWin (GPL-3.0; não reaproveitar o código). No Lucerna, o caminho seria um serviço de compositor no shell e, no `lucernad`, uma implementação para o KWin ao lado da do Hyprland (janelas e áreas de trabalho, atalhos pelo `kglobalaccel`, Night Color, monitores pelo KScreen). Ficam de fora no KWin: bordas e cores do tema nas janelas, lado a lado nativo, áreas de trabalho dinâmicas e a tela de bloqueio própria.
-15. [ ] **Lógica fora do shell (Rust).** Ver a seção "Separação da lógica" abaixo. Substitui o plano de plugins em C++ de `Lucerna — Plugins Próprios.md`, que precisa ser revisto à luz dela.
-16. [ ] **Equalizador de áudio**, com spec próprio: muda o som (filtro do PipeWire, `filter-chain`, ou controle do EasyEffects) e mostra o espectro ao vivo atrás das faixas, reaproveitando o módulo de espectro.
-17. [ ] **Temas com mais cores e o papel de parede como escolha**, com spec próprio (projeto aprovado em 2026-10-26). O modelo de tema hoje tem um destaque só (`accent`, 152 usos) e usa 11 das 26 cores do Catppuccin; o ajuste rápido (o Catppuccin com o azul como destaque) já foi feito (PR #51).
+15. [ ] **Lógica fora do shell (Rust).** Ver a seção "Separação da lógica" abaixo. Substitui o plano de plugins em C++ de `Lucerna — Plugins Próprios.md`, que precisa ser revisto à luz dela. *(Depois dos marcos, salvo o que um marco precisar.)*
+16. [ ] **Equalizador de áudio**, com spec próprio: muda o som (filtro do PipeWire, `filter-chain`, ou controle do EasyEffects) e mostra o espectro ao vivo atrás das faixas, reaproveitando o módulo de espectro. *(Marco 4.)*
+17. [ ] **Temas com mais cores e o papel de parede como escolha**, com spec próprio (projeto aprovado em 2026-10-26). O modelo de tema hoje tem um destaque só (`accent`, 152 usos) e usa 11 das 26 cores do Catppuccin; o ajuste rápido (o Catppuccin com o azul como destaque) já foi feito (PR #51). *(Marco 4.)*
     - **Modelo de cores ampliado**, no estilo do Material 3: primário, secundário e terciário, com os containers e as cores "sobre" cada um; níveis de superfície; estados (erro, sucesso, aviso, informação/link). Revisar onde cada cor entra no shell.
     - **Temas prontos fiéis às paletas oficiais**, sem algoritmo (no Mocha: primário Blue, secundário Mauve, terciário Peach ou Teal, superfícies Base, Mantle, Crust e Surface 0–2).
     - **O papel de parede vira a unidade de escolha:** o `Super+T` passa a ser o carrossel de papéis de parede e troca o fundo e as cores juntos. Cada papel de parede tem o tema definido pelo usuário (opcional) e o tema gerado pelo `lucernad` (Material 3 a partir da imagem, guardado pelo hash do arquivo; num vídeo, por um quadro). O Tab no carrossel alterna entre "seu tema" e "gerado", com a etiqueta no card.
