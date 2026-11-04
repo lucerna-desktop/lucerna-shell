@@ -60,10 +60,26 @@ Essa sequência segue o padrão de outros softwares (o limite de reinícios do s
 - A tampa segue a regra do logind. Sem monitor externo, fechar a tampa suspende e bloqueia.
 - **Com monitor externo ligado, fechar a tampa não bloqueia nem suspende, só apaga a tela do notebook** (decisão do usuário, 2026-11-04, seguindo o padrão do KDE). É personalizável: uma opção nas Configurações (página de Energia ou de Bloqueio, a critério do construtor) "Bloquear ao fechar a tampa com monitor externo", desligada por padrão.
 
+### 6. Escala fracionária de primeira classe (decisão do usuário, 2026-11-04)
+
+O usuário usa 125% no dia a dia, e muita gente usa escalas fracionárias (1,25, 1,5). O shell precisa funcionar nelas **sem quebrar nada e otimizado**, com o mesmo desempenho e nitidez da escala 1. No Hyprland, 1,25 é conhecido por pesar; causas prováveis, a confirmar por medição:
+
+- **Apps sem o protocolo de escala fracionária** (`wp-fractional-scale-v1`): desenham em 2x e o compositor reduz para 1,25 a cada quadro — (2/1,25)² ≈ 2,6 vezes mais pixels que o necessário, mais a passada de redução.
+- **XWayland:** os apps X11 desenham em 1x e são ampliados (borrados) ou, com ajuste, desenham em escala própria.
+- **Geometria não inteira:** posições e tamanhos lógicos não caem em pixels inteiros; as áreas de redesenho (dano) são arredondadas para fora e crescem, e o desfoque é refeito sobre mais pixels. Bordas de 1 px e textos caem entre pixels e borram (já há o item "borda borrada na escala 1,25" nas Pendências).
+- Otimizações que o Hyprland desliga ou perde em escala não inteira (ex.: envio direto ao monitor de uma janela em tela cheia).
+
+Exigências:
+- O shell desenha na escala exata (Qt 6 com o protocolo fracionário), com bordas, linhas e ícones alinhados ao pixel físico, sem borrar.
+- A base do Hyprland traz os ajustes que evitam o pior para os apps: XWayland sem ampliação borrada (`xwayland:force_zero_scaling` e as variáveis de escala dos toolkits), Electron/Chromium em Wayland nativo, Qt e GTK 4 usando o protocolo fracionário.
+- **Medição:** o `dev/bench-paineis.sh` e o de desfoque rodam também em 1,25 (o container aceita escala por regra de monitor) e comparam com 1; a meta é a mesma faixa de FPS e CPU da escala 1. O que o shell não controlar (custo do próprio Hyprland) fica medido e registrado nas Pendências.
+- A escala inicial pelo tamanho físico (decisão minha, abaixo) é um ponto de partida; quem usa 1,25 escolhe na página de Monitores e o shell respeita.
+
 ## Objetivos
 
 - Uma pessoa instala o Lucerna, entra na sessão e tem tudo funcionando em qualquer máquina, sem editar arquivo.
 - A sessão se recupera sozinha de uma queda do shell, e nunca expõe a área de trabalho com a tela bloqueada.
+- Escala fracionária (1,25 e 1,5) tão nítida e leve quanto a escala 1, medida.
 - Tudo validável no container `lucerna-polish`: derrubar o shell (uma vez, repetidamente, bloqueado), bloquear por todos os caminhos (logind simulado), simular a detecção de NVIDIA/híbrida e de layout de teclado.
 
 ## Não objetivos
