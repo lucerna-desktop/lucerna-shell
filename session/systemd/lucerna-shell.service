@@ -1,0 +1,12 @@
+[Unit]
+Description=Lucerna: o shell
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+# A política de quedas é do supervisor; o systemd só cobre a queda do próprio supervisor.
+ExecStart=/usr/bin/lucerna-session supervise
+Restart=on-failure
+RestartSec=1
+Slice=session.slice

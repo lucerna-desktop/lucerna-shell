@@ -1,0 +1,5 @@
+[Unit]
+Description=Lucerna: a sessão gráfica
+BindsTo=graphical-session.target
+Wants=graphical-session-pre.target lucerna-shell.service
+After=graphical-session-pre.target

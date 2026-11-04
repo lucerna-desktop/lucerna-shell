@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Lucerna
+Comment=A sessão do Lucerna sobre o Hyprland
+Exec=lucerna-session
+Type=Application
+DesktopNames=Hyprland
