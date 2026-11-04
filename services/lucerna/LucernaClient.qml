@@ -15,6 +15,12 @@ import Quickshell.Io
 // conectar, ao perder a conexão e quando o app recusa uma assinatura; o Socket
 // do Quickshell, à parte, avisa (WARN quickshell.io.socket) a cada tentativa
 // que falha.
+// Com o `command` (o binário do app, o `app.tui` do manifesto), um socket que
+// não existe ou recusa a conexão sobe o serviço (`<command> serve`, pelo
+// ServeLauncher) e tenta de novo com a espera do SDK (10 ms × 2^n, até
+// 200 ms) por até 2 s; sem atender, `serveState` vira "failed" e o `error`
+// diz o caminho do log, e o cliente segue tentando com a espera normal, sem
+// subir de novo até conectar. Sem `command` (o lucernad), só tenta de novo.
 Scope {
     id: root
 
@@ -28,6 +34,21 @@ Scope {
     }
     readonly property string protocol: "1.0"
     readonly property string clientName: "shell"
+    // O binário do app, que sobe o serviço com `serve`; vazio: não sobe nada.
+    property string command: ""
+    // O log do serviço subido pelo cliente; vazio: não sobe nada.
+    property string serveLog: ServeLauncher.logPath(Quickshell.env("XDG_STATE_HOME") ?? "", Quickshell.env("HOME") ?? "", app)
+    // A subida do serviço: "" (nenhuma), "starting" (esperando o socket) ou
+    // "failed" (não atendeu em 2 s; o `error` diz o log).
+    property string serveState: ""
+    // Quando a subida que este cliente espera começou (Date.now()).
+    property real spawnedAt: 0
+    // Tentativas na espera da subida, para a espera crescente do SDK.
+    property int spawnAttempt: 0
+    // O QLocalSocket::LocalSocketError da última tentativa; -1 sem erro.
+    property int lastError: -1
+    // A espera agendada antes da próxima tentativa, em ms.
+    readonly property alias retryDelay: retry.interval
     // O aperto de mão foi feito (não só o socket aberto).
     property bool connected: false
     // A mensagem do último erro do aperto de mão; vazia depois de conectar.
@@ -61,6 +82,17 @@ Scope {
     // A espera antes da próxima tentativa: min(100 ms × 2^tentativa, maxBackoff).
     function backoff(attempt: int): int {
         return Math.min(100 * 2 ** attempt, root.maxBackoff);
+    }
+
+    // Ninguém ouvindo no socket: ConnectionRefusedError (0) ou
+    // ServerNotFoundError (2), como o `nobody_listening` do SDK.
+    function nobodyListening(code: int): bool {
+        return code === 0 || code === 2;
+    }
+
+    // A espera na subida: min(10 ms × 2^n, 200 ms), a do SDK.
+    function spawnDelay(n: int): int {
+        return Math.min(10 * 2 ** n, 200);
     }
 
     // Uma mensagem JSON-RPC numa linha: com `id` null, uma notificação; com
@@ -170,6 +202,9 @@ Scope {
     // fecha o socket e segue para a nova tentativa, com a espera (sem contar
     // com o serviço fechar a conexão).
     function greeted(response: var): void {
+        // Alguém atendeu: a subida acabou, com ou sem o hello aceito.
+        serveState = "";
+        ServeLauncher.release(app);
         if (response.error) {
             error = String(response.error.message);
             socket.connected = false;
@@ -311,6 +346,7 @@ Scope {
         seqs = ({});
         offered = null;
         error = "";
+        lastError = -1;
         handshake();
     }
 
@@ -324,10 +360,40 @@ Scope {
         settle.stop();
         if (connected)
             console.info(`lucerna: sem conexão com o ${app}`);
+        const wasConnected = connected;
         connected = false;
-        retry.interval = backoff(attempt++);
+        retry.interval = wasConnected ? backoff(attempt++) : nextDelay();
         retry.start();
         failPending(`Sem conexão com o ${app}.`);
+    }
+
+    // O socket deu erro (o código do QLocalSocket): guarda e segue pela queda.
+    function failed(code: int): void {
+        lastError = code;
+        lost();
+    }
+
+    // A espera antes da próxima tentativa que falhou sem conexão: sobe o
+    // serviço se ninguém ouve e há como; esperando a subida, a espera do SDK
+    // até os 2 s; passou deles, o erro com o log; fora isso, a normal.
+    function nextDelay(): int {
+        const now = Date.now();
+        if (serveState === "" && command && serveLog && nobodyListening(lastError)) {
+            ServeLauncher.launch(app, command, serveLog, now);
+            serveState = "starting";
+            spawnedAt = now;
+            spawnAttempt = 0;
+        }
+        if (serveState === "starting") {
+            const left = ServeLauncher.wait - (now - spawnedAt);
+            if (left > 0)
+                return Math.min(spawnDelay(spawnAttempt++), left);
+            // O erro antes do estado: quem olha o "failed" já acha o log.
+            error = `O serviço do ${app} não subiu em 2 s. Veja o log em ${serveLog}.`;
+            serveState = "failed";
+            console.warn(`lucerna: ${error}`);
+        }
+        return backoff(attempt++);
     }
 
     // Responde com erro a todos os pedidos pendentes.
@@ -366,7 +432,7 @@ Scope {
             onRead: line => root.receive(line)
         }
         onConnectionStateChanged: socket.connected ? root.opened() : root.lost()
-        onError: root.lost()
+        onError: code => root.failed(code)
     }
 
     Component.onCompleted: open()
