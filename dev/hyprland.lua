@@ -1,10 +1,5 @@
--- A camada do usuário do Hyprland aninhado de teste (o container do
--- dev/test.sh e do dev/run.sh a monta como ~/.config/hypr/hyprland.lua). A
--- sessão entra pelo lucerna-session, que sobe o Hyprland com a base
--- (session/hypr/hyprland.lua): ela põe os padrões, os binds fixos (com
--- LUCERNA_DEV=1, o mod é ALT, para não brigar com os atalhos do KDE no host;
--- ALT + Return abre o terminal) e, no hyprland.start, chama o
--- `lucerna-session ready`, que sobe o shell. Aqui fica só o do container.
+-- Configuração do Hyprland aninhado usado para testar o Lucerna.
+-- Mod é ALT para não conflitar com os atalhos do KDE no host.
 
 hl.monitor({
     output   = "",
@@ -13,16 +8,8 @@ hl.monitor({
     scale    = 1,
 })
 
--- O logind falso (ci/logind-fake.sh) num barramento privado, antes do shell:
--- o shell escuta o logind só nele (LUCERNA_LOGIND_BUS, do dev/test.sh); o
--- barramento do sistema montado é o do host. Roda ao carregar a config, antes
--- do hyprland.start (que chama o ready e sobe o shell), e espera o nome
--- org.freedesktop.login1 (até 10 s). Com o falso já de pé, só confere. Se
--- falhar, o shell sobe assim mesmo, sem o logind.
-os.execute([[bash ~/.config/quickshell/lucerna/ci/logind-fake.sh start /run/user/1000 > /dev/null]])
-
 hl.on("hyprland.start", function()
-    -- Sem systemd no container, o lucernad sobe aqui, com o Hyprland, e não
+    -- Sem systemd no container, o lucernad sobe aqui, antes do shell, e não
     -- encerra por ociosidade (24 h). Só com o WAYLAND_DISPLAY do Hyprland
     -- aninhado (wayland-<número>): o container recebe o socket do compositor do
     -- host como wayland-host, e um lucernad nele observaria (e tomaria) a área
@@ -32,20 +19,35 @@ hl.on("hyprland.start", function()
     -- aqui mudaria o brilho de verdade do host (o lucernad em container sem a
     -- raiz deixa o módulo indisponível, mas a defesa não depende só dele).
     hl.exec_cmd([[sh -c 'case "$WAYLAND_DISPLAY" in wayland-[0-9]*) bash ~/.config/quickshell/lucerna/ci/power-root.sh /tmp/lucerna-power && exec env LUCERNAD_POWER_ROOT=/tmp/lucerna-power LUCERNA_IDLE_TIMEOUT_MS=86400000 lucernad serve ;; *) echo "hyprland.lua: o lucernad não sobe: WAYLAND_DISPLAY=$WAYLAND_DISPLAY não é o do Hyprland aninhado (wayland-<número>)" >&2 ;; esac']])
+    hl.exec_cmd("qs -c lucerna")
 end)
 
--- O teclado do container (a base usa o detectado, que aqui é us).
 hl.config({
+    general = {
+        gaps_in     = 4,
+        gaps_out    = 10,
+        border_size = 2,
+    },
     input = {
         kb_layout = "br",
+    },
+    misc = {
+        disable_hyprland_logo    = true,
+        disable_splash_rendering = true,
+        force_default_wallpaper  = 0,
+    },
+    ecosystem = {
+        no_update_news  = true,
+        no_donation_nag = true,
     },
 })
 
 local mod = "ALT"
 local ipc = "qs -c lucerna ipc call "
 
+hl.bind(mod .. " + Return",    hl.dsp.exec_cmd("kitty"))
 hl.bind(mod .. " + Q",         hl.dsp.window.close())
-hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("lucerna-session shell restart"))
+hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("pkill -x qs; qs -c lucerna"))
 hl.bind(mod .. " + SHIFT + E", hl.dsp.exit())
 
 -- Os atalhos do Lucerna (painéis, bloqueio, som, mídia e brilho) ficam com o
@@ -64,3 +66,7 @@ for i = 1, 5 do
 end
 hl.bind(mod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+
+-- Arranjo de monitores salvo pelo Lucerna (Configurações → Monitores →
+-- "Usar o arranjo desde o login"). Sem o arquivo, não faz nada.
+pcall(dofile, os.getenv("HOME") .. "/.config/hypr/lucerna-monitors.lua")

@@ -50,7 +50,7 @@
 # (o Hyprland aninhado não desenha e o `shot` trava); a headless desenha sempre.
 # headless off: religa a WAYLAND-1 e remove a HEADLESS-T. Se a WAYLAND-1 não voltar,
 # o `dev/test.sh up` de novo é a saída. O `shot` e os benches usam a saída ativa.
-# O lucernad sobe com o Hyprland (dev/hyprland.lua). Para ver o shell sem ele:
+# O lucernad sobe com o Hyprland (dev/hyprland-test.lua). Para ver o shell sem ele:
 # `dev/test.sh run 'pkill -x lucernad'`; para voltar (sempre pelo `run`, que põe
 # o WAYLAND_DISPLAY do Hyprland aninhado, e sempre com a raiz falsa do brilho:
 # o container monta o D-Bus do sistema do host e vê o /sys dele; com a raiz,
@@ -137,11 +137,11 @@ out=${LUCERNA_TEST_OUT:-/tmp/lucerna-test}
 # 112); se voltar, tem que aparecer no log e no errs, não ser filtrado.
 noise='portal'
 # O barramento privado do logind falso (ci/logind-fake.sh, que o
-# dev/hyprland.lua sobe com o Hyprland). Nunca o barramento do sistema: o
+# dev/hyprland-test.lua sobe com o Hyprland). Nunca o barramento do sistema: o
 # container monta o do host, onde está o logind de verdade.
 logind_bus=unix:path=/run/user/1000/lucerna-fake-system
 # A sessão entra pelo lucerna-session do repositório montado (a entrada real:
-# a base do Hyprland, com o dev/hyprland.lua como a camada do usuário); o
+# a base do Hyprland, com o dev/hyprland-test.lua como a camada do usuário); o
 # PATH o põe à frente, como o /usr/bin no sistema instalado.
 session_path=/home/dev/.config/quickshell/lucerna/session/bin:/usr/local/sbin:/usr/local/bin:/usr/bin
 
@@ -341,7 +341,10 @@ up() {
         extra+=(-v "$target:$target:ro")
     done < <(findmnt -rno SOURCE,TARGET | awk '$1 ~ "^/dev/" && $1 !~ "^/dev/(loop|zram)" && $2 != "/" { print $2 }')
     docker rm -f "$name" &> /dev/null || true
+    # --ulimit core=0: se o qs cair no container, não gera core dump (o
+    # core_pattern do kernel é o do host, e iria para o systemd-coredump dele).
     docker run -d --name "$name" \
+        --ulimit core=0 \
         --user "$(id -u):$(id -g)" \
         --device "$render" --device "$card" \
         -e WAYLAND_DISPLAY=wayland-host \
@@ -350,7 +353,7 @@ up() {
         -v /etc/localtime:/etc/localtime:ro \
         -v "$runtime/$WAYLAND_DISPLAY:/run/user/1000/wayland-host" \
         -v "$repo:/home/dev/.config/quickshell/lucerna" \
-        -v "$repo/dev/hyprland.lua:/home/dev/.config/hypr/hyprland.lua:ro" \
+        -v "$repo/dev/hyprland-test.lua:/home/dev/.config/hypr/hyprland.lua:ro" \
         -e PATH="$session_path" \
         "${extra[@]}" \
         "$image" dbus-run-session lucerna-session > /dev/null
