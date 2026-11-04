@@ -32,10 +32,11 @@ Singleton {
     // A ferramenta do inibidor (systemd-inhibit ou elogind-inhibit), achada uma vez.
     property string inhibitTool: ""
     property bool toolChecked: false
-    // O setpriv --pdeathsig na frente do monitor e do inibidor: com o shell
+    // O setpriv --pdeathsig na frente do monitor e do inibidor (só um que
+    // aceite a opção: o applet do BusyBox e o util-linux < 2.33 não aceitam): com o shell
     // morto (queda, kill do supervisor), eles morrem junto. Sem isso, o
     // inibidor de um shell antigo seguraria cada suspensão até o prazo.
-    property var deathGuard: []
+    property string setpriv: ""
     // As esperas da volta do monitor e do inibidor: 1 s, dobrando até 30 s.
     property int monitorDelay: 1000
     property int inhibitorDelay: 1000
@@ -118,8 +119,14 @@ Singleton {
         // O barramento do logind falso só no ambiente do inibidor (o env dá
         // lugar à ferramenta: o processo é o dela).
         const env = busOverride !== "" ? ["env", `DBUS_SYSTEM_BUS_ADDRESS=${busOverride}`] : [];
-        inhibitor.command = deathGuard.concat(env, [inhibitTool, "--what=sleep", "--mode=delay", "--who=Lucerna", "--why=Bloquear a tela antes de dormir", "sleep", "infinity"]);
+        inhibitor.command = guarded(setpriv, env.concat([inhibitTool, "--what=sleep", "--mode=delay", "--who=Lucerna", "--why=Bloquear a tela antes de dormir", "sleep", "infinity"]));
         inhibitor.running = true;
+    }
+
+    // O comando com o setpriv --pdeathsig na frente; sem setpriv (ou com um
+    // que não aceita a opção), o comando puro.
+    function guarded(setpriv: string, argv: var): var {
+        return setpriv ? [setpriv, "--pdeathsig", "TERM", "--"].concat(argv) : argv;
     }
 
     function startMonitor(): void {
@@ -154,16 +161,17 @@ Singleton {
     Process {
         id: tool
 
-        // Duas linhas: a ferramenta do inibidor e o setpriv (vazias sem eles).
-        command: ["sh", "-c", "command -v systemd-inhibit || command -v elogind-inhibit || echo; command -v setpriv || echo"]
+        // Duas linhas: a ferramenta do inibidor e o setpriv que aceita o
+        // --pdeathsig (vazias sem eles).
+        command: ["sh", "-c", "command -v systemd-inhibit || command -v elogind-inhibit || echo; setpriv --pdeathsig TERM -- true > /dev/null 2>&1 && command -v setpriv || echo"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const [inhibit, setpriv] = text.split("\n").map(l => l.trim());
                 root.inhibitTool = inhibit ?? "";
-                root.deathGuard = setpriv ? [setpriv, "--pdeathsig", "TERM", "--"] : [];
+                root.setpriv = setpriv ?? "";
                 root.toolChecked = true;
                 if (!setpriv)
-                    console.warn("Logind: sem o setpriv; numa queda do shell, o inibidor e o monitor antigos podem sobrar");
+                    console.warn("Logind: sem um setpriv com --pdeathsig; numa queda do shell, o inibidor e o monitor antigos podem sobrar");
                 root.startMonitor();
                 if (root.inhibitTool === "") {
                     console.warn("Logind: sem systemd-inhibit nem elogind-inhibit; a máquina pode dormir antes de a tela bloquear");
@@ -193,7 +201,7 @@ Singleton {
     Process {
         id: monitor
 
-        command: root.deathGuard.concat(["gdbus", "monitor"], root.busArgs, ["--dest", "org.freedesktop.login1"])
+        command: root.guarded(root.setpriv, ["gdbus", "monitor"].concat(root.busArgs, ["--dest", "org.freedesktop.login1"]))
         stdout: SplitParser {
             onRead: line => {
                 root.monitorDelay = 1000;

@@ -54,6 +54,12 @@ function run(t) {
         t.eq(L.parseObjectPath("Error: GDBus.Error:org.freedesktop.login1.NoSuchSession: ..."), "", "erro");
     });
 
+    t.test("logind: o setpriv na frente só quando há um que aceita o --pdeathsig", () => {
+        const argv = ["gdbus", "monitor", "--system"];
+        t.eq(L.guarded("/usr/bin/setpriv", argv), ["/usr/bin/setpriv", "--pdeathsig", "TERM", "--", "gdbus", "monitor", "--system"], "com setpriv");
+        t.eq(L.guarded("", argv), argv, "sem setpriv (ou sem a opção): o comando puro");
+    });
+
     t.test("logind: segurar e soltar o inibidor (desligado: só o estado)", () => {
         const before = L.holding;
         L.releaseSleep();
