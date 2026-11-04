@@ -105,6 +105,15 @@ wait_start() {
     done
 }
 
+# wait_hold: parado pelo shell stop, espera o hold sumir (o shell start o
+# apaga antes do SIGUSR1, que só encurta a espera). Olhar o arquivo, e não só
+# o sinal, não perde um start que chegou antes de a espera começar.
+wait_hold() {
+    while [ -e "$hold_file" ] && [ "$terminating" = 0 ]; do
+        pause 1
+    done
+}
+
 # emergency: a tela de emergência (Tarefa 7). Por enquanto, um aviso do
 # Hyprland.
 emergency() {
@@ -167,17 +176,21 @@ cmd_supervise() {
     rm -f "$hold_file"
     set_state running
     while [ "$terminating" = 0 ]; do
+        # O hold é olhado antes de cada partida: um shell stop na pausa depois
+        # de uma queda (sem qs para parar) também segura o shell.
+        if [ -e "$hold_file" ]; then
+            log "o shell está parado (shell stop); espero o shell start"
+            set_state held
+            wait_hold
+            safe=0 crashes=()
+            continue
+        fi
         if [ "$safe" = 1 ]; then set_state safe; else set_state running; fi
         run_qs
         start_requested=0
         [ "$terminating" = 1 ] && break
-        if [ -e "$hold_file" ]; then
-            log "o shell parou (shell stop); espero o shell start"
-            set_state held
-            wait_start
-            safe=0 crashes=()
-            continue
-        fi
+        # Saiu pelo shell stop: não é queda (o topo do laço espera o start).
+        [ -e "$hold_file" ] && continue
         if ! hyprctl -j version > /dev/null 2>&1; then
             log "o shell saiu (código $qs_status) e o compositor também: fim"
             break
@@ -239,8 +252,11 @@ shell_stop() {
             kill -KILL "$pid" 2> /dev/null
         fi
     fi
-    # Espera o supervisor ver a saída (o estado held), para o status seguinte.
-    if [ "$stopped" = 1 ] && supervisor_alive; then
+    # Sem qs (na pausa depois de uma queda ou na emergência), o SIGUSR1 acorda
+    # o supervisor, que acha o hold. Depois, espera o estado held, para o
+    # status seguinte.
+    if supervisor_alive; then
+        [ "$stopped" = 1 ] || kill -USR1 "$pid" 2> /dev/null
         for _ in $(seq 50); do
             [ "$(cat "$supervisor_state_file" 2> /dev/null)" = held ] && break
             sleep 0.1

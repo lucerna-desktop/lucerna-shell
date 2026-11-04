@@ -561,6 +561,24 @@ wait $s""",
         self.starts_at_least(3)
         self.assertEqual(self.crash_json()["count"], 1)
 
+    def test_stop_during_crash_pause_holds(self):
+        # Um shell stop na pausa depois de uma queda: nenhum qs sobe, o estado
+        # é held, e não sobra hold para a queda seguinte virar "parada".
+        self.supervise(["1"], LUCERNA_CRASH_DELAYS="2 2 2")
+        self.wait_for(lambda: "volta em 2 s" in self.supervisor_log(), what="a pausa")
+        self.run_session("shell", "stop")
+        self.assertEqual(self.status(), "supervised held")
+        time.sleep(2.5)
+        self.assertEqual(len(self.start_lines()), 1, "parado na pausa, não sobe")
+        self.run_session("shell", "start")
+        self.starts_at_least(2)
+        self.assertFalse((self.runtime / "lucerna" / "hold").exists())
+        self.assertEqual(self.status(), "supervised running")
+        # A queda seguinte é queda de verdade: reinicia e conta.
+        self.kill_qs()
+        self.starts_at_least(3)
+        self.assertEqual(self.crash_json()["count"], 1)
+
     def qs_alive(self):
         pid = int((self.runtime / "lucerna" / "qs.pid").read_text())
         try:
