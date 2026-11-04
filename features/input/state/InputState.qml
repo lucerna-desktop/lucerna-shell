@@ -167,13 +167,19 @@ Singleton {
 
     // O reload volta tudo ao hyprland.lua (e tira os binds do Lucerna). Na
     // sessão Lucerna, o arquivo do shell é carregado antes do hyprland.lua do
-    // usuário: não reaplica (o do usuário, lido depois, vence).
+    // usuário: as opções, os dispositivos e o teclado não são reaplicados (o
+    // do usuário, lido depois, vence). Os binds são a exceção: a tecla de um
+    // atalho do shell é do shell, como hoje (muda-se em Configurações), e sem
+    // o unbind de novo o bind do hyprland.lua na mesma tecla dispararia junto.
+    function reloadPlan(layered: bool): string {
+        return layered ? "binds" : "all";
+    }
+
     Connections {
         target: Hypr
 
         function onConfigReloaded() {
-            if (!HyprFile.layered)
-                reloadDelay.restart();
+            reloadDelay.restart();
         }
     }
 
@@ -183,7 +189,10 @@ Singleton {
         interval: 300
         onTriggered: {
             Input.binds = [];
-            root.applyAll();
+            if (root.reloadPlan(HyprFile.layered) === "binds")
+                root.applyBinds();
+            else
+                root.applyAll();
         }
     }
 

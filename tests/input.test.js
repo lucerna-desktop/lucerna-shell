@@ -69,6 +69,13 @@ function run(t) {
         t.eq(I.keymapFileLua("/tmp/keymap.xkb"), 'hl.config({ input = { kb_file = "/tmp/keymap.xkb" } })');
     });
 
+    // Na sessão Lucerna, o reload carrega o arquivo do shell: só os binds são
+    // reaplicados (senão o bind do hyprland.lua na mesma tecla dispararia junto).
+    t.test("input: no reload da sessão Lucerna, só os binds voltam", () => {
+        t.eq(t.InputState.reloadPlan(true), "binds");
+        t.eq(t.InputState.reloadPlan(false), "all");
+    });
+
     t.test("input: nomes e símbolos das teclas do keymap", () => {
         I.parseKeymap(keymap);
         t.eq(I.keyNames, { 9: "ESC", 37: "LCTL", 66: "CAPS" });
