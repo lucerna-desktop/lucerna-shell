@@ -1,6 +1,8 @@
 # Lucerna — Pendências
 
-O que falta fazer, na ordem em que vamos seguir. Cada item vira um PR; ao terminar, ele é marcado aqui.
+O que falta fazer no shell, na ordem em que vamos seguir. Cada item vira um PR; ao terminar, ele é marcado aqui.
+
+Cada repositório do ecossistema tem o seu arquivo de pendências na raiz. Até 2026-11-04, os itens do `lucernad` e do `lucerna-sdk` ficavam aqui também; eles passaram para as [Pendências do `lucernad`](https://github.com/lucerna-desktop/lucernad/blob/main/lucernad%20%E2%80%94%20Pend%C3%AAncias.md) e as [Pendências do `lucerna-sdk`](https://github.com/lucerna-desktop/lucerna-sdk/blob/main/lucerna-sdk%20%E2%80%94%20Pend%C3%AAncias.md). Um item que envolve dois repositórios fica onde o trabalho acontece, com uma linha de referência no outro.
 
 ## Em ordem
 
@@ -44,99 +46,36 @@ Princípio da migração: cada `services/` do shell mantém as mesmas propriedad
 
 Fica no shell: as APIs nativas do Quickshell (PipeWire, MPRIS, Bluetooth, rede, notificações, PAM, Hyprland), a coordenação dos painéis, os temas, a geometria dos monitores nas configurações, a formatação e as animações.
 
-Módulos propostos, em ordem de prioridade:
+Os módulos (os feitos e os que faltam: launcher, Hyprland, luz noturna, o `lucerna-video` e a captura de tela) e as sobras de cada um no daemon estão nas [Pendências do `lucernad`](https://github.com/lucerna-desktop/lucernad/blob/main/lucernad%20%E2%80%94%20Pend%C3%AAncias.md). Aqui ficam as sobras do lado do shell.
 
-1. [x] **Espectro:** captura do PipeWire e FFT próprias no lugar do `cava` (feito em 2026-10-20: módulo `spectrum` do `lucernad`; a batida fica para depois).
-2. [x] **Sistema:** CPU, memória, rede, discos, temperaturas e GPU no lugar do parse em `services/SystemStats.qml`, do `gpu-status.sh`, do `drm-fdinfo.sh`, do `df` e do `lsblk`; NVIDIA pela NVML, sem `nvidia-smi` (feito em 2026-10-20: módulo `system` do `lucernad`).
-3. [x] **Área de transferência:** observador do Wayland, histórico com deduplicação e imagens (SQLite), no lugar do `wl-paste --watch`, do base64 decodificado em JS e do `clipboard.json` (feito em 2026-10-21: módulo `clipboard` do `lucernad`).
-4. [x] **Energia e brilho:** histórico do UPower e perfis de energia por D-Bus (hoje `busctl`), brilho interno e DDC/CI por biblioteca (hoje `brightnessctl` e `ddcutil`). (feito em 2026-10-22: módulo `power` do `lucernad`)
-5. [x] **Rede externa:** letras (LRCLIB) e clima (Open-Meteo), com cache em disco (hoje sem cache). (feito em 2026-10-26: módulo `web` do `lucernad`)
-6. [ ] **Launcher:** índice de apps com pontuação, frecência de verdade (hoje só contagem), busca de arquivos (hoje `fd`/`find`) e metadados de apps (hoje `app-info.sh`).
-7. [ ] **Hyprland:** binds, entrada, keymap (hoje `xkbcli`) e monitores pelo socket IPC do Hyprland, no lugar do `hyprctl eval` e da geração de Lua.
-8. [ ] **Luz noturna:** gama direto pelo protocolo `wlr-gamma-control`, sem o `hyprsunset`.
-- [ ] **Ferramenta à parte:** `lucerna-video`, o conversor de papel de parede em vídeo (hoje `video-wallpaper.sh`, com `ffmpeg`), em lote, fora do daemon.
-- [ ] Depois, se valer: captura de tela e gravação (hoje `grim` e `wf-recorder`).
+## Sobras do módulo de espectro
 
-Sobras do módulo de sistema:
+- [ ] Falta um teste do `spectrum.configure` com um player de verdade (os testes só cobrem `null`) e do `onPlayerChanged`.
+- [ ] O `Spectrum.available` não tem consumidor fora dos testes.
+- [ ] O `applyBands` não confere se as bandas são números.
 
-- [ ] **`status` sem a primeira amostra:** o `lucernad status` (o `status` do `lucerna-cli`, no SDK) imprime o retrato inicial dos tópicos amostrados (`data: null`, `seq` 0) e sai, então `system.stats`, `system.disks` e `system.gpus` aparecem vazios. Ele deveria esperar a primeira amostra por um prazo curto.
-- [ ] **Pacote do `lucernad`:** um PKGBUILD no repositório do `lucernad`. Hoje ele é instalado à mão pelos comandos do README e precisa ser recompilado e reinstalado a cada merge.
-- [ ] **Uso da Intel na primeira amostra:** o fdinfo precisa de duas leituras, então ao abrir a aba Desempenho o uso da Intel fica "—" por ~2 s. Dá para tirar uma leitura curta extra no primeiro ciclo.
+## Sobras do módulo da área de transferência
 
-Sobras do módulo de espectro (baixo risco, adiadas na revisão final):
-
-- [ ] **Captura, por dentro (`lucernad-spectrum/src/pipewire.rs`):**
-  - quando um client sai, o grafo não é reenviado;
-  - um nó novo só é ligado no próximo tique (até 100 ms);
-  - um alvo que o WirePlumber recusa sempre é recriado a cada ~600 ms, sem log nem teto;
-  - a sessão não espera a thread do PipeWire terminar;
-  - a sonda que liga a captura logo que o nó aparece não confere o link player → sink.
-- [ ] **Threads presas por sessão:** com o `/proc` travado para sempre, cada ciclo de assinatura deixa uma thread de casamento presa. O limite de um casamento em voo vale por sessão, não para o processo todo.
-- [ ] **Casamento:**
-  - o `/proc` é lido em duas vezes (`stat` e `exe`), então um PID reciclado no meio pode misturar processos;
-  - um prazo do D-Bus estourado não refaz a conexão;
-  - com `LUCERNA_TEST_HOST_BUS`, o PID do host é procurado no `/proc` do container.
-- [ ] **Análise:**
-  - se dois nós do mesmo player vierem com taxas diferentes, o analisador é recriado a cada amostra e o anel quase para;
-  - com o player pausado e os nós ainda casados, as FFTs seguem rodando sem publicar;
-  - a `magnitudes_db` cria o planejador da FFT a cada chamada.
-- [ ] **"Capturando" depois de recarregar o shell:** o `spectrum.status` fica `capturing: true` por alguns segundos depois de um reload do Quickshell. A causa provável é o socket da geração antiga do shell ainda aberto; conferir com `ss -x` logo após um reload.
-- [ ] **Shell:**
-  - falta um teste do `spectrum.configure` com um player de verdade (os testes só cobrem `null`) e do `onPlayerChanged`;
-  - o `Spectrum.available` não tem consumidor fora dos testes;
-  - o `applyBands` não confere se as bandas são números.
-
-Sobras do módulo da área de transferência (baixo risco, adiadas na revisão final):
-
-- [ ] **Apagar de verdade (`lucernad-clipboard/src/store.rs`):**
-  - o `secure_delete` (e o `secure-delete` do FTS) só protege dali em diante: o que foi apagado antes de ligá-lo fica nas páginas livres do banco até um `VACUUM`;
-  - o corte pelo limite (`evict`) não passa pelo `forget`, então as páginas apagadas ficam no `-wal` até o checkpoint automático;
-  - um `forget` que falha depois do `delete` devolve erro sem publicar a revisão nova.
-- [ ] **Item que some entre o `locate` e a leitura** (apagado no meio de um `copy`/`get`): sai como erro interno, não como o `1001` "O item <id> não existe mais.".
-- [ ] **`lucernad copiar` como primeiro cliente** (sem o shell nem outro assinante) cria um `history.db` vazio antes de achar o item.
-- [ ] **`O_NONBLOCK` no fd de quem cola:** a escrita da seleção põe o fd em não bloqueante, e isso fica na descrição de arquivo do outro app; o caminho `WouldBlock`/`POLLOUT` do envio não tem teste.
-- [ ] **Miniatura reduzida e girada** (EXIF com rotação numa imagem grande): sem teste.
-- [x] **Marcas de direção no `historico`** (U+202E, U+2066–2069): trocadas por U+FFFD na saída, como os caracteres de controle (resolvido na revisão final).
-- [ ] **Shell:**
-  - falta um teste da ordem do `Component.onCompleted` do `Clipboard` (configurar antes de assinar) com o cliente já conectado;
-  - o `onAtYEndChanged` do painel não dispara de novo quando a página somada cabe inteira na tela (a lista não chega a rolar): o "mais" seguinte só vem pelas setas.
+- [ ] Falta um teste da ordem do `Component.onCompleted` do `Clipboard` (configurar antes de assinar) com o cliente já conectado.
+- [ ] O `onAtYEndChanged` do painel não dispara de novo quando a página somada cabe inteira na tela (a lista não chega a rolar): o "mais" seguinte só vem pelas setas.
 
 ## Sobras do módulo de energia e brilho
 
-Adiadas na revisão do módulo `power` do `lucernad` (lucernad#14) e do shell (PR #50).
+Adiadas na revisão do shell (PR #50); as do `lucernad` (lucernad#14) estão nas Pendências de lá.
 
-- [ ] **lucernad:**
-  - cada escrita na integrada faz 4 chamadas D-Bus ao logind (dá para usar um `GetAll` e guardar o `Type`/`Seat` da sessão);
-  - um `GetHistory` que falha derruba o histórico inteiro (o último bom poderia ficar, com o erro ao lado);
-  - os perfis ficam sem estado inicial se a primeira leitura falha (só voltam no próximo `PropertiesChanged` ou `NameOwnerChanged`);
-  - o `O_NOFOLLOW` do `TreeWriter` vale só no último componente do caminho;
-  - `EBUSY` no endereço 0x50 (EDID) sem tentar o `I2C_SLAVE_FORCE`;
-  - docks DisplayLink (monitores sem barramento i2c de placa de vídeo) ficam de fora.
-- [ ] **Shell:**
-  - o slider recua quando o DDC leva mais de 1 s (o hold acaba antes da publicação final) e avança na publicação;
-  - corrida mínima no `reload` (`power.list`) quando o módulo volta enquanto chega um `power.screens`;
-  - com o lucernad fora desde a partida, os botões de perfil ficam escondidos (o `profilesAvailable` não tem último valor);
-  - um `1003` no meio do arrasto marca a tela com erro e o slider da central passa para a próxima tela;
-  - o `busctl` continua na imagem do container (vem do systemd do Arch base), embora o shell não o use mais.
+- [ ] O slider recua quando o DDC leva mais de 1 s (o hold acaba antes da publicação final) e avança na publicação.
+- [ ] Corrida mínima no `reload` (`power.list`) quando o módulo volta enquanto chega um `power.screens`.
+- [ ] Com o lucernad fora desde a partida, os botões de perfil ficam escondidos (o `profilesAvailable` não tem último valor).
+- [ ] Um `1003` no meio do arrasto marca a tela com erro e o slider da central passa para a próxima tela.
+- [ ] O `busctl` continua na imagem do container (vem do systemd do Arch base), embora o shell não o use mais.
 
 ## Sobras do módulo de rede externa
 
-Adiadas na revisão do módulo `web` do `lucernad` (lucernad#17) e do shell (PR #52).
+Adiadas na revisão do shell (PR #52); as do `lucernad` (lucernad#17), inclusive o teste do Vagalume na máquina real, estão nas Pendências de lá.
 
-- [ ] **Vagalume não testado na máquina real:** a API (`api.vagalume.com.br`) respondeu 503 durante todo o desenvolvimento, inclusive a documentação e os termos. Quando voltar: conferir o formato da resposta (`type` `exact`/`aprox`), colar a chave nas Configurações e testar uma faixa brasileira que a LRCLIB não tenha.
-- [ ] **lucernad:**
-  - letra em erro não tem nova tentativa automática (só ao reabrir a aba, no `web.refresh` ou na volta da conexão);
-  - com a chave do Vagalume, uma faixa instrumental é buscada de novo a cada vez que toca;
-  - a busca de cidade em andamento não é cancelada quando o modo offline liga, e há uma corrida curta entre a troca da conexão e a busca;
-  - o clima fica em `loading` ou com o erro de offline já superado enquanto não há assinante, e aparece um `loading` passageiro quando um `configure` troca a cidade e liga o offline juntos;
-  - a normalização faz as minúsculas depois de tirar os acentos (`İstanbul` vira `i stanbul`); o sufixo só é reconhecido depois de ` - ` com hífen comum (não ` – ` nem ` — `); os formatadores bidi (Cf) não são removidos do texto (o shell passa pelo `plain()`);
-  - o cache: a poda varre as duas pastas, mas só confere a do tipo gravado (um link na outra apagaria `.json` fora do cache), e a leitura segue link (um FIFO no lugar do arquivo trava a leitura);
-  - a conectividade: o `PropertiesChanged` não filtra pela interface do NetworkManager; há uma janela estreita no `watch()` em que um receptor novo fica num canal morto;
-  - testes: o corpo lido em pedaços (resposta sem `Content-Length`) não tem teste; o `LocalServer` solto não fecha as conexões abertas; o `base_from_env` aceita porta com zero à esquerda; falta teste do `--lat`/`--lon` negativos na linha de comando; umidade e chance de chuva saem como `58.0` (o shell não se importa).
-- [ ] **Shell:**
-  - o "Hoje" e a data do topo da aba Clima usam a data da máquina, e os dias vêm pela data da cidade: com a cidade em outro fuso, perto da meia-noite, os dois podem divergir;
-  - a barra de ações rápidas do Painel não tem navegação pelo teclado (o Tab do painel troca de aba); se fizer falta, as setas;
-  - sem teste do `openLink` (só `https://`) da página Créditos nem do `openSettings` da aba Clima.
+- [ ] O "Hoje" e a data do topo da aba Clima usam a data da máquina, e os dias vêm pela data da cidade: com a cidade em outro fuso, perto da meia-noite, os dois podem divergir.
+- [ ] A barra de ações rápidas do Painel não tem navegação pelo teclado (o Tab do painel troca de aba); se fizer falta, as setas.
+- [ ] Sem teste do `openLink` (só `https://`) da página Créditos nem do `openSettings` da aba Clima.
 
 ## Sobras dos painéis da moldura
 
@@ -175,17 +114,19 @@ Adiadas na revisão final da branch `feat/desfoque` (níveis do desfoque, xray, 
 
 ## Sobras do modo jogo
 
-Da implementação do modo jogo no shell (branch `feat/modo-jogo`, com o `lucernad` do PR #19).
+Da implementação do modo jogo no shell (branch `feat/modo-jogo`, com o `lucernad` do PR #19). As sobras do daemon (M2, M3, M9, M10 e M7 da revisão do `lucernad`) estão nas Pendências de lá.
 
 - [x] **Perfil falso no ambiente de teste:** o container monta o D-Bus do sistema do host, e o modo jogo seguraria o perfil de energia do host. Resolvido com o lucernad#21: com o `LUCERNAD_POWER_ROOT`, o perfil e o GameMode são falsos em arquivos (o `ci/power-root.sh` cria as pastas); o `dev/bench-game.sh` exige o lucernad na raiz de teste, e a fumaça ainda aponta o `DBUS_SYSTEM_BUS_ADDRESS` do lucernad para um socket inexistente.
 - [ ] **O resumo depois de um reinício do processo do `qs`** (revisão final, M3): ele sobrevive a um reload (o `keepOnReload` e o `receivedAt` persistido), mas com o `qs` morto e subido de novo a lista do `NotificationServer` volta vazia e o resumo sai nulo. Coerente com o que já existia; o "reinício" dos testes e do spec é o reload. Conferir no container quando houver notificações persistentes.
 - [ ] **O ícone da barra não tem dica flutuante** (revisão final, M6): a barra não tem um componente de dica. O ícone mostra "Desligar" ao lado com o mouse em cima, e o texto completo ("Modo jogo ligado: tela cheia, jogo. Clique para desligar.") fica no `BarState.gameTooltip` (o `Accessible.name`). Fazer a dica quando houver um componente para isso.
-- [ ] **A lista "nunca" de fábrica está copiada** do `DEFAULT_NEVER` do `lucernad` no padrão do `Config.gameNever` (revisão final, M2): o shell sempre manda a lista dele no `game.configure`, e o daemon não publica a de fábrica (nem no `game.state` nem num método), então ler dela pede uma mudança no `lucernad` (um `game.defaults` ou o campo no `game.status`). Até lá, o comentário no `Config` aponta a origem; se a lista do daemon mudar, mudar aqui também. Depois: a fumaça comparar as duas, e um botão "voltar à lista de fábrica" na página.
+- [ ] **A lista "nunca" de fábrica está copiada** do `DEFAULT_NEVER` do `lucernad` no padrão do `Config.gameNever` (revisão final, M2): o shell sempre manda a lista dele no `game.configure`, e o daemon não publica a de fábrica (nem no `game.state` nem num método), então ler dela pede uma mudança no `lucernad` (um `game.defaults` ou o campo no `game.status`), registrada nas Pendências de lá. Até lá, o comentário no `Config` aponta a origem; se a lista do daemon mudar, mudar aqui também. Depois: a fumaça comparar as duas, e um botão "voltar à lista de fábrica" na página.
 - [ ] **O resumo das notificações conta as que ainda estão na lista:** uma notificação dispensada durante o jogo (pelo app ou na central) não entra (decisão D20 do spec).
 
 ## Depois
 
-- [ ] **Comandos de linha para todo o ecossistema, em inglês** (pedido do usuário, 2026-11-01). Ter comandos para as principais funções do shell inteiro e dos apps (notes, routine, phone, files e os próximos), com nomes padronizados em inglês (subcomandos, opções e métodos). Levantar o que existe hoje (o `qs ipc` do shell, `lucernad` com subcomandos em português como `restaurar-jogo`, os `lucerna-<app>` pelo `lucerna-cli` do sdk), desenhar um padrão comum (verbos, nomes, saída em texto e `--json`, códigos de saída) no `docs/ecossistema.md` do lucerna-sdk e migrar os nomes em português mantendo apelidos por um tempo. Passa por brainstorming e spec.
+- [ ] **Host de painéis dos apps: subir o serviço quando a conexão é recusada** (do "Trabalho seguinte" do lucerna-sdk#14; item 7 do lucerna-sdk#13). Com a conexão ao `<app>.sock` recusada, o host roda `<app.tui do manifesto> serve` pelo mesmo molde do `Client::connect_or_spawn` do SDK (grupo de processos novo, saída no `serve.log`, até 2 s com espera crescente) e reconecta. Vai junto com o cliente QML do protocolo.
+- [ ] **O lado do shell do explorador (`lucerna-files`, v3 do spec):** o formato do tema que o shell publica (o tema resolvido em JSON público, num spec do shell), o progresso das operações na central (pelo `progress.*` do `lucerna-sdk`), o `FileSearch.qml` pelo `files.sock`, arrastar e soltar com os painéis, "definir como papel de parede" e miniaturas compartilhadas.
+- Os **comandos de linha para todo o ecossistema, em inglês** (pedido de 2026-11-01, PR #63) passaram para as [Pendências do `lucerna-sdk`](https://github.com/lucerna-desktop/lucerna-sdk/blob/main/lucerna-sdk%20%E2%80%94%20Pend%C3%AAncias.md): o padrão é desenhado no `docs/ecossistema.md` de lá, e a migração do `qs ipc` acontece aqui depois.
 - [ ] Aba Desempenho: um medidor de bateria em forma de pilha, só no notebook. Rascunhos de três encaixes (ao lado de CPU e GPU, em pé ao lado da Memória, faixa embaixo) em `.superpowers/brainstorm/436361-1792526405/content/bateria-desempenho.html`; o usuário quer planejar melhor antes.
 - [ ] Aurora, Brasas, Chama e Vaga-lumes somam luz ao fundo e, num tema claro, estouram para branco. Adaptá-los como o Ondas (que já tem versão clara). Os efeitos próprios dos temas claros (Ondas e Névoa) estão bons.
 - [ ] Sliders das configurações gravam o `Config` a cada movimento (GlassPage, NightLightPage, IdlePage, MousePage, KeyboardPage, PowerPage e NotificationsPage). Com `blockWrites` não há perda nem corrupção, e a gravação mediu 1,4 ms em NVMe, mas em disco lento o arrasto pode engasgar. Correção prevista: debounce de uns 200 ms, com o reload suspenso durante a espera e um flush ao sair.

@@ -258,7 +258,7 @@ features/   uma pasta por parte do shell (bar, dashboard, central, settings,
 - A `ui` fala com o `state` da própria feature, e o `state` fala com `services` e `core`.
 - Uma feature não importa outra. Quando precisam conversar, a conversa passa pelo `core`: por exemplo, o `Panels` diz quais painéis estão abertos.
 
-Os princípios e o desenho completo estão em [`Lucerna — Proposta.md`](<Lucerna — Proposta.md>). O desenho dos wallpapers animados está em [`Lucerna — Proposta do Wallpaper.md`](<Lucerna — Proposta do Wallpaper.md>), os plugins próprios planejados, em [`Lucerna — Plugins Próprios.md`](<Lucerna — Plugins Próprios.md>), e o que falta fazer, na ordem, em [`Lucerna — Pendências.md`](<Lucerna — Pendências.md>).
+Os princípios e o desenho completo estão em [`Lucerna — Proposta.md`](<Lucerna — Proposta.md>). O desenho dos wallpapers animados está em [`Lucerna — Proposta do Wallpaper.md`](<Lucerna — Proposta do Wallpaper.md>), os plugins próprios planejados, em [`Lucerna — Plugins Próprios.md`](<Lucerna — Plugins Próprios.md>), e o que falta fazer no shell, na ordem, em [`Lucerna — Pendências.md`](<Lucerna — Pendências.md>). Os outros repositórios do ecossistema (o `lucernad`, o `lucerna-sdk` e os apps) têm cada um o seu arquivo de pendências na raiz.
 
 ## Desenvolvimento
 
