@@ -9,9 +9,13 @@ D-Bus, nem um terminal instalado de verdade.
 """
 
 import json
+import os
+import re
 import shutil
+import signal
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -20,11 +24,13 @@ SCRIPT = ROOT / "session" / "bin" / "lucerna-session"
 # As ferramentas que o script usa, ligadas às do sistema no PATH falso.
 TOOLS = (
     "bash sh env cat mkdir realpath dirname basename sed grep tr head cut "
-    "readlink date mv rm sort ls setsid kill sleep printf"
+    "readlink date mv rm sort ls setsid kill sleep printf touch tail wc seq"
 ).split()
 
 
-class SessionTest(unittest.TestCase):
+class SessionBase(unittest.TestCase):
+    """As raízes falsas, o PATH falso e os ajudantes; os testes ficam nas subclasses."""
+
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="lucerna-session-"))
         self.addCleanup(shutil.rmtree, self.tmp, True)
@@ -110,6 +116,25 @@ class SessionTest(unittest.TestCase):
             self.assertEqual(proc.returncode, 0, f"lucerna-session {' '.join(args)}:\n{proc.stdout}{proc.stderr}")
         return proc
 
+    def wait_for(self, check, timeout=15, what="a condição"):
+        end = time.monotonic() + timeout
+        while time.monotonic() < end:
+            if check():
+                return
+            time.sleep(0.05)
+        self.fail(f"esperei {what} por {timeout} s; log:\n{self.supervisor_log()}")
+
+    def supervisor_log(self):
+        log = self.home / ".local" / "state" / "lucerna" / "session.log"
+        return log.read_text(encoding="utf-8") if log.exists() else ""
+
+    # lookalike(nome): um processo qualquer cujo cmdline contém o nome.
+    def lookalike(self, name):
+        proc = subprocess.Popen(["bash", "-c", f"exec -a '{name}' sleep 60"])
+        self.addCleanup(proc.wait)
+        self.addCleanup(proc.kill)
+        return proc
+
     def detect(self):
         out = self.run_session("detect").stdout
         info = json.loads(out)
@@ -125,6 +150,8 @@ class SessionTest(unittest.TestCase):
         lines = dump.read_text(encoding="utf-8").splitlines()
         return dict(line.split("=", 1) for line in lines if "=" in line)
 
+
+class SessionTest(SessionBase):
     def test_detect_intel_only(self):
         self.card(0, "0x8086", boot_vga=1)
         info = self.detect()
@@ -349,9 +376,245 @@ class SessionTest(unittest.TestCase):
         self.run_session("unlock")
         self.assertIn("hyprctl --instance 0 eval hl.clear_crashed_lockscreen()", self.calls_log())
 
+    def test_unlock_clears_lock_marker_without_shell(self):
+        # Sem o qs vivo, o unlock do TTY (a pessoa entrou com a senha) também
+        # esvazia a marca: o shell start seguinte não bloqueia de novo.
+        marker = self.runtime / "lucerna" / "locked"
+        self.write(marker, "locked\n")
+        self.run_session("unlock")
+        self.assertEqual(marker.read_text().strip(), "")
+
+    def test_unlock_keeps_lock_marker_with_shell(self):
+        # Com o qs vivo (o bloqueio dele está de pé), a marca fica.
+        qs = self.lookalike("qs -c lucerna")
+        marker = self.runtime / "lucerna" / "locked"
+        self.write(marker, "locked\n")
+        self.write(self.runtime / "lucerna" / "qs.pid", f"{qs.pid}\n")
+        self.run_session("unlock")
+        self.assertEqual(marker.read_text().strip(), "locked")
+
+    def test_open_terminal_runs_command(self):
+        self.fake("foot")
+        self.run_session("open", "terminal", "less", "+G", "/tmp/x.log")
+        self.assertEqual(self.calls_log()[-1], "foot less +G /tmp/x.log")
+        self.fake("alacritty")
+        self.write(self.home / ".config" / "lucerna" / "apps.conf", "terminal=alacritty\n")
+        self.run_session("open", "terminal", "less", "/tmp/x.log")
+        self.assertEqual(self.calls_log()[-1], "alacritty -e less /tmp/x.log")
+
+    def test_session_term_stops_supervisor(self):
+        # A sessão derrubada de fora (TERM/HUP) ainda para o shell.
+        supervisor = self.lookalike("lucerna-session supervise")
+        (self.runtime / "lucerna").mkdir()
+        (self.runtime / "lucerna" / "supervisor.pid").write_text(f"{supervisor.pid}\n")
+        self.fake("start-hyprland", "trap 'kill $s; exit 143' TERM; sleep 30 & s=$!; wait $s")
+        proc = subprocess.Popen([str(SCRIPT)], env=self.env())
+        self.addCleanup(proc.wait)
+        self.addCleanup(proc.kill)
+        self.wait_for(lambda: "start-hyprland -- --config" in " ".join(self.calls_log()))
+        proc.send_signal(signal.SIGTERM)
+        proc.wait(timeout=10)
+        self.assertIsNotNone(supervisor.wait(timeout=5), "o supervisor recebeu o TERM")
+
     def test_unknown_subcommand_fails(self):
         proc = self.run_session("nada", check=False)
         self.assertEqual(proc.returncode, 64)
+
+
+class SupervisorTest(SessionBase):
+    """O supervisor (lucerna-session supervise), com um qs falso que lê de um
+    arquivo como cada partida termina e anota o ambiente, e um hyprctl falso
+    que falha no `-j version` quando o arquivo gone existe (o compositor saiu)."""
+
+    def setUp(self):
+        super().setUp()
+        self.exits = self.tmp / "exits.txt"
+        self.starts = self.tmp / "starts.txt"
+        self.counter = self.tmp / "count.txt"
+        self.gone = self.tmp / "gone"
+        self.exits.write_text("")
+        # Cada linha do exits.txt é uma partida: CÓDIGO, ou CÓDIGO@SEGUNDOS
+        # (roda esse tempo e sai). Sem linha, fica rodando até o TERM.
+        self.fake(
+            "qs",
+            f"""n=$(( $(cat "{self.counter}" 2> /dev/null || echo 0) + 1 )); echo "$n" > "{self.counter}"
+echo "start=$n safe=${{LUCERNA_SAFE_MODE:-}} qt=${{QT_SCALE_FACTOR-unset}} handler=${{QS_DISABLE_CRASH_HANDLER-}} args=$*" >> "{self.starts}"
+echo "partida $n"
+line=$(sed -n "${{n}}p" "{self.exits}")
+trap 'kill $s 2> /dev/null; exit 143' TERM
+if [ -n "$line" ]; then
+    case "$line" in *@*) sleep "${{line#*@}}" & s=$!; wait $s ;; esac
+    exit "${{line%@*}}"
+fi
+sleep 600 & s=$!
+wait $s""",
+        )
+        self.fake("hyprctl", f'[ "$1" = -j ] && [ -e "{self.gone}" ] && exit 1\nexit 0')
+
+    def env(self):
+        env = super().env()
+        env.update(LUCERNA_CRASH_DELAYS="0.1 0.2 0.4", LUCERNA_CRASH_WINDOW="30", LUCERNA_SAFE_TRIES="2")
+        return env
+
+    def start_lines(self):
+        return self.starts.read_text().splitlines() if self.starts.exists() else []
+
+    def supervise(self, exits=(), **extra):
+        self.exits.write_text("".join(f"{e}\n" for e in exits))
+        env = self.env()
+        env.update(extra)
+        proc = subprocess.Popen([str(SCRIPT), "supervise"], env=env)
+
+        def stop():
+            if proc.poll() is None:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+
+        self.addCleanup(stop)
+        return proc
+
+    def starts_at_least(self, n):
+        self.wait_for(lambda: len(self.start_lines()) >= n, what=f"{n} partidas")
+        # A partida anotada: o qs.pid já aponta para ela.
+        time.sleep(0.2)
+
+    def crash_json(self):
+        return json.loads((self.runtime / "lucerna" / "crash.json").read_text(encoding="utf-8"))
+
+    def delays(self):
+        return re.findall(r"volta em ([0-9.]+) s", self.supervisor_log())
+
+    def status(self):
+        return self.run_session("shell", "status").stdout.strip()
+
+    def test_isolated_crash_restarts_after_first_delay(self):
+        self.supervise(["1"])
+        self.starts_at_least(2)
+        self.assertEqual(self.delays(), ["0.1"])
+        self.assertEqual(self.status(), "supervised running")
+
+    def test_delays_grow_1_2_4(self):
+        self.supervise(["1", "1", "1"])
+        self.starts_at_least(4)
+        self.assertEqual(self.delays(), ["0.1", "0.2", "0.4"])
+        self.assertTrue(all("safe= " in line for line in self.start_lines()), self.start_lines())
+
+    def test_fourth_crash_in_window_goes_safe(self):
+        safe_config = self.runtime / "lucerna" / "config.safe.json"
+        self.write(safe_config, '{"theme": "da sessão segura anterior"}')
+        self.supervise(["1", "1", "1", "1"])
+        self.starts_at_least(5)
+        lines = self.start_lines()
+        self.assertTrue(all("safe= " in line for line in lines[:4]), lines)
+        self.assertIn("safe=1 ", lines[4])
+        self.assertFalse(safe_config.exists(), "o config.safe.json é apagado ao entrar no modo de segurança")
+        crash = self.crash_json()
+        self.assertTrue(crash["safe"])
+        self.assertEqual(self.status(), "supervised safe")
+
+    def test_crashes_outside_window_do_not_accumulate(self):
+        self.supervise(["1@1.2"] * 5, LUCERNA_CRASH_WINDOW="1")
+        self.starts_at_least(6)
+        self.assertEqual(self.delays(), ["0.1"] * 5)
+        self.assertTrue(all("safe= " in line for line in self.start_lines()), self.start_lines())
+
+    def test_safe_mode_crashes_open_emergency(self):
+        self.supervise(["1"] * 6)
+        self.wait_for(lambda: any(c.startswith("hyprctl notify") for c in self.calls_log()), what="a emergência")
+        self.wait_for(lambda: self.status() == "supervised emergency", what="o status emergency")
+        time.sleep(0.5)
+        self.assertEqual(len(self.start_lines()), 6, "na emergência, espera o shell start")
+        # O shell start volta ao normal.
+        self.run_session("shell", "start")
+        self.starts_at_least(7)
+        self.assertIn("safe= ", self.start_lines()[6])
+        self.assertEqual(self.status(), "supervised running")
+
+    def test_compositor_gone_stops_without_restart(self):
+        self.gone.touch()
+        proc = self.supervise(["1"])
+        self.assertEqual(proc.wait(timeout=10), 0)
+        self.assertEqual(len(self.start_lines()), 1)
+        self.assertFalse((self.runtime / "lucerna" / "crash.json").exists())
+        self.assertFalse([c for c in self.calls_log() if c.startswith("hyprctl notify")])
+        self.assertEqual(self.status(), "unsupervised")
+
+    def test_hold_does_not_count_as_crash(self):
+        self.supervise()
+        self.starts_at_least(1)
+        self.run_session("shell", "stop")
+        self.assertEqual(self.status(), "supervised held")
+        self.assertFalse((self.runtime / "lucerna" / "qs.pid").exists() and self.qs_alive())
+        time.sleep(0.5)
+        self.assertEqual(len(self.start_lines()), 1, "parado, não volta sozinho")
+        self.run_session("shell", "start")
+        self.starts_at_least(2)
+        self.assertEqual(self.status(), "supervised running")
+        self.assertFalse((self.runtime / "lucerna" / "crash.json").exists())
+        self.assertNotIn("caiu", self.supervisor_log())
+        # O contador continua 0: a próxima queda é a primeira.
+        self.exits.write_text("0\n1\n")
+        self.kill_qs()
+        self.starts_at_least(3)
+        self.assertEqual(self.crash_json()["count"], 1)
+
+    def qs_alive(self):
+        pid = int((self.runtime / "lucerna" / "qs.pid").read_text())
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        return True
+
+    def kill_qs(self):
+        pid = int((self.runtime / "lucerna" / "qs.pid").read_text())
+        os.kill(pid, signal.SIGKILL)
+
+    def test_crash_json_written(self):
+        self.supervise(["3"])
+        self.starts_at_least(2)
+        crash = self.crash_json()
+        self.assertEqual(set(crash), {"time", "log", "count", "safe"})
+        self.assertEqual(crash["count"], 1)
+        self.assertIs(crash["safe"], False)
+        log = Path(crash["log"])
+        self.assertEqual(log.parent, self.home / ".local" / "state" / "lucerna" / "shell")
+        self.assertRegex(log.name, r"^qs-\d{8}-\d{6}(-\d+)?\.log$")
+        self.assertIn("partida 1", log.read_text())
+        self.assertRegex(crash["time"], r"^\d{4}-\d{2}-\d{2}T")
+
+    def test_reports_keep_last_five(self):
+        self.supervise(["1"] * 6, LUCERNA_SAFE_TRIES="3")
+        self.starts_at_least(7)
+        logs = sorted((self.home / ".local" / "state" / "lucerna" / "shell").glob("qs-*.log"))
+        self.assertEqual(len(logs), 5, logs)
+        kept = sorted(int(log.read_text().split()[1]) for log in logs)
+        self.assertEqual(kept, [3, 4, 5, 6, 7])
+
+    def test_qs_runs_without_qt_scale_factor(self):
+        self.supervise(QT_SCALE_FACTOR="2")
+        self.starts_at_least(1)
+        self.assertIn("qt=unset", self.start_lines()[0])
+        # O tratador de quedas do Quickshell desligado: a queda é do supervisor.
+        self.assertIn("handler=1 ", self.start_lines()[0])
+        self.assertIn("args=-c lucerna", self.start_lines()[0])
+
+    def test_status_unsupervised_without_pid(self):
+        self.assertEqual(self.status(), "unsupervised")
+        # Um pid de outro processo no supervisor.pid também não é o supervisor.
+        other = self.lookalike("outro programa")
+        self.write(self.runtime / "lucerna" / "supervisor.pid", f"{other.pid}\n")
+        self.assertEqual(self.status(), "unsupervised")
+
+    def test_stop_does_not_signal_foreign_pid(self):
+        other = self.lookalike("outro programa")
+        self.write(self.runtime / "lucerna" / "qs.pid", f"{other.pid}\n")
+        self.write(self.runtime / "lucerna" / "supervisor.pid", f"{other.pid}\n")
+        self.run_session("shell", "stop")
+        self.assertIsNone(other.poll(), "o processo de outro não recebe o TERM")
 
 
 if __name__ == "__main__":

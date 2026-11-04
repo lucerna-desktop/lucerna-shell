@@ -6,8 +6,15 @@ import Quickshell.Io
 
 // Preferências do usuário, persistidas em ~/.local/state/quickshell/.../config.json.
 // Qualquer alteração numa propriedade é gravada no disco automaticamente.
+// No modo de segurança (o supervisor sobe o shell com LUCERNA_SAFE_MODE=1
+// depois de quedas seguidas), vale o arquivo $XDG_RUNTIME_DIR/lucerna/config.safe.json,
+// que o supervisor apaga ao entrar no modo: o shell sobe com os padrões e a
+// config da pessoa não é lida nem gravada.
 Singleton {
     id: root
+
+    readonly property bool safeMode: Quickshell.env("LUCERNA_SAFE_MODE") === "1"
+    readonly property string filePath: safeMode ? `${Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"}/lucerna/config.safe.json` : Quickshell.statePath("config.json")
 
     property alias theme: adapter.theme
     property alias doNotDisturb: adapter.doNotDisturb
@@ -120,7 +127,7 @@ Singleton {
     property alias gameNotices: adapter.gameNotices
 
     FileView {
-        path: Quickshell.statePath("config.json")
+        path: root.filePath
         blockLoading: true
         // Grava de forma síncrona: a gravação precisa terminar antes de o
         // watcher disparar o reload, senão ele lê o arquivo antigo e desfaz

@@ -16,6 +16,16 @@ function run(t) {
         t.check(!S.locked, "desbloqueada");
     });
 
+    t.test("session: a marca do bloqueio volta a bloquear", () => {
+        S.unlock();
+        S.restoreLock(false);
+        t.check(!S.locked, "sem a marca, continua desbloqueada");
+        S.restoreLock(true);
+        t.check(S.locked, "com a marca, bloqueia");
+        S.restoreLock(false);
+        t.check(S.locked, "sem a marca, não desbloqueia");
+    });
+
     if (original.locked)
         S.lock();
     else

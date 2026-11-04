@@ -8,17 +8,29 @@
 #                                   modeset da NVIDIA, teclado, init)
 #   lucerna-session ready           chamado pela base quando o Hyprland está
 #                                   de pé: sobe o shell (systemd ou supervisor)
-#   lucerna-session supervise       o supervisor do shell (provisório: só o qs)
-#   lucerna-session shell restart   reinicia o shell (provisório)
+#   lucerna-session supervise       o supervisor do shell: sobe o qs, o reinicia
+#                                   depois de uma queda (pausas de 1, 2 e 4 s),
+#                                   passa ao modo de segurança na 4ª queda em
+#                                   30 s e abre a emergência se cair também lá
+#   lucerna-session shell stop|start|restart|status
+#                                   para o shell sem contar como queda, volta
+#                                   (e sai do modo de segurança), os dois, ou
+#                                   o estado: supervised running|held|safe|
+#                                   emergency, ou unsupervised
 #   lucerna-session open terminal|browser|files
 #                                   abre o app do apps.conf ou o primeiro
 #                                   instalado da lista
+#   lucerna-session open terminal COMANDO...
+#                                   o terminal rodando o comando
 #   lucerna-session detect-apps     os apps instalados de cada tipo, em JSON
 #   lucerna-session logout          sai do Hyprland (fim da sessão)
 #   lucerna-session unlock          do TTY, depois de entrar com a senha:
 #                                   libera a tela de bloqueio que caiu
-#                                   (hl.clear_crashed_lockscreen; o efeito é
-#                                   conferido na Tarefa 6)
+#                                   (hl.clear_crashed_lockscreen) e, com o
+#                                   shell parado, esvazia a marca do bloqueio
+#                                   (o shell start seguinte não bloqueia de
+#                                   novo). Com o shell de pé, a tela dele
+#                                   continua e pede a senha
 # Tudo é anotado em ~/.local/state/lucerna/session.log. As raízes do sistema
 # (LUCERNA_SYSFS, LUCERNA_DEVFS, LUCERNA_ETC, LUCERNA_USR_SHARE, LUCERNA_RUN) só mudam nos
 # testes (ci/tests/test_session.py).
@@ -40,6 +52,8 @@ subcommand=${1:-}
 . "$lib_dir/common.sh"
 # shellcheck source=session/lib/detect.sh
 . "$lib_dir/detect.sh"
+# shellcheck source=session/lib/supervise.sh
+. "$lib_dir/supervise.sh"
 
 export LUCERNA_DATA_DIR=${LUCERNA_DATA_DIR:-$default_data_dir}
 
@@ -102,27 +116,38 @@ cmd_session() {
         export "${line?}"
     done < <(session_env_lines)
     base="$LUCERNA_DATA_DIR/hypr/hyprland.lua"
+    # Em segundo plano, com o wait: um TERM ou HUP na sessão (derrubada de
+    # fora) chega ao trap na hora, e não só quando o Hyprland sair.
+    trap end_session TERM HUP INT
     if have start-hyprland; then
-        start-hyprland -- --config "$base"
+        start-hyprland -- --config "$base" &
     else
-        Hyprland --config "$base"
+        Hyprland --config "$base" &
     fi
+    compositor_pid=$!
+    wait "$compositor_pid"
     status=$?
     log "o Hyprland saiu (código $status)"
     stop_shell
     exit "$status"
 }
 
+# shellcheck disable=SC2329 # chamada pelo trap
+end_session() {
+    log "a sessão recebeu um sinal de fim"
+    trap - TERM HUP INT
+    [ -n "${compositor_pid:-}" ] && kill -TERM "$compositor_pid" 2> /dev/null
+    stop_shell
+    exit 143
+}
+
 # stop_shell: o fim da sessão. Com systemd, para o alvo; sem ele, TERM no
-# supervisor.
+# supervisor (só se o pid ainda é dele).
 stop_shell() {
-    local pid
     if [ "$init" = systemd ]; then
         systemctl --user stop lucerna-session.target || log "não consegui parar o lucerna-session.target"
-    elif [ -r "$runtime_dir/supervisor.pid" ]; then
-        pid=$(cat "$runtime_dir/supervisor.pid")
-        [ -n "$pid" ] && kill -TERM "$pid" 2> /dev/null
-        rm -f "$runtime_dir/supervisor.pid"
+    elif supervisor_alive; then
+        kill -TERM "$pid" 2> /dev/null
     fi
 }
 
@@ -153,33 +178,6 @@ cmd_ready() {
     fi
 }
 
-# O supervisor provisório: só o qs. A Tarefa 6 o troca pelo de verdade (com
-# os reinícios e o modo de segurança).
-cmd_supervise() {
-    mkdir -p "$runtime_dir"
-    echo "$$" > "$runtime_dir/supervisor.pid"
-    log "o shell sobe (${LUCERNA_SHELL_CONFIG:-lucerna})"
-    exec qs -c "${LUCERNA_SHELL_CONFIG:-lucerna}"
-}
-
-# shell restart, provisório (a Tarefa 6 traz o subcomando shell inteiro):
-# para o qs do supervisor e sobe outro.
-cmd_shell() {
-    local pid
-    [ "${1:-}" = restart ] || usage
-    if [ -r "$runtime_dir/supervisor.pid" ]; then
-        pid=$(cat "$runtime_dir/supervisor.pid")
-        if [ -n "$pid" ] && kill -TERM "$pid" 2> /dev/null; then
-            for _ in 1 2 3 4 5 6 7 8 9 10; do
-                kill -0 "$pid" 2> /dev/null || break
-                sleep 0.2
-            done
-        fi
-    fi
-    log "o shell reinicia"
-    setsid -f "$self" supervise > /dev/null 2>&1 < /dev/null
-}
-
 # apps_of TIPO: a lista do tipo, no array `apps`, e o nome dele, em `label`.
 apps_of() {
     case "$1" in
@@ -197,24 +195,43 @@ configured_app() {
     sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*//p" "$file" | sed -n '$s/[[:space:]]*$//p'
 }
 
+# run_in TERMINAL COMANDO...: o jeito de cada terminal rodar um comando, no
+# array `run_args` (o -e, que quase todos aceitam, para os outros).
+run_in() {
+    local term=$1
+    shift
+    case "${term##*/}" in
+        kitty | foot) run_args=("$@") ;;
+        wezterm) run_args=(start -- "$@") ;;
+        gnome-terminal) run_args=(-- "$@") ;;
+        xfce4-terminal) run_args=(-x "$@") ;;
+        *) run_args=(-e "$@") ;;
+    esac
+}
+
 cmd_open() {
     local kind=${1:-} value app label
-    local -a apps=() argv=()
+    local -a apps=() argv=() run_args=()
     apps_of "$kind" || usage
+    shift
+    # Um comando só no terminal.
+    [ $# -eq 0 ] || [ "$kind" = terminal ] || usage
     value=$(configured_app "$kind")
     if [ -n "$value" ]; then
         # Palavras separadas por espaço, sem eval: "kitty -1" vira kitty e -1.
         read -ra argv <<< "$value"
         if [ "${#argv[@]}" -gt 0 ] && have "${argv[0]}"; then
-            log "abre $kind: ${argv[*]} (apps.conf)"
-            exec "${argv[@]}"
+            [ $# -eq 0 ] || run_in "${argv[0]}" "$@"
+            log "abre $kind: ${argv[*]} ${run_args[*]} (apps.conf)"
+            exec "${argv[@]}" "${run_args[@]}"
         fi
         log "o $kind do apps.conf ($value) não está instalado; uso a lista"
     fi
     for app in "${apps[@]}"; do
         if have "$app"; then
-            log "abre $kind: $app"
-            exec "$app"
+            [ $# -eq 0 ] || run_in "$app" "$@"
+            log "abre $kind: $app ${run_args[*]}"
+            exec "$app" "${run_args[@]}"
         fi
     done
     log "nenhum $label instalado"
@@ -242,7 +259,10 @@ case "$subcommand" in
     ready) cmd_ready ;;
     supervise) cmd_supervise ;;
     shell) cmd_shell "${2:-}" ;;
-    open) cmd_open "${2:-}" ;;
+    open)
+        shift
+        cmd_open "$@"
+        ;;
     detect-apps) cmd_detect_apps ;;
     logout)
         log "sair da sessão"
@@ -251,6 +271,12 @@ case "$subcommand" in
     unlock)
         log "liberar a tela de bloqueio caída (pelo TTY)"
         hyprctl --instance 0 eval 'hl.clear_crashed_lockscreen()'
+        status=$?
+        if ! qs_alive && [ -s "$runtime_dir/locked" ]; then
+            : > "$runtime_dir/locked"
+            log "marca do bloqueio esvaziada (o shell está parado)"
+        fi
+        exit "$status"
         ;;
     -h | --help | help) usage 0 ;;
     *) usage ;;

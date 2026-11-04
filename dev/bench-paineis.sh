@@ -26,8 +26,9 @@
 # numa passada separada, porque gravar pesa no Hyprland e mudaria a CPU e os
 # quadros do qs. O dev/bench-paineis.py lê o log e os vídeos e imprime a tabela.
 # No fim (e no Ctrl+C), fecha os painéis, devolve o desfoque e o modo do papel
-# de parede, fecha o kitty e sobe o qs normal. Nenhum hyprctl keyword/reload; o
-# único `hyprctl eval` é o do BENCH_SCALE (abaixo).
+# de parede, fecha o kitty e sobe o qs normal (o `lucerna-session shell
+# start`). Nenhum hyprctl keyword/reload; o único `hyprctl eval` é o do
+# BENCH_SCALE (abaixo).
 #   dev/bench-paineis.sh [ciclos] [segundos]   (padrão 10 e 10)
 # No container de teste:
 #   dev/test.sh run 'bash ~/.config/quickshell/lucerna/dev/bench-paineis.sh 10 10'
@@ -124,10 +125,12 @@ restore() {
     ipc wallpaper mode "$wall_before" > /dev/null || true
     if [ "$restarted" = 1 ]; then
         # O config é gravado na hora, mas dá um respiro antes de matar o qs.
+        # O do bench é o à mão; o supervisor (parado pelo shell stop) sobe o
+        # normal de volta.
         sleep 0.5
         pkill -x qs || true
         sleep 0.5
-        setsid -f qs -c lucerna > /dev/null 2>&1 < /dev/null
+        lucerna-session shell start
         echo "qs normal de volta"
     fi
 }
@@ -296,10 +299,12 @@ if [ "$rec_only" = 1 ]; then
     exit 0
 fi
 
-# O qs com o log do render loop.
+# O qs com o log do render loop. O supervisor para o dele (sem contar como
+# queda) e espera o shell start do restore.
+restarted=1
+lucerna-session shell stop
 pkill -x qs || true
 sleep 0.5
-restarted=1
 QT_LOGGING_RULES='qt.scenegraph.time.renderloop.debug=true' setsid -f qs -c lucerna > "$log" 2>&1 < /dev/null
 # Sem instância, o `ipc call` também escreve na saída: pronto é responder o
 # mesmo desfoque de antes (o `panels get` sai vazio com tudo fechado).

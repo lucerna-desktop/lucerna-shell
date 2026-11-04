@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.core.config
 
 // O arquivo do Hyprland controlado pelo shell: ~/.config/lucerna/hypr/settings.lua.
 // Na sessão Lucerna (o lucerna-session põe LUCERNA_SESSION=1), a base carrega
@@ -17,9 +18,9 @@ Singleton {
     readonly property bool layered: Quickshell.env("LUCERNA_SESSION") === "1"
     readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || `${Quickshell.env("HOME")}/.config`
     readonly property string path: `${configHome}/lucerna/hypr/settings.lua`
-    // O ponto único do modo de segurança: com ele, nada é escrito. A Tarefa 6
-    // liga isto ao Config.safeMode.
-    readonly property bool writable: true
+    // O ponto único do modo de segurança: com ele, nada é escrito (o Hyprland
+    // segue com o settings.lua que já existia).
+    readonly property bool writable: !Config.safeMode
 
     readonly property string header: "-- Gerado pelo Lucerna (Configurações). Não edite: é reescrito. O seu arquivo é o ~/.config/hypr/hyprland.lua."
 

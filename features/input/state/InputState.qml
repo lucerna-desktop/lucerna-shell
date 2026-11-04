@@ -14,11 +14,13 @@ import qs.services
 // iniciar, quando a config muda e depois de um reload do Hyprland (fora da
 // sessão Lucerna: nela, o arquivo do shell, HyprFile, já vale no reload).
 // Sem interface própria; tudo se monta em Configurações → Mouse e Teclado.
+// No modo de segurança, nada é aplicado: o Hyprland fica com o que já tinha.
 Singleton {
     id: root
 
     // As opções do arquivo só são conhecidas depois da primeira leitura.
     readonly property bool ready: Object.keys(Input.options).length > 0
+    readonly property bool applies: !Config.safeMode
 
     onReadyChanged: {
         if (ready)
@@ -26,6 +28,8 @@ Singleton {
     }
 
     function applyAll(): void {
+        if (!applies)
+            return;
         applyOptions();
         applyDevices();
         applyKeyboard();
@@ -33,11 +37,15 @@ Singleton {
     }
 
     function applyOptions(): void {
+        if (!applies)
+            return;
         Input.setOptions(Config.inputOptions ?? {});
         writeInput();
     }
 
     function applyDevices(): void {
+        if (!applies)
+            return;
         const devices = Config.mouseDevices ?? {};
         for (const name of Object.keys(devices))
             Input.setDevice(name, devices[name]);
@@ -67,7 +75,7 @@ Singleton {
 
     // Sem nada mudado aqui, só lê o keymap do arquivo (para nomear as teclas).
     function applyKeyboard(): void {
-        if (!ready)
+        if (!ready || !applies)
             return;
         const layouts = Config.keyboardLayouts ?? fileLayouts();
         const options = Config.keyboardOptions ?? fileOptions();
@@ -113,6 +121,8 @@ Singleton {
     }
 
     function applyBinds(): void {
+        if (!applies)
+            return;
         const list = shellEntries().concat(Config.inputBinds ?? []).map(bindFor).filter(b => b);
         Input.setBinds(list);
         HyprFile.setSection("binds", Input.bindLua(list));
@@ -188,6 +198,8 @@ Singleton {
 
         interval: 300
         onTriggered: {
+            if (!root.applies)
+                return;
             Input.binds = [];
             if (root.reloadPlan(HyprFile.layered) === "binds")
                 root.applyBinds();

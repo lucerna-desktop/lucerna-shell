@@ -16,6 +16,7 @@ import qs.features.nightlight.ui
 import qs.features.notifications.ui
 import qs.features.osd.ui
 import qs.features.powerMenu.ui
+import qs.features.safeMode.ui
 import qs.features.settings.ui
 import qs.features.themeSwitcher.ui
 import qs.features.wallpaper.ui
@@ -23,10 +24,14 @@ import qs.features.workspaces.ui
 import qs.services as Services
 
 ShellRoot {
-    // Cria o serviço da sessão já no começo: ele lê o session.json do
-    // lucerna-session e mostra os avisos (o modeset da NVIDIA).
+    // Cria o serviço da sessão já no começo: ele lê o session.json e o
+    // crash.json do lucerna-session e mostra os avisos (a queda, o modo de
+    // segurança, o modeset da NVIDIA).
     Component.onCompleted: Services.LucernaSession.start()
 
+    // O bloqueio antes de qualquer janela: o Session (criado aqui) lê a marca
+    // do bloqueio e, se o shell caiu bloqueado, volta bloqueado.
+    Lockscreen {}
     Wallpaper {}
     WorkspacesOverview {}
     Bar {}
@@ -75,6 +80,6 @@ ShellRoot {
     Settings {}
     MonitorConfirm {}
     MonitorIdentify {}
-    Lockscreen {}
+    SafeModeBanner {}
     ThemeSwitcher {}
 }
