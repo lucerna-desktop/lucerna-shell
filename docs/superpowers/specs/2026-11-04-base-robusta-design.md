@@ -75,6 +75,13 @@ Exigências:
 - **Medição:** o `dev/bench-paineis.sh` e o de desfoque rodam também em 1,25 (o container aceita escala por regra de monitor) e comparam com 1; a meta é a mesma faixa de FPS e CPU da escala 1. O que o shell não controlar (custo do próprio Hyprland) fica medido e registrado nas Pendências.
 - A escala inicial pelo tamanho físico (decisão minha, abaixo) é um ponto de partida; quem usa 1,25 escolhe na página de Monitores e o shell respeita.
 
+**Duas formas de escala (decisão do usuário, 2026-11-04, depois de avaliar a sugestão de "monitor em 1 + fontes maiores"):**
+- **Escala interna do shell:** o shell ganha um fator de escala próprio, aplicado às medidas do tema (tamanhos, raios, espaçamentos, fontes, ícones), para desenhar em 1,25 com o monitor em 1, nítido e alinhado ao pixel. Vale em qualquer das duas formas abaixo.
+- Na página de Monitores, a pessoa escolhe:
+  - **Escala do monitor** (padrão): a fracionária do Hyprland, que permite monitores com escalas diferentes.
+  - **Escala pelos apps** (modo leve): os monitores ficam em 1 e o próprio shell escreve os ajustes de cada toolkit, sem pacotes extras (lxappearance, qt5ct): Qt (`QT_SCALE_FACTOR`/DPI das fontes no ambiente da sessão), GTK (escala da interface e das fontes pelas configurações do GTK), Electron/Chromium (fator de escala nas flags), XWayland (`Xft.dpi`), cursor e as medidas do Hyprland (bordas, espaços). Aumentar só as fontes não basta: a interface inteira de cada app escala. A página avisa as limitações: um fator só para todos os monitores, e apps que não seguem (o Firefox tem ajuste próprio; apps sem suporte ficam pequenos).
+- A medição da primeira tarefa (custo em 1 × 1,25) diz de onde vem o peso e orienta o padrão: se vier dos apps desenhados em 2x e reduzidos, o modo leve ganha força; se vier do Hyprland, fica registrado.
+
 ## Objetivos
 
 - Uma pessoa instala o Lucerna, entra na sessão e tem tudo funcionando em qualquer máquina, sem editar arquivo.
