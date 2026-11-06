@@ -116,7 +116,7 @@ Singleton {
     }
 
     // Integração com o Hyprland
-    readonly property string hyprlandConfig: Hypr.usingLua ? toLua(ThemeManager.hyprland) : ""
+    readonly property string hyprlandConfig: Hypr.usingLua ? toLua(ThemeManager.hyprland, AppsScale.factor) : ""
     readonly property string blurRule: Hypr.usingLua ? blurLua(ThemeManager.blur.mode, ThemeManager.transparency.enabled) : ""
     readonly property string blurConfig: Hypr.usingLua ? blurConfigLua(ThemeManager.blur.size, ThemeManager.blur.passes) : ""
     // Janelas sem desfoque (Config.blurWindows desligado): uma regra de janela.
@@ -220,7 +220,7 @@ Singleton {
     function rules(lua: bool): var {
         if (!lua)
             return [];
-        const list = [toLua(ThemeManager.hyprland), blurLua(ThemeManager.blur.mode, ThemeManager.transparency.enabled), blurConfigLua(ThemeManager.blur.size, ThemeManager.blur.passes), noAnimLua()];
+        const list = [toLua(ThemeManager.hyprland, AppsScale.factor), blurLua(ThemeManager.blur.mode, ThemeManager.transparency.enabled), blurConfigLua(ThemeManager.blur.size, ThemeManager.blur.passes), noAnimLua()];
         if (!Config.blurWindows)
             list.push(windowBlurLua());
         return list.filter(x => x);
@@ -255,10 +255,13 @@ Singleton {
         return `hl.window_rule({ match = { class = ".*" }, no_blur = true })`;
     }
 
-    function toLua(h: var): string {
+    // `f`: o fator do modo "Escala pelos apps" (AppsScale.factor; 1 fora
+    // dele): com o compositor em 1, a borda e o arredondamento crescem junto
+    // com os apps.
+    function toLua(h: var, f: real): string {
         if (!h.activeBorder)
             return "";
         const rgb = hex => `rgb(${String(hex).replace("#", "")})`;
-        return `hl.config({ general = { border_size = ${h.borderSize ?? 2}, col = { active_border = "${rgb(h.activeBorder)}", inactive_border = "${rgb(h.inactiveBorder ?? h.activeBorder)}" } }, decoration = { rounding = ${h.rounding ?? 10} } })`;
+        return `hl.config({ general = { border_size = ${Math.round((h.borderSize ?? 2) * f)}, col = { active_border = "${rgb(h.activeBorder)}", inactive_border = "${rgb(h.inactiveBorder ?? h.activeBorder)}" } }, decoration = { rounding = ${Math.round((h.rounding ?? 10) * f)} } })`;
     }
 }

@@ -129,28 +129,56 @@ Singleton {
     readonly property string loginHeader: "-- Gerado pelo Lucerna (Configurações → Monitores); é reescrito a cada arranjo salvo.\n"
         + `-- Para usar, no hyprland.lua: ${Monitors.includeLine}\n`
 
+    // O modo de escala mudou (Configurações → Monitores): o arranjo do modo
+    // novo. No "Escala pelos apps", os monitores em 1; de volta à escala do
+    // monitor, o arranjo salvo.
+    Connections {
+        target: Config
+
+        function onScaleModeChanged() {
+            root.restore();
+            root.writeLogin();
+        }
+    }
+
+    // O arranjo do conjunto conectado no modo de escala atual (a porta de
+    // agora em `name`, a descrição em `description`), ou null. No modo
+    // "Escala pelos apps", o arranjo salvo dele; sem ele, o da escala do
+    // monitor em 1 (Monitors.atScale); com `live`, sem nenhum salvo, os
+    // monitores de agora em 1.
+    function arrangement(live: bool): var {
+        const apps = Config.scaleMode === "apps";
+        const saved = Config.monitorSetups ?? {};
+        const fromSaved = entry => {
+            if (!setup || !entry)
+                return null;
+            // O arranjo é salvo pela chave do monitor; a porta pode ter mudado.
+            const specs = Monitors.monitors.filter(m => entry[m.key]).map(m => Object.assign({}, entry[m.key], { name: m.name, description: m.description }));
+            return specs.length === Monitors.monitors.length ? specs : null;
+        };
+        const own = fromSaved(saved[Monitors.setupKey(setup, apps)]);
+        if (own || !apps)
+            return own;
+        const base = fromSaved(saved[setup]) ?? (live && Monitors.monitors.length ? Monitors.monitors.map(m => Object.assign({}, m)) : null);
+        return base ? Monitors.atScale(base, 1) : null;
+    }
+
     function writeLogin(): void {
         if (!HyprFile.layered && !Config.monitorsAtLogin)
             return;
-        const saved = (Config.monitorSetups ?? {})[setup];
-        if (!setup || !saved)
+        const specs = arrangement(false);
+        if (!specs)
             return;
-        const specs = Monitors.monitors.filter(m => saved[m.key]).map(m => Object.assign({}, saved[m.key], { name: m.description ? `desc:${m.description}` : m.name }));
-        if (specs.length !== Monitors.monitors.length)
-            return;
+        const named = specs.map(s => Object.assign({}, s, { name: s.description ? `desc:${s.description}` : s.name }));
         if (HyprFile.layered)
-            HyprFile.setSection("monitors", `-- Monitores: ${setup}\n${Monitors.lua(specs)}`);
+            HyprFile.setSection("monitors", `-- Monitores: ${setup}\n${Monitors.lua(named)}`);
         else
-            Monitors.writeLoginFile(`${loginHeader}-- Monitores: ${setup}\n${Monitors.lua(specs)}\n`);
+            Monitors.writeLoginFile(`${loginHeader}-- Monitores: ${setup}\n${Monitors.lua(named)}\n`);
     }
 
     function restore(): void {
-        const saved = (Config.monitorSetups ?? {})[setup];
-        if (!setup || !saved)
-            return;
-        // O arranjo é salvo pela chave do monitor; a porta pode ter mudado.
-        const specs = Monitors.monitors.filter(m => saved[m.key]).map(m => Object.assign({}, saved[m.key], { name: m.name }));
-        if (specs.length !== Monitors.monitors.length)
+        const specs = arrangement(true);
+        if (!specs)
             return;
         // Com a tampa fechada e um externo ativo no arranjo, o interno fica
         // desligado (senão acenderia e apagaria a cada monitor que entra).

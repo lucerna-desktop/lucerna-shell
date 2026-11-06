@@ -241,4 +241,11 @@ function run(t) {
             C.blurWindows = windows0;
         }
     });
+
+    t.test("themeswitcher: no modo pelos apps, bordas e arredondamento pelo fator", () => {
+        const h = { activeBorder: "#89b4fa", borderSize: 2, rounding: 10 };
+        const lua = S.toLua(h, 1.25);
+        t.check(lua.includes("border_size = 3") && lua.includes("rounding = 13"), lua);
+        t.check(S.toLua(h, 1).includes("border_size = 2") && S.toLua(h, 1).includes("rounding = 10"), "em 1, os do tema");
+    });
 }

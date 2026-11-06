@@ -36,6 +36,7 @@ import qs.features.wallpaper.state
 import qs.services
 import qs.services.lucerna
 import "appinfo.test.js" as AppInfoTest
+import "appsscale.test.js" as AppsScaleTest
 import "audio.test.js" as AudioTest
 import "audiostreams.test.js" as AudioStreamsTest
 import "bar.test.js" as BarTest
@@ -120,6 +121,7 @@ ShellRoot {
         ["brightness", BrightnessTest],
         ["monitors", MonitorsTest],
         ["hyprfile", HyprFileTest],
+        ["appsscale", AppsScaleTest],
         ["input", InputTest],
         ["systemstats", SystemStatsTest],
         ["videowallpapers", VideoWallpapersTest],
@@ -287,6 +289,7 @@ ShellRoot {
             get Capture() { return Capture; },
             get Clipboard() { return Clipboard; },
             get HyprFile() { return HyprFile; },
+            get AppsScale() { return AppsScale; },
             get Input() { return Input; },
             get Lyrics() { return Lyrics; },
             get Media() { return Media; },

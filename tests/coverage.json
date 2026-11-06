@@ -6,6 +6,7 @@
     },
     "serviços": {
         "services/AppInfo.qml": ["info", "decodeEntities"],
+        "services/AppsScale.qml": ["envFor", "sessionEnvText", "hyprLua", "splitLines", "flagsText", "iniValue", "gtkIniText", "xresourcesText", "gapsLua", "restoreLua", "parseRead", "planApply", "planRestore", "changes"],
         "services/Audio.qml": ["nodeName"],
         "services/AudioStreams.qml": ["describe"],
         "services/Battery.qml": ["wantedTopics", "sync", "apply", "applyHistory", "applyProfiles", "applyStatus", "connectionChanged"],
@@ -22,7 +23,7 @@
         "services/lucerna/ServeLauncher.qml": ["logPath", "serveArgs", "launch", "release"],
         "services/Lyrics.qml": ["wantedTopics", "sync", "trackParams", "sendTrack", "toLine", "apply", "applyLyrics", "clear", "connectionChanged", "lineAt", "lineRole"],
         "services/Media.qml": ["select", "nextPlayer", "cycle", "albumShown", "seekTo"],
-        "services/Monitors.qml": ["keyOf", "parseMode", "normalize", "logicalSize", "luaFor", "lua", "lidPlan"],
+        "services/Monitors.qml": ["keyOf", "parseMode", "normalize", "logicalSize", "setupKey", "atScale", "luaFor", "lua", "lidPlan"],
         "services/Network.qml": ["isSecure", "needsPassword"],
         "services/Notifications.qml": ["hidePopup", "clearPopups", "popsUp", "timeoutFor", "timeOf"],
         "services/Session.qml": ["lock", "unlock", "restoreLock", "setSecure", "onSleep"],

@@ -80,4 +80,24 @@ function run(t) {
         t.eq(M.lidPlan(false, [mon("DP-1", false), mon("HDMI-A-1", true)], true), none);
         t.eq(M.lidPlan(true, [], true), none);
     });
+
+    // O modo "Escala pelos apps": os monitores em 1, com o arranjo guardado à parte.
+    t.test("monitors: o arranjo do modo pelos apps tem chave própria", () => {
+        t.eq(M.setupKey("A | B", false), "A | B");
+        t.eq(M.setupKey("A | B", true), "apps: A | B");
+    });
+
+    t.test("monitors: o arranjo em outra escala segue as bordas encostadas", () => {
+        const at = (name, x, y, scale) => ({ name: name, enabled: true, width: 2560, height: 1440, refresh: 60, x: x, y: y, scale: scale, transform: 0, vrr: 0, tenBit: false, mirror: "" });
+        const row = M.atScale([at("DP-1", 0, 0, 1.25), at("DP-2", 2048, 0, 1.25)], 1);
+        t.eq(row.map(m => [m.x, m.y, m.scale]), [[0, 0, 1], [2560, 0, 1]], "lado a lado");
+        const column = M.atScale([at("DP-1", 0, 0, 1.25), at("DP-2", 0, 1152, 1.25)], 1);
+        t.eq(column.map(m => [m.x, m.y]), [[0, 0], [0, 1440]], "um em cima do outro");
+        const mixed = M.atScale([at("DP-1", 0, 0, 2), at("DP-2", 1280, 0, 1)], 1);
+        t.eq(mixed.map(m => m.x), [0, 2560], "escalas diferentes");
+        const spare = M.atScale([at("DP-1", 0, 0, 1.25), Object.assign(at("DP-2", 0, 0, 1.5), { enabled: false })], 1);
+        t.eq([spare[1].scale, spare[1].x], [1, 0], "o desligado só muda a escala");
+        const same = M.atScale([at("DP-1", 0, 0, 1), at("DP-2", 2560, 0, 1)], 1);
+        t.eq(same.map(m => m.x), [0, 2560], "já em 1, nada muda");
+    });
 }

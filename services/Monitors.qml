@@ -71,6 +71,40 @@ Singleton {
         };
     }
 
+    // A chave do arranjo salvo (Config.monitorSetups): o modo "Escala pelos
+    // apps" (os monitores em 1) guarda o seu à parte, e o da escala do
+    // monitor fica intacto para a volta.
+    function setupKey(setup: string, apps: bool): string {
+        return apps ? `apps: ${setup}` : setup;
+    }
+
+    // O arranjo com todos os monitores na escala `s`. Os tamanhos lógicos
+    // mudam: quem encostava na borda direita (ou de baixo) de outro continua
+    // encostado, quem se alinhava a outro continua alinhado; o resto anda na
+    // proporção do próprio tamanho.
+    function atScale(specs: var, s: real): var {
+        const out = specs.map(m => Object.assign({}, m, { scale: s }));
+        const placed = specs.map((m, i) => i).filter(i => specs[i].enabled && !specs[i].mirror);
+        const before = specs.map(m => logicalSize(m));
+        const after = out.map(m => logicalSize(m));
+        for (const [pos, size] of [["x", "width"], ["y", "height"]]) {
+            const done = [];
+            for (const i of placed.slice().sort((a, b) => specs[a][pos] - specs[b][pos])) {
+                const old = specs[i][pos];
+                const aligned = done.find(j => specs[j][pos] === old);
+                const touching = done.find(j => Math.abs(specs[j][pos] + before[j][size] - old) <= 1);
+                if (aligned !== undefined)
+                    out[i][pos] = out[aligned][pos];
+                else if (touching !== undefined)
+                    out[i][pos] = out[touching][pos] + after[touching][size];
+                else
+                    out[i][pos] = Math.round(old * after[i][size] / before[i][size]);
+                done.push(i);
+            }
+        }
+        return out;
+    }
+
     function refresh(): void {
         reader.running = true;
     }

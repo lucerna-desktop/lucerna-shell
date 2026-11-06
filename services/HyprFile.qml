@@ -11,7 +11,9 @@ import qs.core.config
 // ajusta nas Configurações vale desde o login, e o arquivo do usuário, lido
 // depois, vence. Cada parte das Configurações escreve a sua seção (theme,
 // input, keyboard, binds, monitors...) com o mesmo Lua que manda pelo hyprctl
-// eval. O shell nunca escreve no hyprland.lua do usuário.
+// eval. A seção "scale" é a do modo "Escala pelos apps" (AppsScale): o global
+// lucerna_scale_mode, que deixa os monitores em 1 na escala automática da
+// base, e o ambiente dos apps. O shell nunca escreve no hyprland.lua do usuário.
 Singleton {
     id: root
 

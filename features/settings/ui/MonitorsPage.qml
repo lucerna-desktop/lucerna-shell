@@ -66,6 +66,51 @@ Column {
         }
     }
 
+    // Quem escala: o Hyprland (cada monitor na sua escala) ou os apps (os
+    // monitores em 1, um fator só pelos toolkits; mais leve para a GPU).
+    SettingSection {
+        title: "Escala"
+
+        SettingRow {
+            wide: true
+            icon: Icons.zoom
+            title: "Quem aumenta a tela"
+            description: MonitorsState.appsMode ? "Os monitores ficam em 100% e cada app aumenta sozinho: mais leve para a placa de vídeo" : "O Hyprland aumenta cada monitor na escala dele: tudo igual, com mais trabalho para a placa de vídeo"
+
+            SegmentedControl {
+                width: parent.width
+                options: MonitorsState.scaleModeOptions
+                value: MonitorsState.scaleMode
+                onSelected: v => MonitorsState.setScaleMode(v)
+            }
+        }
+
+        SettingRow {
+            visible: MonitorsState.appsMode
+            wide: true
+            icon: Icons.resolution
+            title: "Tamanho dos apps"
+
+            Select {
+                width: parent.width
+                options: MonitorsState.appsScaleOptions
+                value: MonitorsState.appsScale
+                onSelected: v => MonitorsState.setAppsScale(v)
+            }
+        }
+
+        Txt {
+            x: ThemeManager.spacing.large
+            width: parent.width - x * 2
+            visible: MonitorsState.appsMode
+            bottomPadding: ThemeManager.spacing.large
+            wrapMode: Text.Wrap
+            text: MonitorsState.appsNotice
+            color: ThemeManager.colors.warning
+            font.pixelSize: ThemeManager.font.small + 1
+        }
+    }
+
     // Qual monitor ajustar (inclui os desligados e os que espelham, fora do canvas).
     SegmentedControl {
         width: parent.width
@@ -118,17 +163,20 @@ Column {
             }
         }
 
+        // No modo "Escala pelos apps", os monitores ficam em 1.
         SettingRow {
             visible: page.active && !page.monitor?.mirror
             wide: true
+            dimmed: MonitorsState.appsMode
             icon: Icons.zoom
             title: "Escala"
-            description: "Maior deixa tudo maior, com menos espaço na tela"
+            description: MonitorsState.appsMode ? "Na escala pelos apps, todos os monitores ficam em 100%" : "Maior deixa tudo maior, com menos espaço na tela"
 
             SegmentedControl {
                 width: parent.width
+                enabled: !MonitorsState.appsMode
                 options: MonitorsState.scaleOptions
-                value: page.monitor?.scale ?? 1
+                value: MonitorsState.appsMode ? 1 : page.monitor?.scale ?? 1
                 onSelected: v => MonitorsState.setScale(v)
             }
         }
