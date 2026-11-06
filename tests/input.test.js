@@ -56,6 +56,25 @@ function run(t) {
              'hl.bind("SUPER + d", hl.dsp.exit(), { repeating = true, locked = true })\nhl.bind("ALT + q", x())');
     });
 
+    t.test("input: bind de soltar", () => {
+        t.check(I.bindLua([{ key: "SUPER + SUPER_L", lua: "x", release: true }]).includes("release = true"), "release");
+        t.eq(I.bindLua([{ key: "SUPER + SUPER_L", lua: "x", release: true }]), 'hl.bind("SUPER + SUPER_L", x, { release = true })');
+        t.eq(I.bindLua([{ key: "SUPER + mouse:272", lua: "hl.dsp.window.drag()", mouse: true }]), 'hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })', "arrastar com o mouse");
+    });
+
+    // A tecla da base (SUPER + Return) sai junto: o atalho do shell a
+    // substitui; mudado, ela não pode ficar abrindo o terminal.
+    t.test("input: a tecla da base sai quando o atalho muda", () => {
+        const term = { key: "SUPER + t", lua: "t()" };
+        const base = [{ key: "SUPER + Return" }];
+        t.eq(I.bindsLua([], [term], base, false), 'hl.unbind("SUPER + t")\nhl.unbind("SUPER + Return")\nhl.bind("SUPER + t", t())');
+        t.eq(I.bindsLua([{ key: "SUPER + d" }], [term], base, true), 'hl.unbind("SUPER + d")\nhl.unbind("SUPER + t")\nhl.unbind("SUPER + Return")', "suspenso, só tira");
+        t.eq(I.bindsLua([], [{ key: "SUPER + Return", lua: "t()" }], base, false), 'hl.unbind("SUPER + Return")\nhl.bind("SUPER + Return", t())', "a mesma tecla sai uma vez só");
+        t.eq(I.bindsLua([], [], [], false), "");
+        t.eq(t.InputState.baseUnbinds(true), [{ key: `${t.ShellShortcuts.mod} + Return` }], "na sessão Lucerna, a da base");
+        t.eq(t.InputState.baseUnbinds(false), [], "fora dela, não há base");
+    });
+
     // O eval (hyprctl) e o arquivo do shell (HyprFile) usam o mesmo Lua.
     t.test("input: o mesmo Lua no eval e no arquivo", () => {
         t.eq(I.optionsLua({ "input.touchpad.tap_to_click": true }), "hl.config({ input = { touchpad = { tap_to_click = true } } })");

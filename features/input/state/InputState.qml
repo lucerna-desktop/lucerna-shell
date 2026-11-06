@@ -93,7 +93,7 @@ Singleton {
         const action = InputActions.find(entry.action?.id ?? "");
         if (!action)
             return null;
-        const key = (entry.mods ? entry.mods.split(/\s+/).join(" + ") + " + " : "") + entry.trigger;
+        const key = ShellShortcuts.keyOf(entry);
         let lua = "hl.dsp.no_op()";
         if (action.kind === "shell")
             lua = `hl.dsp.exec_cmd(${Input.luaString(`qs -p ${Quickshell.shellPath("shell.qml")} ipc call ${action.ipc ?? `action run ${action.id}`}`)})`;
@@ -103,7 +103,7 @@ Singleton {
             lua = `hl.dsp.send_shortcut({ mods = ${Input.luaString(entry.action.mods ?? "")}, key = ${Input.luaString(entry.action.key ?? "")} })`;
         else if (action.kind === "command")
             lua = `hl.dsp.exec_cmd(${Input.luaString(entry.action.command ?? "")})`;
-        return { key, lua, repeating: action.repeating ?? false, locked: action.locked ?? false };
+        return { key, lua, repeating: action.repeating ?? false, locked: action.locked ?? false, release: entry.release ?? false, mouse: action.mouse ?? false };
     }
 
     // Os atalhos do shell viram binds como os outros. Uma tecla mapeada na aba
@@ -114,18 +114,29 @@ Singleton {
         for (const shortcut of ShellShortcuts.effective(Config.shellShortcuts)) {
             for (const k of shortcut.keys) {
                 if (!own.some(b => ShellShortcuts.same(b, k)) && !out.some(e => ShellShortcuts.same(e, k)))
-                    out.push({ trigger: k.trigger, mods: ShellShortcuts.normalizeMods(k.mods), action: { id: shortcut.id } });
+                    out.push({ trigger: k.trigger, mods: ShellShortcuts.normalizeMods(k.mods), release: k.release ?? false, action: { id: shortcut.id } });
             }
         }
         return out;
+    }
+
+    // As teclas da base do Hyprland que um atalho do shell substitui (o
+    // terminal): saem sempre, no eval e no arquivo. Sem mudança, o shell põe
+    // a mesma tecla de volta com o bind dele (no arquivo, carregado depois da
+    // base, sem o unbind ela ficaria com dois binds e abriria dois
+    // terminais); mudada ou tirada, a da base não abre mais nada. Fora da
+    // sessão Lucerna não há base: a tecla seria a do hyprland.lua da pessoa.
+    function baseUnbinds(layered: bool): var {
+        return layered ? ShellShortcuts.baseKeys().map(k => ({ key: ShellShortcuts.keyOf(k) })) : [];
     }
 
     function applyBinds(): void {
         if (!applies)
             return;
         const list = shellEntries().concat(Config.inputBinds ?? []).map(bindFor).filter(b => b);
-        Input.setBinds(list);
-        HyprFile.setSection("binds", Input.bindLua(list));
+        const base = baseUnbinds(HyprFile.layered);
+        Input.setBinds(list, base);
+        HyprFile.setSection("binds", [Input.unbindLua(base), Input.bindLua(list)].filter(l => l).join("\n"));
     }
 
     // Mudanças em sequência (arrastar um slider) viram uma aplicação só.

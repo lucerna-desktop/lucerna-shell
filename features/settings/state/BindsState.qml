@@ -140,6 +140,7 @@ Singleton {
         Config.inputBinds = all.filter(b => !same(b, entry));
     }
 
-    // Ações para o seletor, agrupadas.
-    readonly property var actionOptions: InputActions.actions.map(a => ({ label: a.label, detail: a.group, value: a.id }))
+    // Ações para o seletor, agrupadas. As de seguir o mouse (arrastar,
+    // redimensionar) ficam só nos atalhos do shell.
+    readonly property var actionOptions: InputActions.actions.filter(a => !a.mouse).map(a => ({ label: a.label, detail: a.group, value: a.id }))
 }

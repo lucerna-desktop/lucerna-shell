@@ -43,25 +43,13 @@ hl.config({
 })
 
 local mod = "ALT"
-local ipc = "qs -c lucerna ipc call "
 
-hl.bind(mod .. " + Q",         hl.dsp.window.close())
 hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("lucerna-session shell restart"))
 hl.bind(mod .. " + SHIFT + E", hl.dsp.exit())
 
--- Os atalhos do Lucerna (painéis, bloqueio, som, mídia e brilho) ficam com o
--- próprio shell: Configurações → Atalhos. Aqui, só os do Hyprland.
-
--- Volume e brilho sem teclas de mídia (no host, elas ficam com o KDE)
-hl.bind(mod .. " + Up",    hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { repeating = true })
-hl.bind(mod .. " + Down",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { repeating = true })
+-- Os atalhos do Lucerna (painéis, bloqueio, som, mídia e brilho, e também
+-- fechar, tela cheia, áreas de trabalho, setas e arrastar) ficam com o
+-- próprio shell: Configurações → Atalhos. Aqui, só os que ele não tem.
 hl.bind(mod .. " + M",     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
-hl.bind(mod .. " + Right", hl.dsp.exec_cmd(ipc .. "brightness up"),   { repeating = true })
-hl.bind(mod .. " + Left",  hl.dsp.exec_cmd(ipc .. "brightness down"), { repeating = true })
-
-for i = 1, 5 do
-    hl.bind(mod .. " + " .. i,         hl.dsp.focus({ workspace = i }))
-    hl.bind(mod .. " + SHIFT + " .. i, hl.dsp.window.move({ workspace = i }))
-end
 hl.bind(mod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))

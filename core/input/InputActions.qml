@@ -14,6 +14,8 @@ Singleton {
     // senão é "action run <id>"), "hypr" (dispatch do Hyprland),
     // "shortcut" (envia uma combinação para a janela), "command" (roda um
     // comando), "none" (o botão ou a tecla deixa de fazer qualquer coisa).
+    // `mouse`: a ação segue o mouse enquanto o botão está apertado (arrastar,
+    // redimensionar); só vale num botão do mouse.
     readonly property var actions: [
         { id: "launcher", group: "Lucerna", label: "Abrir o launcher", icon: Icons.apps, kind: "shell" },
         { id: "dashboard", group: "Lucerna", label: "Abrir o painel superior", icon: Icons.dashboard, kind: "shell" },
@@ -48,10 +50,32 @@ Singleton {
         { id: "pin", group: "Janelas", label: "Fixar em todos os workspaces", icon: Icons.pin, kind: "hypr", lua: "hl.dsp.window.pin()" },
         { id: "workspace-prev", group: "Janelas", label: "Workspace anterior", icon: Icons.previousWorkspace, kind: "hypr", lua: "hl.dsp.focus({ workspace = \"e-1\" })" },
         { id: "workspace-next", group: "Janelas", label: "Próximo workspace", icon: Icons.nextWorkspace, kind: "hypr", lua: "hl.dsp.focus({ workspace = \"e+1\" })" },
+        { id: "terminal", group: "Apps", label: "Abrir o terminal", icon: Icons.terminal, kind: "hypr", lua: "hl.dsp.exec_cmd(\"lucerna-session open terminal\")" }
+    ].concat(workspaceActions(), windowActions(), [
         { id: "shortcut", group: "Outros", label: "Enviar um atalho de teclado", icon: Icons.keyboard, kind: "shortcut" },
         { id: "command", group: "Outros", label: "Rodar um comando", icon: Icons.terminal, kind: "command" },
         { id: "none", group: "Outros", label: "Não fazer nada", icon: Icons.block, kind: "none" }
-    ]
+    ])
+
+    // Ir para cada área de trabalho (1 a 9) e mover a janela para ela.
+    function workspaceActions(): var {
+        const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        return numbers.map(n => ({ id: `workspace-${n}`, group: "Áreas de trabalho", label: `Ir para a área de trabalho ${n}`, icon: `counter_${n}`, kind: "hypr", lua: `hl.dsp.focus({ workspace = ${n} })` })).concat(numbers.map(n => ({ id: `move-to-${n}`, group: "Áreas de trabalho", label: `Mover a janela para a área de trabalho ${n}`, icon: "move_item", kind: "hypr", lua: `hl.dsp.window.move({ workspace = ${n} })` })));
+    }
+
+    // O foco e a janela pelas setas, e arrastar e redimensionar com o mouse.
+    function windowActions(): var {
+        const dirs = [
+            { id: "left", name: "à esquerda", icon: "west" },
+            { id: "right", name: "à direita", icon: "east" },
+            { id: "up", name: "para cima", icon: "north" },
+            { id: "down", name: "para baixo", icon: "south" }
+        ];
+        return dirs.map(d => ({ id: `focus-${d.id}`, group: "Janelas", label: `Foco na janela ${d.name}`, icon: d.icon, kind: "hypr", lua: `hl.dsp.focus({ direction = "${d.id}" })` })).concat(dirs.map(d => ({ id: `move-${d.id}`, group: "Janelas", label: `Mover a janela ${d.name}`, icon: d.icon, kind: "hypr", lua: `hl.dsp.window.move({ direction = "${d.id}" })` })), [
+            { id: "drag", group: "Janelas", label: "Arrastar a janela", icon: "drag_pan", kind: "hypr", lua: "hl.dsp.window.drag()", mouse: true },
+            { id: "resize", group: "Janelas", label: "Redimensionar a janela", icon: "open_in_full", kind: "hypr", lua: "hl.dsp.window.resize()", mouse: true }
+        ]);
+    }
 
     // Ids que mudaram de nome (o antigo → o novo): um botão ou tecla salvo
     // com o antigo segue valendo.
@@ -105,6 +129,7 @@ Singleton {
     // Símbolos do xkb com nome em português.
     readonly property var symbolNames: ({
         "Escape": "Esc", "Return": "Enter", "KP_Enter": "Enter do teclado numérico", "space": "Espaço", "Tab": "Tab",
+        "comma": "Vírgula", "period": "Ponto",
         "BackSpace": "Backspace", "Delete": "Delete", "Insert": "Insert", "Home": "Home", "End": "End",
         "Prior": "Page Up", "Next": "Page Down", "Up": "Seta para cima", "Down": "Seta para baixo",
         "Left": "Seta para a esquerda", "Right": "Seta para a direita", "Caps_Lock": "Caps Lock", "Num_Lock": "Num Lock",
@@ -128,6 +153,10 @@ Singleton {
             return symbolNames[sym];
         if (sym.length === 1)
             return sym.toUpperCase();
+        // O Hyprland aceita o nome em qualquer caixa ("left" nos atalhos padrão).
+        const named = Object.keys(symbolNames).find(k => k.toLowerCase() === sym.toLowerCase());
+        if (named)
+            return symbolNames[named];
         return sym.replace(/^XF86/, "").replace(/_/g, " ");
     }
 

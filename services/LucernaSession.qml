@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.core.config
 
 // A sessão Lucerna vista pelo shell: o que o lucerna-session detectou
 // ($XDG_RUNTIME_DIR/lucerna/session.json: GPU, DRM, modeset da NVIDIA,
@@ -105,6 +106,69 @@ Singleton {
         blockLoading: true
         blockWrites: true
         printErrors: false
+    }
+
+    // Os apps padrão (terminal, navegador, arquivos): os instalados de cada
+    // tipo, do `lucerna-session detect-apps` (na ordem de preferência dele; o
+    // primeiro é o automático), e o ~/.config/lucerna/apps.conf, que o
+    // `lucerna-session open` lê. Sem o lucerna-session, as listas ficam vazias.
+    property var apps: ({ terminal: [], browser: [], files: [] })
+    readonly property var appKinds: ["terminal", "browser", "files"]
+
+    function parseApps(text: string): var {
+        let data = {};
+        try {
+            data = JSON.parse(text) ?? {};
+        } catch (e) {
+            data = {};
+        }
+        const out = {};
+        for (const kind of appKinds)
+            out[kind] = Array.isArray(data[kind]) ? data[kind].map(String) : [];
+        return out;
+    }
+
+    // O texto do apps.conf: uma linha TIPO=app por escolha; vazio (o
+    // automático) não entra.
+    function appsConf(chosen: var): string {
+        const lines = ["# Gerado pelo Lucerna (Configurações → Atalhos). Vazio = automático."];
+        for (const kind of appKinds) {
+            const value = String(chosen?.[kind] ?? "").replace(/[\r\n]+/g, " ").trim();
+            if (value)
+                lines.push(`${kind}=${value}`);
+        }
+        return lines.join("\n") + "\n";
+    }
+
+    function detectApps(): void {
+        appsProbe.running = true;
+    }
+
+    // Grava o apps.conf (nunca no modo de segurança).
+    function writeApps(chosen: var): void {
+        if (Config.safeMode)
+            return;
+        const dir = `${Quickshell.env("XDG_CONFIG_HOME") || `${Quickshell.env("HOME")}/.config`}/lucerna`;
+        appsWriter.command = ["sh", "-c", 'mkdir -p "$1" && printf "%s" "$2" > "$1/apps.conf.tmp" && mv -f "$1/apps.conf.tmp" "$1/apps.conf"', "sh", dir, appsConf(chosen)];
+        appsWriter.running = true;
+    }
+
+    Process {
+        id: appsProbe
+
+        command: ["sh", "-c", "command -v lucerna-session > /dev/null && exec lucerna-session detect-apps"]
+        stdout: StdioCollector {
+            onStreamFinished: root.apps = root.parseApps(text)
+        }
+    }
+
+    Process {
+        id: appsWriter
+
+        onExited: code => {
+            if (code !== 0)
+                console.warn(`Lucerna: não consegui gravar o apps.conf (código ${code})`);
+        }
     }
 
     // Os avisos esperam o servidor de notificações (o do próprio shell) subir.

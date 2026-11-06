@@ -6,11 +6,13 @@ import qs.core.theme
 import qs.core.widgets
 import qs.features.settings.state
 
-// Atalhos: as teclas do próprio shell, editáveis. Clicar numa tecla troca por
-// outra; "+" acrescenta mais uma. Os atalhos do Hyprland (janelas, workspaces)
-// continuam no hyprland.lua.
+// Atalhos: as teclas do próprio shell (painéis, apps, janelas, áreas de
+// trabalho), editáveis. Clicar numa tecla troca por outra; "+" acrescenta mais
+// uma. Embaixo, os fixos da sessão (só leitura) e os apps padrão.
 Column {
     spacing: ThemeManager.spacing.large
+
+    Component.onCompleted: ShortcutsState.detectApps()
 
     Component.onDestruction: {
         if (ShortcutsState.capturing)
@@ -21,7 +23,7 @@ Column {
         width: parent.width
         wrapMode: Text.Wrap
         muted: true
-        text: "Clique numa tecla para trocar, ou em + para acrescentar outra. Uma tecla que o hyprland.lua também usa passa a ser do Lucerna. As janelas e os workspaces continuam no hyprland.lua; teclas e botões extras, nas abas Teclado e Mouse."
+        text: "Clique numa tecla para trocar, ou em + para acrescentar outra. Uma tecla que o hyprland.lua também usa passa a ser do Lucerna. Teclas e botões extras ficam nas abas Teclado e Mouse."
     }
 
     Txt {
@@ -78,6 +80,7 @@ Column {
                                     color: current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.2) : ThemeManager.glass(ThemeManager.colors.raised, 1)
                                     border.width: current ? 1 : ThemeManager.outlines ? 1 : 0
                                     border.color: current ? ThemeManager.colors.accent : ThemeManager.colors.border
+                                    enabled: ShortcutsState.editable(entry.modelData)
                                     onClicked: ShortcutsState.start(entry.modelData, index)
 
                                     Txt {
@@ -93,6 +96,7 @@ Column {
 
                             IconButton {
                                 anchors.verticalCenter: parent.verticalCenter
+                                visible: ShortcutsState.editable(entry.modelData)
                                 icon: Icons.add
                                 iconSize: 18
                                 onClicked: ShortcutsState.start(entry.modelData, -1)
@@ -147,6 +151,67 @@ Column {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    SettingSection {
+        title: "Fixos (funcionam sem o shell)"
+
+        Repeater {
+            model: ShortcutsState.fixed
+
+            delegate: SettingRow {
+                id: fixedRow
+
+                required property var modelData
+
+                icon: Icons.lock
+                title: modelData.label
+
+                Rectangle {
+                    width: fixedKey.implicitWidth + 20
+                    height: 30
+                    radius: 8
+                    color: ThemeManager.glass(ThemeManager.colors.raised, 1)
+                    border.width: ThemeManager.outlines ? 1 : 0
+                    border.color: ThemeManager.colors.border
+
+                    Txt {
+                        id: fixedKey
+
+                        anchors.centerIn: parent
+                        text: fixedRow.modelData.combo
+                        mono: true
+                        muted: true
+                        font.pixelSize: ThemeManager.font.small + 1
+                    }
+                }
+            }
+        }
+    }
+
+    SettingSection {
+        title: "Apps padrão"
+
+        Repeater {
+            model: ShortcutsState.appKinds
+
+            delegate: SettingRow {
+                id: appRow
+
+                required property var modelData
+
+                wide: true
+                icon: modelData.icon
+                title: modelData.label
+
+                Select {
+                    width: parent.width
+                    options: ShortcutsState.appOptions(ShortcutsState.installedApps[appRow.modelData.kind] ?? [], ShortcutsState.currentApp(appRow.modelData.kind))
+                    value: ShortcutsState.currentApp(appRow.modelData.kind)
+                    onSelected: v => ShortcutsState.setApp(appRow.modelData.kind, v)
                 }
             }
         }

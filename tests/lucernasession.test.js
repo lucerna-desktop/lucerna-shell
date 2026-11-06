@@ -29,4 +29,18 @@ function run(t) {
         t.eq(L.notices({ gpu: "nvidia", nvidiaModeset: false }, { log, count: 2, safe: false }).map(n => n.summary), ["O Lucerna reiniciou depois de uma falha", modeset.summary], "a queda e o modeset");
         t.eq(L.notices({}, {}), [], "um crash.json vazio não avisa");
     });
+
+    // Os apps padrão: o JSON do `lucerna-session detect-apps` e o apps.conf
+    // que o shell grava (vazio = automático: a linha não entra).
+    t.test("lucernasession: os apps instalados do detect-apps", () => {
+        t.eq(L.parseApps('{"terminal": ["foot", "kitty"], "browser": [], "files": ["thunar"]}\n'), { terminal: ["foot", "kitty"], browser: [], files: ["thunar"] });
+        t.eq(L.parseApps('{"terminal": "foot"}'), { terminal: [], browser: [], files: [] }, "formato estranho");
+        t.eq(L.parseApps("lixo"), { terminal: [], browser: [], files: [] }, "JSON inválido");
+    });
+
+    t.test("lucernasession: o apps.conf dos apps padrão", () => {
+        t.eq(L.appsConf({ terminal: "foot", browser: "", files: "thunar" }), "# Gerado pelo Lucerna (Configurações → Atalhos). Vazio = automático.\nterminal=foot\nfiles=thunar\n");
+        t.eq(L.appsConf({}), "# Gerado pelo Lucerna (Configurações → Atalhos). Vazio = automático.\n", "tudo automático");
+        t.eq(L.appsConf({ terminal: "foot\nbrowser=x" }), "# Gerado pelo Lucerna (Configurações → Atalhos). Vazio = automático.\nterminal=foot browser=x\n", "uma quebra de linha não vira outra chave");
+    });
 }

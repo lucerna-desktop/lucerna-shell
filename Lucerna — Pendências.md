@@ -184,6 +184,8 @@ Da implementação do modo jogo no shell (branch `feat/modo-jogo`, com o `lucern
 - [ ] README: a captura `docs/screenshots/hero.jpg` (cena montada com terminais e música) ainda mostra o visual antigo do painel superior. Refazer a cena.
 - [ ] Lint: quando o CI deixar de testar o Qt 6.11, tirar o `unqualified` da linha de supressão da margem e do `QMLLINT_ALLOWED_COMMENT` em `ci/rules.py`.
 - [ ] Crédito ao Caelestia também na página Sobre das configurações (hoje só no README).
+- [ ] Atalhos (base robusta, Tarefa 11): arrastar e redimensionar (`Super` + botão esquerdo/direito) só mostram a tecla na página de Atalhos; falta escolher o modificador (a captura é de teclas, e os botões esquerdo e direito ficam fora da captura do mouse).
+- [ ] Apps padrão (Tarefa 11): o `apps.conf` só é gravado quando a escolha muda na página de Atalhos; um `Config.defaultApps` mudado por fora (o `config.json` à mão, `dev/test.sh setc`) não chega ao `apps.conf` até a próxima escolha. De propósito, para não apagar um `apps.conf` escrito à mão na partida; rever se o `apps.conf` passar a ser só do shell.
 
 ## Verificar com hardware e entrada reais
 
@@ -208,6 +210,7 @@ No ambiente de teste não dá para simular cliques, e o Hyprland ignora teclado 
 - [ ] Bloqueio pelo logind (`services/Logind.qml`): na máquina real, o `GetSession("auto")` com o shell subido pelo `lucerna-shell.service` (fora do escopo da sessão, o logind cai na sessão gráfica do usuário), o inibidor delay aceito pelo polkit, o bloqueio na tela antes de dormir pelo `systemctl suspend`, pela tecla de energia e pela tampa, a hibernação, o `loginctl lock-session`/`unlock-session` e o `LockedHint` no `loginctl show-session`. No container só o logind falso.
 - [ ] Tampa com monitor externo (`Monitors.lidPlan`, `DisplaysState.followLid`): num notebook de verdade (o container só tem a `WAYLAND-1`, que não é interna), fechar a tampa com um externo ligado apaga a `eDP` sem suspender (o `HandleLidSwitchDocked=ignore` padrão do logind; quem mudou isso no `logind.conf` suspende mesmo assim) e, com a opção de Energia, bloqueia; abrir religa a `eDP` com o arranjo salvo; tirar o externo com a tampa fechada religa a `eDP`. Ver também o externo espelhando a `eDP` (com a tampa fechada a `eDP` desliga e o espelho perde a origem).
 - [ ] Central: os ícones da barra abrindo as ações na página certa e fechando no mesmo ícone (sem fechar as notificações), o sino abrindo e fechando só as notificações, e o foco voltando ao painel (o `Esc` fecha) depois de fechar as ações com a senha do Wi-Fi sendo digitada; os tiles (o corpo liga e desliga, a setinha abre a página), os sliders de volume e brilho e os volumes do microfone e de cada app; a troca de dispositivo, conectar a uma rede com senha, parear, os perfis de energia, a engrenagem e o "Limpar".
+- [ ] Super sozinho (lançador ao soltar, `release = true` no `SUPER + SUPER_L`): conferido no container com o Alt e o `wtype` (Alt sozinho abre; Alt+1 e soltar não abre; Alt+arrastar uma janela com o ponteiro virtual e soltar não abre). Conferir com o teclado e o mouse de verdade na sessão real, com o Super.
 
 ## Ambiente de teste
 

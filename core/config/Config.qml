@@ -97,6 +97,7 @@ Singleton {
     property alias keyRemaps: adapter.keyRemaps
     property alias inputBinds: adapter.inputBinds
     property alias shellShortcuts: adapter.shellShortcuts
+    property alias defaultApps: adapter.defaultApps
     property alias clipboardEnabled: adapter.clipboardEnabled
     property alias clipboardLimit: adapter.clipboardLimit
     property alias clipboardPersist: adapter.clipboardPersist
@@ -296,6 +297,9 @@ Singleton {
             // Atalhos do shell que o usuário mudou: { <id da ação>: [{ mods, trigger }] }
             // (os padrões estão em core/input/ShellShortcuts).
             property var shellShortcuts: ({})
+            // Apps padrão (o `lucerna-session open` os abre; o shell grava o
+            // ~/.config/lucerna/apps.conf): "" = automático (o primeiro instalado).
+            property var defaultApps: ({ terminal: "", browser: "", files: "" })
             // Histórico da área de transferência: guardar, quantos, manter ao
             // reiniciar e colar direto ao escolher.
             property bool clipboardEnabled: true

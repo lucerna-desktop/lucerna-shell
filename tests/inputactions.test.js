@@ -36,6 +36,8 @@ function run(t) {
 
     t.test("inputactions: nome amigável de símbolo do xkb", () => {
         t.eq(A.prettySymbol("space"), "Espaço");
+        t.eq(A.prettySymbol("comma"), "Vírgula", "o atalho das Configurações");
+        t.eq(A.prettySymbol("left"), "Seta para a esquerda", "o nome em outra caixa");
         t.eq(A.prettySymbol("a"), "A");
         t.eq(A.prettySymbol("XF86Launch5"), "Launch5");
         t.eq(A.prettySymbol("Page_Up"), "Page Up");
@@ -57,5 +59,18 @@ function run(t) {
         t.eq(["game", "bar"].map(id => A.describe({ id })), ["Ligar/desligar o modo jogo", "Mostrar/esconder a barra"]);
         const keys = t.ShellShortcuts.effective({});
         t.eq(["game", "bar"].map(id => keys.find(k => k.id === id)?.keys), [[], []], "na lista, sem tecla");
+    });
+
+    t.test("inputactions: as ações novas existem", () => {
+        const term = A.find("terminal");
+        t.eq([term.kind, term.lua, term.group], ["hypr", 'hl.dsp.exec_cmd("lucerna-session open terminal")', "Apps"]);
+        t.eq([A.find("workspace-3").lua, A.find("workspace-3").group], ["hl.dsp.focus({ workspace = 3 })", "Áreas de trabalho"]);
+        t.eq([A.find("move-to-9").lua, A.find("move-to-9").group], ["hl.dsp.window.move({ workspace = 9 })", "Áreas de trabalho"]);
+        t.eq([A.find("focus-left").lua, A.find("focus-left").group], ['hl.dsp.focus({ direction = "left" })', "Janelas"]);
+        t.eq([A.find("move-down").lua, A.find("move-down").group], ['hl.dsp.window.move({ direction = "down" })', "Janelas"]);
+        t.eq([A.find("drag").lua, A.find("drag").mouse, A.find("drag").group], ["hl.dsp.window.drag()", true, "Janelas"]);
+        t.eq([A.find("resize").lua, A.find("resize").mouse], ["hl.dsp.window.resize()", true]);
+        const missing = t.ShellShortcuts.defaults.filter(d => !A.find(d.id)).map(d => d.id);
+        t.eq(missing, [], "todo atalho padrão tem a sua ação");
     });
 }

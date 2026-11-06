@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import qs.core.config
 import qs.core.input
+import qs.core.widgets
 import qs.services
 
 // View model de Configurações → Atalhos: as teclas do próprio shell. Clicar
@@ -15,8 +16,18 @@ Singleton {
 
     readonly property var groups: [
         { title: "Painéis e sessão", ids: ["launcher", "overview", "clipboard", "dashboard", "settings", "actions", "notifications", "central", "themes", "power", "lock", "dnd", "game", "bar"] },
+        { title: "Apps", ids: ["terminal"] },
+        { title: "Janelas", ids: ["close", "fullscreen", "focus-left", "focus-right", "focus-up", "focus-down", "move-left", "move-right", "move-up", "move-down", "drag", "resize"] },
+        { title: "Áreas de trabalho", ids: [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `workspace-${n}`).concat([1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `move-to-${n}`)) },
         { title: "Captura de tela", ids: ["capture", "capture-screen", "capture-window", "record"] },
         { title: "Som, mídia e brilho", ids: ["volume-up", "volume-down", "mute", "mic-mute", "play-pause", "next", "previous", "brightness-up", "brightness-down"] }
+    ]
+
+    // Os binds fixos da base do Hyprland (session/hypr/hyprland.lua): valem
+    // mesmo sem o shell e não mudam aqui.
+    readonly property var fixed: [
+        { combo: "Ctrl + Alt + Delete", label: "Energia e sessão" },
+        { combo: "Ctrl + Alt + Shift + Esc", label: "Sair da sessão" }
     ]
 
     readonly property var shortcuts: ShellShortcuts.effective(Config.shellShortcuts)
@@ -33,8 +44,26 @@ Singleton {
         return InputActions.find(id)?.icon ?? "";
     }
 
+    // Uma tecla legível: "Super + Espaço", "Super sozinho" (o modificador ao
+    // soltar), "Super + Botão esquerdo".
     function pretty(k: var): string {
-        return InputActions.prettyCombo(ShellShortcuts.normalizeMods(k.mods), k.trigger);
+        const mods = ShellShortcuts.normalizeMods(k.mods);
+        const alone = /^(SUPER|ALT|CTRL|SHIFT)_[LR]$/i.exec(String(k.trigger));
+        if (k.release && alone)
+            return `${InputActions.modNames[alone[1].toUpperCase()]} sozinho`;
+        const button = /^mouse:(\d+)$/.exec(String(k.trigger));
+        if (button) {
+            const name = ({ 272: "Botão esquerdo", 273: "Botão direito" })[button[1]] ?? InputActions.buttonLabel(Number(button[1]));
+            return (mods ? mods.split(" ") : []).map(m => InputActions.modNames[m] ?? m).concat([name]).join(" + ");
+        }
+        return InputActions.prettyCombo(mods, k.trigger);
+    }
+
+    // Os atalhos do mouse (arrastar, redimensionar) só mostram a tecla: a
+    // captura daqui é de teclas, e os botões esquerdo e direito ficam fora
+    // da captura do mouse.
+    function editable(id: string): bool {
+        return !(InputActions.find(id)?.mouse ?? false);
     }
 
     // Captura: { id, index } (index -1 = acrescentar) ou null.
@@ -117,4 +146,36 @@ Singleton {
     }
 
     readonly property bool anyCustom: shortcuts.some(s => s.custom)
+
+    // Apps padrão: "Automático (o primeiro instalado)" e os instalados; o
+    // escolhido que não está mais instalado continua na lista, marcado.
+    readonly property var appKinds: [
+        { kind: "terminal", label: "Terminal", icon: Icons.terminal },
+        { kind: "browser", label: "Navegador", icon: "language" },
+        { kind: "files", label: "Arquivos", icon: "folder" }
+    ]
+
+    readonly property var installedApps: LucernaSession.apps
+
+    function detectApps(): void {
+        LucernaSession.detectApps();
+    }
+
+    function currentApp(kind: string): string {
+        return Config.defaultApps?.[kind] ?? "";
+    }
+
+    function appOptions(installed: var, current: string): var {
+        const out = [{ label: `Automático (${installed[0] ?? "nenhum instalado"})`, value: "" }].concat(installed.map(app => ({ label: app, value: app })));
+        if (current && !installed.includes(current))
+            out.push({ label: current, value: current, detail: "não instalado" });
+        return out;
+    }
+
+    function setApp(kind: string, app: string): void {
+        const next = Object.assign({ terminal: "", browser: "", files: "" }, Config.defaultApps ?? {});
+        next[kind] = app;
+        Config.defaultApps = next;
+        LucernaSession.writeApps(next);
+    }
 }

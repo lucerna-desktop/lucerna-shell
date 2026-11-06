@@ -102,7 +102,7 @@ Singleton {
         HyprFile.reload();
     }
 
-    // Binds do Lucerna: [{ key: "SUPER + mouse:275", lua: "hl.dsp....", repeating, locked }].
+    // Binds do Lucerna: [{ key: "SUPER + mouse:275", lua: "hl.dsp....", repeating, locked, release, mouse }].
     // Trocar a lista tira os anteriores e o que o hyprland.lua tiver nas mesmas
     // teclas (senão a ação rodaria duas vezes); suspender tira todos por um
     // tempo (para capturar uma tecla ou botão que já está mapeado).
@@ -120,13 +120,24 @@ Singleton {
                 opts.push("repeating = true");
             if (b.locked)
                 opts.push("locked = true");
+            if (b.release)
+                opts.push("release = true");
+            if (b.mouse)
+                opts.push("mouse = true");
             return `hl.bind(${luaString(b.key)}, ${b.lua}${opts.length ? `, { ${opts.join(", ")} }` : ""})`;
         }).join("\n");
     }
 
-    function setBinds(list: var): void {
-        const keys = binds.concat(list).filter((b, i, all) => all.findIndex(o => o.key.toLowerCase() === b.key.toLowerCase()) === i);
-        const lua = [unbindLua(keys), suspended ? "" : bindLua(list)].filter(l => l).join("\n");
+    // O Lua de trocar os binds: tira os anteriores, os da lista nova e os de
+    // `alsoUnbind` ([{ key }]: as teclas da base que um atalho do shell
+    // substitui), cada tecla uma vez, e põe os novos (suspenso, só tira).
+    function bindsLua(previous: var, list: var, alsoUnbind: var, isSuspended: bool): string {
+        const keys = previous.concat(list, alsoUnbind ?? []).filter((b, i, all) => all.findIndex(o => o.key.toLowerCase() === b.key.toLowerCase()) === i);
+        return [unbindLua(keys), isSuspended ? "" : bindLua(list)].filter(l => l).join("\n");
+    }
+
+    function setBinds(list: var, alsoUnbind: var): void {
+        const lua = bindsLua(binds, list, alsoUnbind, suspended);
         binds = list;
         if (lua)
             evalLua(lua);

@@ -254,6 +254,7 @@ ShellRoot {
             get BlobShapes() { return BlobShapes; },
             get InputActions() { return InputActions; },
             get ShellShortcuts() { return ShellShortcuts; },
+            get ShortcutsState() { return ShortcutsState; },
             get SearchEngines() { return SearchEngines; },
             get NightSchedule() { return NightSchedule; },
             get Panels() { return Panels; },
