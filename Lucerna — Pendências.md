@@ -187,6 +187,35 @@ Da implementação do modo jogo no shell (branch `feat/modo-jogo`, com o `lucern
 - [ ] **A lista "nunca" de fábrica está copiada** do `DEFAULT_NEVER` do `lucernad` no padrão do `Config.gameNever` (revisão final, M2): o shell sempre manda a lista dele no `game.configure`, e o daemon não publica a de fábrica (nem no `game.state` nem num método), então ler dela pede uma mudança no `lucernad` (um `game.defaults` ou o campo no `game.status`), registrada nas Pendências de lá. Até lá, o comentário no `Config` aponta a origem; se a lista do daemon mudar, mudar aqui também. Depois: a fumaça comparar as duas, e um botão "voltar à lista de fábrica" na página.
 - [ ] **O resumo das notificações conta as que ainda estão na lista:** uma notificação dispensada durante o jogo (pelo app ou na central) não entra (decisão D20 do spec).
 
+## Sobras da base robusta
+
+Da revisão final da branch `feat/base-robusta` (triagem do ledger de minors das Tarefas 1 a 14, e os residuais depois das correções). Nada aqui bloqueia o merge; os pontos de máquina real estão no Marco 7.
+
+**Sessão, supervisor e emergência**
+- [ ] Dois supervisores por corrida: vale um `flock` no `supervisor.pid`. `shell stop` passando de 5 s pode perder o SIGUSR1 (o `wait_hold` acha o start no arquivo em 1 s) e há uma corrida de milissegundos entre o `hold` e o `qs.pid`; no pior caso, o próximo `shell stop` resolve.
+- [ ] `show-environment` sem timeout (vale um `timeout 5`); `have` com `command -v`; `session.env` sem aspas (o `AppsScale` grava assim); `Config.filePath` cai em `/tmp/lucerna` sem `XDG_RUNTIME_DIR` (alinhar com o `/run/user/$UID` do `common.sh`).
+- [ ] `LUCERNA_SAFE_MODE` e `QS_DISABLE_CRASH_HANDLER` são herdados pelos apps (só incomoda quem roda `qs` à mão); pelo mesmo caminho, os apps abertos pelo shell herdam `LUCERNA_SUPERVISED=1`, e um `qs` digitado nesse terminal não é barrado.
+- [ ] `unlock` esvazia a marca mesmo com o `hyprctl` falhando (o bloqueio caído segue no Hyprland, repetir resolve); o log "volta ao normal" é enganoso; a emergência: corrida entre o pid file e o `close_emergency`, tamanhos fixos (de propósito, sem tema), sem teste do IPC travado nem do power com a emergência aberta.
+- [ ] Logind: o backoff zera com as linhas de cabeçalho (volta em 1 s); soltar e repegar o inibidor rápido deixa 1 s de buraco; o `GetSession` que falha só é tentado de novo com o monitor; um `secure` falso depois de hot reload bloqueado faz a suspensão esperar o `InhibitDelayMaxUSec` (5 s), nunca abrir.
+
+**Tampa e monitores**
+- [ ] Partida com `Monitors.monitors` vazio: uma `eDP` deixada desligada por um shell que caiu enquanto a tampa abria fica assim sem arranjo salvo (a página de Monitores religa). Correção barata: no primeiro `monitorsChanged` depois de um `lidRead` com a lista vazia, chamar `followLid(false)`.
+- [ ] A `eDP` desligada de propósito pisca ao abrir a tampa e a cada reconexão do `gdbus`; o espelho da `eDP` conta como externo; o `lock` só na virada da tampa; uma corrida do `PropertiesChanged` antes do `Get` pula o `lock` (só na partida); `restoreDelay` duplica o `reloadDelay`; `restore` forçado e `lastLidPlan` sem teste.
+- [ ] Monitores: seções semeadas de um Lua antigo nunca saem (regras ausentes são inofensivas); texto do `settings.lua` por argv (128 KiB); recarga depois de gravação que falhou; só as funções puras têm teste; arquivo gravado fora da sessão Lucerna (inofensivo, decidir e registrar); chave `original` misturada em `claims`; regras automáticas se acumulam; hl.on devolvendo nil; o formato do `description` no reload.
+
+**Atalhos e apps**
+- [ ] `writeApps` descarta a escrita com a anterior rodando (enfileirar como o `HyprFile`); `Wants` comparado como lista ordenada; drag/resize mapeado em tecla ganharia `mouse = true`; teste do `SUPER_L` sem efeito no modo dev; testes do `ShortcutsState` no arquivo errado; `pretty()` com casos mortos.
+
+**Escala**
+- [ ] `ThemeManager.scale` sem limite (precisa de edição à mão; o modo de segurança recupera); `setShellScale` sem teste; `blurMax` não escala; as outras páginas das Configurações não foram conferidas em 1,25; a lista lateral das Configurações em 1,25 ainda passa do fim visível (Tarefas 1 e 15).
+- [ ] Shader: o `fwidth` depois de um `discard` não uniforme (mover o `w` para antes), a suavização alarga nas diagonais de L1, `Window.window?.devicePixelRatio ?? 1` repetido, `Pixel` sem guarda para `dpr <= 0`; `CaptureOverlay` com `h.y > 40` sem px, `GlassPreview` com -70/-20.
+- [ ] Modo "Escala pelos apps": gaps escalados da base, não os da pessoa; restaurar pode deixar monitores em 1 se o conjunto mudou; `force_zero_scaling` não é restaurado (a base já põe `true`); o modo de segurança aplica meio modo (some ao reiniciar normalmente); `xrdb` na volta põe `Xft.dpi` 96; pastas `gtk` vazias ficam; `restoreLua` com `||` troca um original vazio pelo neutro; o `.lucerna-bak` da primeira entrada fica para sempre (decisão consciente).
+- [ ] `AppsScale`: o arquivo temporário nasce com o umask antes do `chmod` (uma janela curta de leitura, e quebra hardlinks); o `QT_SCALE_FACTOR` é sempre gravado como "ausente antes" (o supervisor o tira), então a volta o desfaz no systemd mesmo que a pessoa o tenha posto pelo `environment.d`; com o `dbus-daemon` clássico, o ambiente do modo continua no ambiente de ativação dele.
+
+**Ambiente de teste (dev)**
+- [ ] `dev/test.sh`: `headless off` fixa 1920x1080 em vez do `LUCERNA_TEST_SIZE`; a mensagem do `shot` fala só da `WAYLAND-1`; sem `pkill`; Hyprland com stdin `/dev/null`; o `help` (`sed 2,42p`) corta; `dev/test.sh logind` imprime `()`; o logind falso casa `sleep` por substring, rejeita `block-weak`/`delay-weak`, o `stop` mata o PID sem conferir o `comm`, `on_get` None e sem `session/auto` nem `GetSessionByPID`.
+- [ ] Benches: `set_scale` e a leitura duplicados, o cabeçalho com `hl.monitor` sem `mode`/`position`, `LUCERNA_BENCH=janela` sem uso, o `restore` engole a falha do `set_scale`, o parado-painel fora da tolerância (stall do host).
+
 ## Depois
 
 - [ ] **Host de painéis dos apps: subir o serviço quando a conexão é recusada** (do "Trabalho seguinte" do lucerna-sdk#14; item 7 do lucerna-sdk#13). Com a conexão ao `<app>.sock` recusada, o host roda `<app.tui do manifesto> serve` pelo mesmo molde do `Client::connect_or_spawn` do SDK (grupo de processos novo, saída no `serve.log`, até 2 s com espera crescente) e reconecta. Vai junto com o cliente QML do protocolo.
