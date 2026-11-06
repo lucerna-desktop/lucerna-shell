@@ -16,6 +16,15 @@ function run(t) {
         t.eq(L.notices(null, null), [], "nulo");
     });
 
+    // Um qs dentro da sessão Lucerna sem o supervisor (o exec_cmd do README
+    // antigo, um bind `pkill -x qs; qs -c lucerna`) sai: senão seriam dois.
+    t.test("lucernasession: só o qs do supervisor sobe na sessão Lucerna", () => {
+        t.eq(L.unsupervised("1", ""), true, "na sessão, sem o supervisor: sai");
+        t.eq(L.unsupervised("1", "1"), false, "na sessão, o do supervisor");
+        t.eq(L.unsupervised("", ""), false, "fora da sessão Lucerna, sobe");
+        t.eq(L.unsupervised("", "1"), false, "fora da sessão, com a variável, sobe");
+    });
+
     t.test("lucernasession: aviso da queda e do modo de segurança", () => {
         const log = "/home/x/.local/state/lucerna/shell/qs-20261104-101010.log";
         t.eq(L.notices({}, { time: "2026-11-04T10:10:10-03:00", log, count: 1, safe: false }), [{

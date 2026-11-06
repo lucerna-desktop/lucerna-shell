@@ -139,13 +139,15 @@ on_start() {
 # QT_SCALE_FACTOR (a escala do shell é a interna) e sem o tratador de quedas
 # do próprio Quickshell (QS_DISABLE_CRASH_HANDLER): com ele, o qs se relança
 # sozinho num processo novo (sem o -c no cmdline) e o supervisor não vê a
-# queda; a política de quedas é a daqui.
+# queda; a política de quedas é a daqui. O LUCERNA_SUPERVISED=1 diz ao shell
+# que ele é o do supervisor: na sessão Lucerna, um qs sem ela (um exec_cmd no
+# hyprland.lua da pessoa) sai logo, para não haver dois shells.
 run_qs() {
     local -a safe_env=()
     [ "$safe" = 1 ] && safe_env=(LUCERNA_SAFE_MODE=1)
     new_log
     log "o shell sobe (${LUCERNA_SHELL_CONFIG:-lucerna}${safe_env[*]:+, modo de segurança}; registro em $qs_log)"
-    env -u QT_SCALE_FACTOR -u LUCERNA_SAFE_MODE QS_DISABLE_CRASH_HANDLER=1 "${safe_env[@]}" qs -c "${LUCERNA_SHELL_CONFIG:-lucerna}" >> "$qs_log" 2>&1 < /dev/null &
+    env -u QT_SCALE_FACTOR -u LUCERNA_SAFE_MODE QS_DISABLE_CRASH_HANDLER=1 LUCERNA_SUPERVISED=1 "${safe_env[@]}" qs -c "${LUCERNA_SHELL_CONFIG:-lucerna}" >> "$qs_log" 2>&1 < /dev/null &
     qs_pid=$!
     write_file "$qs_pid_file" "$qs_pid"
     # O wait volta antes do fim quando chega um sinal (o SIGUSR1); o qs segue.

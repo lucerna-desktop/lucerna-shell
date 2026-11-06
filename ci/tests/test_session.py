@@ -552,7 +552,7 @@ class SupervisorTest(SessionBase):
     exit 0
 fi
 n=$(( $(cat "{self.counter}" 2> /dev/null || echo 0) + 1 )); echo "$n" > "{self.counter}"
-echo "start=$n safe=${{LUCERNA_SAFE_MODE:-}} qt=${{QT_SCALE_FACTOR-unset}} handler=${{QS_DISABLE_CRASH_HANDLER-}} args=$*" >> "{self.starts}"
+echo "start=$n safe=${{LUCERNA_SAFE_MODE:-}} qt=${{QT_SCALE_FACTOR-unset}} handler=${{QS_DISABLE_CRASH_HANDLER-}} supervised=${{LUCERNA_SUPERVISED-}} args=$*" >> "{self.starts}"
 echo "partida $n"
 line=$(sed -n "${{n}}p" "{self.exits}")
 trap 'kill $s 2> /dev/null; exit 143' TERM
@@ -745,6 +745,9 @@ wait $s""",
         self.assertIn("qt=unset", self.start_lines()[0])
         # O tratador de quedas do Quickshell desligado: a queda é do supervisor.
         self.assertIn("handler=1 ", self.start_lines()[0])
+        # O shell sabe que é o do supervisor: na sessão Lucerna, um qs sem a
+        # LUCERNA_SUPERVISED (o exec_cmd do hyprland.lua da pessoa) sai.
+        self.assertIn("supervised=1 ", self.start_lines()[0])
         self.assertIn("args=-c lucerna", self.start_lines()[0])
 
     def test_status_unsupervised_without_pid(self):

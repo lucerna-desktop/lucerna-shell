@@ -193,14 +193,15 @@ ex() {
 # quando o `shell status` diz supervised; sem supervisor vivo, `shell start`
 # sobe um. Com o barramento do host montado (LUCERNA_TEST_HOST_BUS=1 no up),
 # `shell stop` e o qs à mão, como antes, com esse barramento no lugar do da
-# sessão do container (o supervisor fica parado até o próximo up).
+# sessão do container (o supervisor fica parado até o próximo up; o
+# LUCERNA_SUPERVISED=1 faz as vezes dele, senão o qs na sessão Lucerna sai).
 start_shell() {
     # shellcheck disable=SC2016 # expande dentro do container, não aqui
     ex 'if [ -S "$XDG_RUNTIME_DIR/host-bus" ]; then
             lucerna-session shell stop
             pkill -x qs; sleep 0.5
             export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/host-bus"
-            setsid -f qs -c lucerna > /dev/null 2>&1 < /dev/null
+            LUCERNA_SUPERVISED=1 setsid -f qs -c lucerna > /dev/null 2>&1 < /dev/null
         elif [ "$(lucerna-session shell status)" = unsupervised ]; then
             pkill -x qs; sleep 0.5
             lucerna-session shell start

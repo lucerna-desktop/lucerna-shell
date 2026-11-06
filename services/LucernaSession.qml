@@ -29,6 +29,13 @@ Singleton {
         started = true;
     }
 
+    // O qs dentro da sessão Lucerna (LUCERNA_SESSION=1) sem o supervisor
+    // (LUCERNA_SUPERVISED vazia): o shell.qml sai sem abrir nada. Fora da
+    // sessão Lucerna, o qs sobe como sempre. Pura.
+    function unsupervised(session: string, supervised: string): bool {
+        return session === "1" && supervised === "";
+    }
+
     // Os avisos, como [{ summary, body }]: a queda (crash.json) e os da
     // detecção (session.json). Pura.
     function notices(info: var, crash: var): var {

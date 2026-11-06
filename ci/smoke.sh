@@ -55,6 +55,11 @@
 # (com a captura); ao acordar, o inibidor de novo (10 s); o UnlockSession
 # desbloqueia e o LockSession bloqueia (5 s cada), e um UnlockSession no fim
 # deixa a tela livre para o repouso.
+# Antes do repouso, a fase "qs sem supervisor": um segundo qs com
+# LUCERNA_SESSION=1 e sem a LUCERNA_SUPERVISED (o exec_cmd do qs no
+# hyprland.lua da pessoa, dentro da sessão Lucerna) precisa sair sozinho em
+# 10 s, com código 0 e a linha "este qs sai" no log dele, sem derrubar o shell
+# da fumaça.
 # O som nunca alcança um alto-falante: o PipeWire da fumaça é próprio, sem os
 # monitores de hardware, e o mpv toca só no sink nulo. A unidade roda de novo
 # numa cópia separada (unit_suites e unit_run, do ci/lib.sh), e a cobertura de
@@ -84,6 +89,7 @@
 # o shell não segue), `ipc call`
 # com código diferente de 0, `panels get` diferente do esperado, painel que não
 # fecha, shell que cai (inclusive no repouso de 5 s depois do último passo),
+# o qs sem supervisor na sessão Lucerna que não sai em 10 s com a linha no log,
 # shell que não encerra limpo com `qs kill` (código 0 em 10 s), aviso ou erro
 # fora do ci/tolerated.txt no log final (conferido depois do encerramento), a
 # unidade da cópia separada que falha e todo `ipc call` ou grim que passa de
@@ -953,6 +959,27 @@ logind_call LockSession > /dev/null || fail "o org.lucerna.Test.LockSession falh
 wait_locked true "LockSession bloqueia"
 logind_call UnlockSession > /dev/null || fail "o org.lucerna.Test.UnlockSession falhou: $(why $?)"
 wait_locked false "UnlockSession no fim"
+
+# O qs sem supervisor na sessão Lucerna sai sem abrir nada (o log dele fica
+# fora do shell.log: o aviso é o esperado).
+env -u LUCERNA_SUPERVISED LUCERNA_SESSION=1 setsid qs -c lucerna > "$out/unsupervised.log" 2>&1 < /dev/null &
+dup_pid=$!
+for _ in $(seq 50); do
+    kill -0 "$dup_pid" 2> /dev/null || break
+    sleep 0.2
+done
+if kill -0 "$dup_pid" 2> /dev/null; then
+    kill -TERM -- "-$dup_pid" 2> /dev/null || kill "$dup_pid" 2> /dev/null || true
+    row "qs sem supervisor na sessão Lucerna" "sai em 10 s" "(não saiu)"
+    fail "o qs com LUCERNA_SESSION=1 e sem LUCERNA_SUPERVISED não saiu em 10 s (veja unsupervised.log)"
+fi
+dup_code=0
+wait "$dup_pid" || dup_code=$?
+grep -qF "este qs sai" "$out/unsupervised.log" \
+    || fail "o qs sem supervisor saiu (código $dup_code) sem a linha \"este qs sai\" no log (veja unsupervised.log)"
+[ "$dup_code" -eq 0 ] || fail "o qs sem supervisor saiu com código $dup_code (veja unsupervised.log)"
+alive || fail "o shell caiu com o qs sem supervisor"
+row "qs sem supervisor na sessão Lucerna" "sai em 10 s, código 0, com a linha no log" "código $dup_code"
 
 # Repouso: o shell fica parado alguns segundos depois do último passo, para o
 # que chega tarde (um Timer, uma resposta assíncrona, o efeito do último

@@ -300,12 +300,13 @@ if [ "$rec_only" = 1 ]; then
 fi
 
 # O qs com o log do render loop. O supervisor para o dele (sem contar como
-# queda) e espera o shell start do restore.
+# queda) e espera o shell start do restore. O LUCERNA_SUPERVISED=1 faz as
+# vezes do supervisor parado: sem ela, o qs na sessão Lucerna sai logo.
 restarted=1
 lucerna-session shell stop
 pkill -x qs || true
 sleep 0.5
-QT_LOGGING_RULES='qt.scenegraph.time.renderloop.debug=true' setsid -f qs -c lucerna > "$log" 2>&1 < /dev/null
+QT_LOGGING_RULES='qt.scenegraph.time.renderloop.debug=true' LUCERNA_SUPERVISED=1 setsid -f qs -c lucerna > "$log" 2>&1 < /dev/null
 # Sem instância, o `ipc call` também escreve na saída: pronto é responder o
 # mesmo desfoque de antes (o `panels get` sai vazio com tudo fechado).
 ready() { [ "$(ipc blur get || true)" = "$blur_before" ]; }
