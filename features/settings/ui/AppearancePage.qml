@@ -43,19 +43,19 @@ Column {
                         readonly property bool current: modelData.id === SettingsState.theme
 
                         width: themeFlow.chipWidth
-                        height: 64
+                        height: ThemeManager.px(64)
                         radius: ThemeManager.radius.normal
                         pressScale: 0.95
                         color: modelData.colors.base ?? "black"
-                        border.width: current ? 2 : ThemeManager.outlines ? Pixel.hairline(page.dpr) : 0
+                        border.width: current ? ThemeManager.px(2) : ThemeManager.outlines ? Pixel.hairline(page.dpr) : 0
                         border.color: current ? ThemeManager.colors.accent : (modelData.colors.border ?? "gray")
                         onClicked: SettingsState.applyTheme(modelData.id)
 
                         Row {
                             anchors.left: parent.left
                             anchors.top: parent.top
-                            anchors.margins: 10
-                            spacing: 4
+                            anchors.margins: ThemeManager.px(10)
+                            spacing: ThemeManager.px(4)
 
                             Repeater {
                                 model: ["accent", "text", "textMuted", "surface"]
@@ -63,9 +63,9 @@ Column {
                                 delegate: Rectangle {
                                     required property string modelData
 
-                                    width: 14
-                                    height: 14
-                                    radius: 7
+                                    width: ThemeManager.px(14)
+                                    height: ThemeManager.px(14)
+                                    radius: width / 2
                                     color: chip.modelData.colors[modelData] ?? "gray"
                                     border.width: Pixel.hairline(page.dpr)
                                     border.color: chip.modelData.colors.border ?? "gray"
@@ -77,7 +77,7 @@ Column {
                             anchors.left: parent.left
                             anchors.right: parent.right
                             anchors.bottom: parent.bottom
-                            anchors.margins: 10
+                            anchors.margins: ThemeManager.px(10)
                             elide: Text.ElideRight
                             text: chip.modelData.name
                             color: chip.modelData.colors.text ?? "white"
@@ -90,10 +90,10 @@ Column {
                         Rectangle {
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            anchors.margins: 8
-                            width: 20
-                            height: 20
-                            radius: 10
+                            anchors.margins: ThemeManager.px(8)
+                            width: ThemeManager.px(20)
+                            height: ThemeManager.px(20)
+                            radius: width / 2
                             color: chip.modelData.colors.accent ?? "white"
                             scale: chip.current ? 1 : 0
                             opacity: chip.current ? 1 : 0
@@ -104,7 +104,7 @@ Column {
                             Icon {
                                 anchors.centerIn: parent
                                 icon: Icons.check
-                                size: 14
+                                size: ThemeManager.px(14)
                                 weight: 600
                                 color: chip.modelData.colors.accentText ?? "black"
                             }

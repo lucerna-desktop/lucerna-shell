@@ -38,12 +38,12 @@ Column {
             description: InputActions.describe(modelData.action)
 
             Row {
-                spacing: 2
+                spacing: ThemeManager.px(2)
 
                 IconButton {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: Icons.edit
-                    iconSize: 18
+                    iconSize: ThemeManager.px(18)
                     enabled: !BindsState.editing
                     onClicked: BindsState.edit(row.modelData)
                 }
@@ -51,7 +51,7 @@ Column {
                 IconButton {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: Icons.trash
-                    iconSize: 18
+                    iconSize: ThemeManager.px(18)
                     onClicked: BindsState.remove(row.modelData)
                 }
             }

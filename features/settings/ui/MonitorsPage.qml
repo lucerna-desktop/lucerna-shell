@@ -37,7 +37,7 @@ Column {
 
                 Item {
                     width: parent.width
-                    height: 40
+                    height: ThemeManager.px(40)
 
                     TonalButton {
                         icon: Icons.identify
@@ -237,8 +237,8 @@ Column {
 
                 Rectangle {
                     width: parent.width - copy.width - parent.spacing
-                    height: 40
-                    radius: ThemeManager.radius.small + 2
+                    height: ThemeManager.px(40)
+                    radius: ThemeManager.radius.small + ThemeManager.px(2)
                     color: ThemeManager.alpha(ThemeManager.colors.text, 0.06)
 
                     Txt {

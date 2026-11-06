@@ -131,18 +131,18 @@ Surface {
         // Comando
         Rectangle {
             width: parent.width
-            height: 40
+            height: ThemeManager.px(40)
             visible: root.action?.kind === "command"
-            radius: 20
+            radius: height / 2
             color: ThemeManager.alpha(ThemeManager.colors.text, 0.06)
-            border.width: command.activeFocus ? 2 : 0
+            border.width: command.activeFocus ? ThemeManager.px(2) : 0
             border.color: ThemeManager.colors.accent
 
             TextInput {
                 id: command
 
                 anchors.fill: parent
-                anchors.leftMargin: ThemeManager.spacing.normal + 2
+                anchors.leftMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
                 anchors.rightMargin: ThemeManager.spacing.normal
                 verticalAlignment: TextInput.AlignVCenter
                 color: ThemeManager.colors.text

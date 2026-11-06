@@ -95,7 +95,7 @@ class SuppressionsTest(RepoCase):
 
     def test_aceita_as_registradas(self):
         files = {
-            self.CONFIRM: "    margins.top: 90 // qmllint disable unqualified missing-property\n",
+            self.CONFIRM: "    margins.top: ThemeManager.px(90) // qmllint disable unqualified missing-property\n",
         }
         self.assertEqual(self.found(files), [])
 

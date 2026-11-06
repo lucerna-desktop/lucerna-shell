@@ -17,18 +17,18 @@ Rectangle {
     readonly property real dpr: Window.window?.devicePixelRatio ?? 1
 
     readonly property var area: MonitorsState.bounds
-    readonly property real pad: 28
+    readonly property real pad: ThemeManager.px(28)
     // Pixels do canvas por pixel lógico. Fica fixo durante o arrasto.
     property real k: Math.min((width - pad * 2) / area.w, (height - pad * 2) / area.h)
     readonly property real ox: (width - area.w * k) / 2 - area.x * k
     readonly property real oy: (height - area.h * k) / 2 - area.y * k
     // Distância, na tela, em que o encaixe puxa para um alinhamento.
-    readonly property real pull: 14 / k
+    readonly property real pull: ThemeManager.px(14) / k
 
     property string dragging: ""
     property var ghost: null
 
-    implicitHeight: 250
+    implicitHeight: ThemeManager.px(250)
     radius: ThemeManager.radius.normal
     color: ThemeManager.alpha(ThemeManager.colors.text, 0.03)
     border.width: ThemeManager.outlines ? Pixel.hairline(canvas.dpr) : 0
@@ -43,9 +43,9 @@ Rectangle {
         y: canvas.oy + (canvas.ghost?.y ?? 0) * canvas.k
         width: (canvas.ghost?.w ?? 0) * canvas.k
         height: (canvas.ghost?.h ?? 0) * canvas.k
-        radius: ThemeManager.radius.small + 2
+        radius: ThemeManager.radius.small + ThemeManager.px(2)
         color: ThemeManager.alpha(ThemeManager.colors.accent, 0.08)
-        border.width: 2
+        border.width: ThemeManager.px(2)
         border.color: ThemeManager.alpha(ThemeManager.colors.accent, 0.6)
 
         Behavior on x { Anim { type: Anim.FastSpatial } }
@@ -75,9 +75,9 @@ Rectangle {
             width: tile.rect.w * canvas.k
             height: tile.rect.h * canvas.k
             z: tile.moving ? 2 : tile.selected ? 1 : 0
-            radius: ThemeManager.radius.small + 2
+            radius: ThemeManager.radius.small + ThemeManager.px(2)
             color: tile.selected ? ThemeManager.alpha(ThemeManager.colors.accent, 0.22) : ThemeManager.colors.surface
-            border.width: tile.selected ? 2 : Pixel.hairline(canvas.dpr)
+            border.width: tile.selected ? ThemeManager.px(2) : Pixel.hairline(canvas.dpr)
             border.color: tile.selected ? ThemeManager.colors.accent : ThemeManager.colors.border
             scale: tile.moving ? 1.03 : 1
             opacity: tile.moving ? 0.9 : 1
@@ -91,20 +91,20 @@ Rectangle {
 
             Column {
                 anchors.centerIn: parent
-                width: parent.width - 12
+                width: parent.width - ThemeManager.px(12)
                 spacing: 0
 
                 Txt {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: MonitorsState.numberOf(tile.modelData)
                     color: tile.selected ? ThemeManager.colors.accent : ThemeManager.colors.text
-                    font.pixelSize: Math.max(14, Math.min(34, tile.height * 0.3))
+                    font.pixelSize: Math.max(ThemeManager.px(14), Math.min(ThemeManager.px(34), tile.height * 0.3))
                     font.weight: Font.DemiBold
                 }
 
                 Txt {
                     width: parent.width
-                    visible: tile.height > 64
+                    visible: tile.height > ThemeManager.px(64)
                     horizontalAlignment: Text.AlignHCenter
                     elide: Text.ElideRight
                     text: tile.spec.label
@@ -113,7 +113,7 @@ Rectangle {
 
                 Txt {
                     width: parent.width
-                    visible: tile.height > 84
+                    visible: tile.height > ThemeManager.px(84)
                     horizontalAlignment: Text.AlignHCenter
                     elide: Text.ElideRight
                     text: `${tile.spec.width} × ${tile.spec.height}`
@@ -137,7 +137,7 @@ Rectangle {
                 }
                 onPositionChanged: event => {
                     const p = mouse.mapToItem(canvas, event.x, event.y);
-                    if (!tile.moving && Math.hypot(p.x - mouse.press.x, p.y - mouse.press.y) < 4)
+                    if (!tile.moving && Math.hypot(p.x - mouse.press.x, p.y - mouse.press.y) < ThemeManager.px(4))
                         return;
                     canvas.dragging = tile.modelData;
                     tile.dx = p.x - mouse.press.x;

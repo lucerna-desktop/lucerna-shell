@@ -84,12 +84,12 @@ Column {
                 description: modelData.genericName || modelData.comment || ""
 
                 Row {
-                    spacing: 2
+                    spacing: ThemeManager.px(2)
 
                     IconButton {
                         anchors.verticalCenter: parent.verticalCenter
                         icon: "keyboard_arrow_up"
-                        iconSize: 20
+                        iconSize: ThemeManager.px(20)
                         enabled: favRow.index > 0
                         onClicked: LauncherSettings.moveFavorite(favRow.modelData.id, -1)
                     }
@@ -97,7 +97,7 @@ Column {
                     IconButton {
                         anchors.verticalCenter: parent.verticalCenter
                         icon: Icons.trash
-                        iconSize: 18
+                        iconSize: ThemeManager.px(18)
                         onClicked: LauncherSettings.unpin(favRow.modelData.id)
                     }
                 }

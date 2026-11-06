@@ -14,8 +14,8 @@ Column {
 
         Image {
             anchors.verticalCenter: parent.verticalCenter
-            width: 65
-            height: 84
+            width: ThemeManager.px(65)
+            height: ThemeManager.px(84)
             source: ThemeManager.logo
             sourceSize: Qt.size(width * 2, height * 2)
             fillMode: Image.PreserveAspectFit
@@ -25,11 +25,11 @@ Column {
 
         Column {
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
+            spacing: ThemeManager.px(2)
 
             Txt {
                 text: "Lucerna"
-                font.pixelSize: ThemeManager.font.huge - 12
+                font.pixelSize: ThemeManager.font.huge - ThemeManager.px(12)
                 font.weight: Font.DemiBold
             }
 

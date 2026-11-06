@@ -64,7 +64,7 @@ def repo_files(root):
 # `missing-property`; as duas categorias, para o lint passar nos dois) e o
 # registro estão no spec do CI (docs/superpowers/specs/2026-09-26-ci-design.md).
 QMLLINT_ALLOWED = {
-    "features/settings/ui/MonitorConfirm.qml": ("margins.top: 90",),
+    "features/settings/ui/MonitorConfirm.qml": ("margins.top: ThemeManager.px(90)",),
 }
 QMLLINT_SUPPRESSION = re.compile(r"qmllint\s+(disable|enable)\b")
 QMLLINT_ALLOWED_COMMENT = "// qmllint disable unqualified missing-property"

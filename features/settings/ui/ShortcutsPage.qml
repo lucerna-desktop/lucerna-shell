@@ -75,9 +75,9 @@ Column {
                                     readonly property bool current: entry.capturingHere && ShortcutsState.capturing.index === index
 
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: keyText.implicitWidth + 20
-                                    height: 30
-                                    radius: 8
+                                    width: keyText.implicitWidth + ThemeManager.px(20)
+                                    height: ThemeManager.px(30)
+                                    radius: ThemeManager.px(8)
                                     color: current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.2) : ThemeManager.glass(ThemeManager.colors.raised, 1)
                                     border.width: current || ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
                                     border.color: current ? ThemeManager.colors.accent : ThemeManager.colors.border
@@ -99,7 +99,7 @@ Column {
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: ShortcutsState.editable(entry.modelData)
                                 icon: Icons.add
-                                iconSize: 18
+                                iconSize: ThemeManager.px(18)
                                 onClicked: ShortcutsState.start(entry.modelData, -1)
                             }
 
@@ -107,7 +107,7 @@ Column {
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: entry.shortcut.custom
                                 icon: "restart_alt"
-                                iconSize: 18
+                                iconSize: ThemeManager.px(18)
                                 onClicked: ShortcutsState.reset(entry.modelData)
                             }
                         }
@@ -172,9 +172,9 @@ Column {
                 title: modelData.label
 
                 Rectangle {
-                    width: fixedKey.implicitWidth + 20
-                    height: 30
-                    radius: 8
+                    width: fixedKey.implicitWidth + ThemeManager.px(20)
+                    height: ThemeManager.px(30)
+                    radius: ThemeManager.px(8)
                     color: ThemeManager.glass(ThemeManager.colors.raised, 1)
                     border.width: ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
                     border.color: ThemeManager.colors.border
