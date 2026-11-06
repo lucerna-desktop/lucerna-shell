@@ -18,7 +18,9 @@ function run(t) {
     t.test("appsscale: em 1, nada", () => {
         t.eq(A.envFor(1), {});
         t.eq(A.flagsText("", 1), "", "sem a linha das flags");
-        t.check(!A.hyprLua(1, {}).includes("hl.env("), "nenhum hl.env");
+        const lua = A.hyprLua(1, {});
+        for (const part of ['hl.env("QT_SCALE_FACTOR", "1")', 'hl.env("GDK_SCALE", "1")', 'hl.env("GDK_DPI_SCALE", "1")', 'hl.env("XCURSOR_SIZE", "24")', 'hl.env("HYPRCURSOR_SIZE", "24")'])
+            t.check(lua.includes(part), `no Hyprland, o neutro (o fator de antes não fica): ${part}`);
     });
 
     t.test("appsscale: o session.env sem aspas, com o cabeçalho", () => {
@@ -74,7 +76,8 @@ function run(t) {
 
     t.test("appsscale: a volta ao Hyprland de antes", () => {
         const lua = A.restoreLua({ env: { XCURSOR_SIZE: "32", QT_SCALE_FACTOR: null }, gaps: { in: "4 4 4 4", out: "5 10 5 10" } });
-        for (const part of ["lucerna_scale_mode = nil", 'hl.env("XCURSOR_SIZE", "32")', 'hl.env("QT_SCALE_FACTOR", "")', "gaps_in = 4", "gaps_out = { top = 5, right = 10, bottom = 5, left = 10 }"])
+        t.check(!lua.includes('", "")'), `nunca vazio: ${lua}`);
+        for (const part of ["lucerna_scale_mode = nil", 'hl.env("XCURSOR_SIZE", "32")', 'hl.env("QT_SCALE_FACTOR", "1")', 'hl.env("GDK_SCALE", "1")', 'hl.env("GDK_DPI_SCALE", "1")', 'hl.env("HYPRCURSOR_SIZE", "24")', "gaps_in = 4", "gaps_out = { top = 5, right = 10, bottom = 5, left = 10 }"])
             t.check(lua.includes(part), `${part} em ${lua}`);
         t.check(A.restoreLua(null).includes("gaps_in = 4") && A.restoreLua(null).includes("gaps_out = 10"), "sem cópia, a base");
         t.eq(A.gapsLua("7"), "7");
@@ -82,10 +85,13 @@ function run(t) {
     });
 
     t.test("appsscale: a leitura dos arquivos", () => {
-        const text = "\x1eelectron-flags.conf\x1f1--a\n\x1egtk-3.0/settings.ini\x1f0\x1e@xrdb\x1f1\n120\n\x1e@gaps_in\x1f{\"css\": \"4 4 4 4\"}\n";
+        // O formato do `hyprctl getoption general:gaps_in -j` do Hyprland 0.57.1.
+        const text = "\x1eelectron-flags.conf\x1f1--a\n\x1egtk-3.0/settings.ini\x1f0\x1e@xrdb\x1f1\n120\n\x1e@gaps_in\x1f{\"option\": \"general:gaps_in\", \"css\": \"0 0 0 0\", \"set\": true }\n";
         const read = A.parseRead(text);
         t.eq(read.files, { "electron-flags.conf": "--a\n", "gtk-3.0/settings.ini": null });
-        t.eq([read.xrdb, read.xftDpi, read.gapsIn], [true, "120", "4 4 4 4"]);
+        t.eq([read.xrdb, read.xftDpi, read.gapsIn], [true, "120", "0 0 0 0"]);
+        t.eq(A.parseRead('\x1e@gaps_out\x1f{"option": "general:gaps_out", "custom": "5 10 5 10", "set": true }').gapsOut, "5 10 5 10", "versões com custom");
+        t.check(A.restoreLua({ gaps: { in: read.gapsIn } }).includes("gaps_in = 0"), "o 0 da pessoa volta 0, não 4");
         t.eq(A.parseRead("\x1e@xrdb\x1f0\n").xrdb, false);
     });
 
@@ -141,5 +147,32 @@ function run(t) {
         t.eq(back["lucerna/Xresources"], null, "o gerado some");
         t.eq(back["lucerna/session.env"], "FOO=1\n", "o da pessoa fica");
         t.eq(back["gtk-3.0/settings.ini"], on["gtk-3.0/settings.ini"], "sem o original, o GTK fica");
+    });
+
+    t.test("appsscale: sem o scale-backup.json no meio do modo, os originais não se perdem", () => {
+        const first = A.planApply(files, null, 1.25, live);
+        const on = applied(files, first.writes);
+        // As cópias que a primeira aplicação tirou (dos que existiam).
+        const copies = {};
+        for (const name of Object.keys(files)) {
+            if (files[name] !== null)
+                copies[`${name}.lucerna-bak`] = files[name];
+        }
+        const scaledLive = { env: { QT_SCALE_FACTOR: "1.25", XCURSOR_SIZE: "30" }, gapsIn: "5 5 5 5", gapsOut: "13 13 13 13", xftDpi: "120" };
+        const lost = A.planApply(Object.assign({}, on, copies), null, 1.5, scaledLive);
+        t.check(lost.fresh, "sem o JSON, conta como a primeira");
+        t.eq(lost.backup.files, first.backup.files, "quem existia antes, pelas cópias e pelas marcas");
+        t.eq(lost.backup.gtk, first.backup.gtk, "o gtk-xft-dpi de antes, não o do modo");
+        t.eq(lost.backup.own, first.backup.own);
+        t.eq([lost.backup.env, lost.backup.gaps.in, lost.backup.xftDpi], [{}, "", null], "o ambiente, os espaços e o Xft.dpi de agora são do modo: não contam");
+        const on2 = applied(on, lost.writes);
+        t.eq(applied(on2, A.planRestore(on2, lost.backup).writes), files, "a volta devolve os arquivos de antes");
+
+        const gtk = Object.assign({}, files, { "gtk-3.0/settings.ini": "[Settings]\ngtk-xft-dpi = 98304\n" });
+        const onGtk = applied(gtk, A.planApply(gtk, null, 1.25, live).writes);
+        const noCopy = A.planApply(onGtk, null, 1.25, scaledLive);
+        t.eq(noCopy.backup.gtk["gtk-3.0/settings.ini"], null, "sem cópia, o valor do modo (122880) não vira o original");
+        t.eq(noCopy.backup.files["gtk-4.0/settings.ini"], false, "o GTK 4 criado pelo modo não conta como da pessoa");
+        t.eq(noCopy.backup.files["electron-flags.conf"], false, "nem as flags só com a nossa linha");
     });
 }

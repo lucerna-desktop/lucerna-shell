@@ -33,6 +33,10 @@ Singleton {
     property bool hasXrdb: false
 
     readonly property var envNames: ["QT_SCALE_FACTOR", "GDK_SCALE", "GDK_DPI_SCALE", "XCURSOR_SIZE", "HYPRCURSOR_SIZE"]
+    // Os valores neutros do ambiente no Hyprland: o hl.env não desfaz uma
+    // variável, e um valor vazio não é neutro (o GTK 3 no X11 fixa a escala
+    // com qualquer GDK_SCALE, e o GDK_DPI_SCALE vazio vira 0).
+    readonly property var neutralEnv: ({ QT_SCALE_FACTOR: "1", GDK_SCALE: "1", GDK_DPI_SCALE: "1", XCURSOR_SIZE: "24", HYPRCURSOR_SIZE: "24" })
     readonly property var flagFiles: ["electron-flags.conf", "chromium-flags.conf", "chrome-flags.conf"]
     readonly property var gtkFiles: ["gtk-3.0/settings.ini", "gtk-4.0/settings.ini"]
     readonly property string sessionEnvFile: "lucerna/session.env"
@@ -77,9 +81,11 @@ Singleton {
         const r = v => Math.round(v * f);
         // Sem comentário na frente: o mesmo texto vai pelo hyprctl eval, que
         // leria um "--" no começo como opção dele.
+        // As cinco variáveis sempre: em 1 (envFor vazio), as neutras, senão o
+        // fator de antes continuaria valendo para os apps abertos depois.
         const lines = ['lucerna_scale_mode = "apps"'];
-        for (const name of Object.keys(env))
-            lines.push(`hl.env("${name}", "${env[name]}")`);
+        for (const name of envNames)
+            lines.push(`hl.env("${name}", "${env[name] ?? neutralEnv[name]}")`);
         lines.push(`hl.config({ xwayland = { force_zero_scaling = true }, general = { border_size = ${r(hypr?.borderSize ?? 2)}, gaps_in = ${r(4)}, gaps_out = ${r(10)} }, decoration = { rounding = ${r(hypr?.rounding ?? 10)} } })`);
         return lines.join("\n");
     }
@@ -181,13 +187,13 @@ Singleton {
     }
 
     // O Lua da volta, mandado na hora (o arquivo perde a seção "scale"): o
-    // ambiente de antes (o que não havia fica vazio: o hl.env não desfaz uma
-    // variável) e os espaços de antes. Bordas e arredondamento voltam pelo
+    // ambiente de antes (o que não havia vai com o valor neutro: o hl.env não
+    // desfaz uma variável, e vazio não é neutro) e os espaços de antes. Bordas e arredondamento voltam pelo
     // tema (ThemeSwitcherState, com o fator 1).
     function restoreLua(backup: var): string {
         const lines = ["lucerna_scale_mode = nil"];
         for (const name of envNames)
-            lines.push(`hl.env("${name}", ${JSON.stringify(String(backup?.env?.[name] ?? ""))})`);
+            lines.push(`hl.env("${name}", ${JSON.stringify(String(backup?.env?.[name] || neutralEnv[name]))})`);
         const gapsIn = gapsLua(backup?.gaps?.in ?? "") || "4";
         const gapsOut = gapsLua(backup?.gaps?.out ?? "") || "10";
         lines.push(`hl.config({ general = { gaps_in = ${gapsIn}, gaps_out = ${gapsOut} } })`);
@@ -210,7 +216,10 @@ Singleton {
             } else if (name === "@gaps_in" || name === "@gaps_out") {
                 let css = "";
                 try {
-                    css = JSON.parse(body).css ?? "";
+                    // O Hyprland 0.57 dá os espaços em "css"; versões
+                    // anteriores, em "custom".
+                    const o = JSON.parse(body);
+                    css = o.css ?? o.custom ?? "";
                 } catch (e) {}
                 out[name === "@gaps_in" ? "gapsIn" : "gapsOut"] = css;
             } else {
@@ -220,31 +229,62 @@ Singleton {
         return out;
     }
 
+    // O modo já deixou marcas nos arquivos (o Xresources ou o session.env
+    // gerados, a linha das flags): sem o scale-backup.json, os valores de
+    // agora não são os de antes.
+    function modeTraces(files: var): bool {
+        return ownFiles.some(n => /^[#!] Gerado pelo Lucerna/.test(files[n] ?? "")) || flagFiles.some(n => (files[n] ?? "").split("\n").some(l => l.trim() === marker));
+    }
+
     // O que gravar para o fator f. `files`: nome (relativo ao ~/.config) →
-    // texto, ou null se não existe. `backup`: o scale-backup.json (null na
-    // primeira vez: ele é montado agora, com `live`, o estado de antes).
-    // Devolve { fresh, backup, writes } (writes: nome → texto, ou null para
-    // apagar; só o que muda).
+    // texto, ou null se não existe; também "<nome>.lucerna-bak", as cópias.
+    // `backup`: o scale-backup.json (null na primeira vez: ele é montado
+    // agora, com `live`, o estado de antes). Sem ele, mas com o modo já nos
+    // arquivos (o JSON ilegível ou apagado no meio do modo), o de antes vem
+    // das cópias .lucerna-bak; sem cópia, o valor de agora não conta (o
+    // gtk-xft-dpi, o ambiente e os espaços ficam sem original, e a volta usa
+    // o neutro). Devolve { fresh, backup, writes } (writes: nome → texto, ou
+    // null para apagar; só o que muda).
     function planApply(files: var, backup: var, f: real, live: var): var {
         const fresh = !backup;
+        const traces = fresh && modeTraces(files);
         const b = backup ?? {
             files: {},
             gtk: {},
             gtkSection: {},
             own: {},
-            env: live.env,
-            gaps: { in: live.gapsIn, out: live.gapsOut },
-            xftDpi: live.xftDpi
+            env: traces ? {} : live.env,
+            gaps: traces ? { in: "", out: "" } : { in: live.gapsIn, out: live.gapsOut },
+            xftDpi: traces ? null : live.xftDpi
         };
         if (fresh) {
-            for (const name of root.files)
-                b.files[name] = files[name] !== null && files[name] !== undefined;
-            for (const name of gtkFiles) {
-                b.gtk[name] = iniValue(files[name] ?? "", "Settings", "gtk-xft-dpi");
-                b.gtkSection[name] = /^\s*\[Settings\]\s*$/m.test(files[name] ?? "");
+            const has = v => v !== null && v !== undefined;
+            for (const name of root.files) {
+                const copy = files[`${name}.lucerna-bak`];
+                if (traces && has(copy)) {
+                    b.files[name] = true;
+                    if (gtkFiles.includes(name)) {
+                        b.gtk[name] = iniValue(copy, "Settings", "gtk-xft-dpi");
+                        b.gtkSection[name] = /^\s*\[Settings\]\s*$/m.test(copy);
+                    }
+                    if (ownFiles.includes(name))
+                        b.own[name] = copy;
+                    continue;
+                }
+                const text = files[name] ?? null;
+                if (flagFiles.includes(name)) {
+                    b.files[name] = has(text) && (!traces || flagsText(text, 1) !== "");
+                } else if (gtkFiles.includes(name)) {
+                    const kept = traces && has(text) ? gtkIniText(text, 1, null) : text;
+                    b.files[name] = has(text) && (!traces || !/^\s*(\[Settings\]\s*)?$/.test(kept));
+                    b.gtk[name] = traces ? null : iniValue(text ?? "", "Settings", "gtk-xft-dpi");
+                    b.gtkSection[name] = /^\s*\[Settings\]\s*$/m.test(text ?? "") && b.files[name];
+                } else {
+                    const generated = /^[#!] Gerado pelo Lucerna/.test(text ?? "");
+                    b.files[name] = has(text) && !generated;
+                    b.own[name] = generated ? null : text;
+                }
             }
-            for (const name of ownFiles)
-                b.own[name] = files[name] ?? null;
         }
         const next = {};
         for (const name of flagFiles) {
@@ -334,7 +374,7 @@ printf '\\036@xrdb\\037'
 if command -v xrdb > /dev/null; then printf 1; xrdb -query 2> /dev/null | sed -n 's/^Xft\\.dpi:[[:space:]]*//p'; else printf 0; fi
 printf '\\036@gaps_in\\037'; hyprctl getoption general:gaps_in -j 2> /dev/null
 printf '\\036@gaps_out\\037'; hyprctl getoption general:gaps_out -j 2> /dev/null
-:`, "sh", configHome, backupFile].concat(files);
+:`, "sh", configHome, backupFile].concat(files, files.map(n => `${n}.lucerna-bak`));
         reader.running = true;
     }
 
@@ -380,15 +420,17 @@ printf '\\036@gaps_out\\037'; hyprctl getoption general:gaps_out -j 2> /dev/null
         writer.job = job;
         writer.backup = job.op === "apply" ? plan.backup : backup;
         // As cópias .lucerna-bak: só na primeira aplicação (sem o
-        // scale-backup.json), de todos os arquivos que existem: o estado de
-        // antes do modo. Uma troca de fator depois não copia de novo (seria a
-        // cópia do que o próprio modo escreveu).
-        writer.command = ["sh", "-c", `cd "$1" || exit 1; mode=$2; shift 2
+        // scale-backup.json), dos arquivos que existem: o estado de antes do
+        // modo. Uma cópia que já existe nunca é sobrescrita (com o JSON
+        // perdido no meio do modo, a cópia nova seria a versão do modo).
+        // Só os da pessoa (o que o modo gerou não tem cópia).
+        const copies = job.op === "apply" && plan.fresh ? files.filter(n => plan.backup.files[n]).join("\n") : "";
+        writer.command = ["sh", "-c", `cd "$1" || exit 1; mode=$2; copies=$3; shift 3
 if [ "$mode" = fresh ]; then
-    for n in ${files.map(n => `'${n}'`).join(" ")}; do
-        [ -f "$n" ] || continue
+    printf '%s\\n' "$copies" | while IFS= read -r n; do
+        [ -n "$n" ] && [ -f "$n" ] && [ ! -e "$n.lucerna-bak" ] || continue
         cp -pL -- "$n" "$n.lucerna-bak" || exit 1
-    done
+    done || exit 1
 fi
 st=0
 while [ $# -ge 3 ]; do
@@ -398,7 +440,7 @@ while [ $# -ge 3 ]; do
     esac
     shift 3
 done
-exit $st`, "sh", configHome, job.op === "restore" ? "restore" : plan.fresh ? "fresh" : "apply"].concat(args);
+exit $st`, "sh", configHome, job.op === "restore" ? "restore" : plan.fresh ? "fresh" : "apply", copies].concat(args);
         writer.running = true;
     }
 
