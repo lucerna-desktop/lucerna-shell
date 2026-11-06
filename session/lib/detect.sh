@@ -34,12 +34,30 @@ vendor_of() {
     esac
 }
 
+# real_display PLACA: a placa é uma GPU PCI de verdade (tem device/vendor, o
+# device/class é de vídeo, 0x03xxxx, e o driver não é de quadro simples nem
+# de tela USB). O simpledrm (o quadro do firmware, que fica como card0 numa
+# máquina só com NVIDIA quando o driver dela não o tira), o evdi (DisplayLink)
+# e outros assim não desenham a sessão: não contam como integrada.
+real_display() {
+    local class driver=""
+    [ -r "$1/device/vendor" ] || return 1
+    class=$(tr -d '[:space:]' < "$1/device/class" 2> /dev/null) || return 1
+    case "$class" in 0x03*) ;; *) return 1 ;; esac
+    [ -e "$1/device/driver" ] && driver=$(basename "$(readlink -f "$1/device/driver")")
+    case "$driver" in simpledrm | simplefb | efidrm | vesadrm | ofdrm | evdi | udl | gud) return 1 ;; esac
+    return 0
+}
+
 # detect_gpu: as placas card[0-9]* (sem hífen: card0-eDP-1 é um conector) de
 # class/drm que têm o nó /dev/dri/cardN (num container, o /sys mostra as
-# placas do host, mas só as repassadas têm o nó). Só NVIDIA: o ambiente da NVIDIA. NVIDIA com outra (híbrida): a
-# integrada desenha, então só o AQ_DRM_DEVICES com ela antes da NVIDIA.
+# placas do host, mas só as repassadas têm o nó). Só NVIDIA: o ambiente da
+# NVIDIA. NVIDIA com outra GPU de verdade (híbrida): a integrada desenha,
+# então só o AQ_DRM_DEVICES com ela antes da NVIDIA. As placas que não são
+# GPU (real_display) ficam na lista drm, mas não fazem uma híbrida: NVIDIA com
+# simpledrm ou evdi é só NVIDIA. Sem NVIDIA e sem GPU de verdade, other.
 detect_gpu() {
-    local path name number vendor first_other="" boot_other="" first_nvidia="" others=0 nvidias=0
+    local path name number vendor first_other="" boot_other="" first_nvidia="" others=0 nvidias=0 pseudo=0
     local -a cards=()
     for path in "$sysfs"/class/drm/card[0-9]*; do
         [ -e "$path" ] || continue
@@ -59,7 +77,9 @@ detect_gpu() {
         path="$sysfs/class/drm/card$number"
         drm+=("/dev/dri/card$number")
         vendor=$(vendor_of "$path")
-        if [ "$vendor" = nvidia ]; then
+        if ! real_display "$path"; then
+            pseudo=$((pseudo + 1))
+        elif [ "$vendor" = nvidia ]; then
             nvidias=$((nvidias + 1))
             [ -n "$first_nvidia" ] || first_nvidia="/dev/dri/card$number"
         else
@@ -80,6 +100,8 @@ detect_gpu() {
     elif [ "$nvidias" -gt 0 ]; then
         gpu=hybrid
         gpu_env=("AQ_DRM_DEVICES=${boot_other:-$first_other}:$first_nvidia")
+    elif [ "$others" -eq 0 ] && [ "$pseudo" -gt 0 ]; then
+        gpu=other
     fi
 }
 

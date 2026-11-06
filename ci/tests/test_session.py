@@ -72,10 +72,18 @@ class SessionBase(unittest.TestCase):
     def calls_log(self):
         return self.calls.read_text(encoding="utf-8").splitlines() if self.calls.exists() else []
 
-    def card(self, n, vendor, boot_vga=None, node=True):
+    # Uma placa em class/drm. Com vendor, uma GPU PCI (class 0x030000 e o
+    # driver dado); sem vendor, um dispositivo de plataforma (o simpledrm).
+    def card(self, n, vendor, boot_vga=None, node=True, driver=None, pci_class="0x030000"):
         dev = self.sysfs / "devices" / f"pci{n}"
         dev.mkdir(parents=True)
-        (dev / "vendor").write_text(f"{vendor}\n")
+        if vendor is not None:
+            (dev / "vendor").write_text(f"{vendor}\n")
+            (dev / "class").write_text(f"{pci_class}\n")
+        if driver is not None:
+            target = self.sysfs / "bus" / "drivers" / driver
+            target.mkdir(parents=True, exist_ok=True)
+            (dev / "driver").symlink_to(target)
         if boot_vga is not None:
             (dev / "boot_vga").write_text(f"{boot_vga}\n")
         card = self.sysfs / "class" / "drm" / f"card{n}"
@@ -186,6 +194,52 @@ class SessionTest(SessionBase):
         self.assertEqual(env["AQ_DRM_DEVICES"], "/dev/dri/card1:/dev/dri/card0")
         self.assertNotIn("__GLX_VENDOR_LIBRARY_NAME", env)
         self.assertNotIn("LIBVA_DRIVER_NAME", env)
+
+    def test_detect_simpledrm_and_nvidia_is_nvidia(self):
+        # Desktop só com NVIDIA (driver < 545 ou fbdev=0): o simpledrm do
+        # firmware fica como card0, sem vendor. Não é uma híbrida.
+        self.card(0, None, driver="simpledrm")
+        self.card(1, "0x10de", boot_vga=1)
+        self.modeset("Y")
+        info = self.detect()
+        self.assertEqual(info["gpu"], "nvidia")
+        self.assertEqual(info["drm"], ["/dev/dri/card0", "/dev/dri/card1"])
+        env = self.session_env()
+        self.assertNotIn("AQ_DRM_DEVICES", env)
+        self.assertEqual(env["LIBVA_DRIVER_NAME"], "nvidia")
+
+    def test_detect_evdi_and_nvidia_is_nvidia(self):
+        # Um adaptador DisplayLink (evdi) num notebook só com NVIDIA.
+        self.card(0, "0x10de", boot_vga=1)
+        self.card(1, None, driver="evdi")
+        self.assertEqual(self.detect()["gpu"], "nvidia")
+        self.assertNotIn("AQ_DRM_DEVICES", self.session_env())
+
+    def test_detect_pci_card_with_pseudo_driver_or_other_class_is_skipped(self):
+        # Com vendor PCI, mas com driver de quadro simples ou classe que não é
+        # de vídeo: também não faz híbrida.
+        self.card(0, "0x10de", boot_vga=1)
+        self.card(1, "0x17e9", driver="evdi")
+        self.card(2, "0x8086", pci_class="0x040300")
+        self.assertEqual(self.detect()["gpu"], "nvidia")
+
+    def test_detect_hybrid_with_simpledrm_keeps_integrated(self):
+        # Uma híbrida de verdade com o simpledrm junto: o AQ_DRM_DEVICES leva a
+        # integrada, nunca o simpledrm.
+        self.card(0, None, driver="simpledrm")
+        self.card(1, "0x10de", boot_vga=0)
+        self.card(2, "0x8086", boot_vga=1, driver="i915")
+        self.modeset("Y")
+        info = self.detect()
+        self.assertEqual(info["gpu"], "hybrid")
+        self.assertEqual(self.session_env()["AQ_DRM_DEVICES"], "/dev/dri/card2:/dev/dri/card1")
+
+    def test_detect_only_simpledrm_is_other(self):
+        self.card(0, None, driver="simpledrm")
+        info = self.detect()
+        self.assertEqual(info["gpu"], "other")
+        self.assertEqual(info["drm"], ["/dev/dri/card0"])
+        self.assertIsNone(info["nvidiaModeset"])
 
     def test_detect_modeset_off_and_missing(self):
         self.card(0, "0x10de")
