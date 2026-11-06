@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import Quickshell.Widgets
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 
@@ -10,6 +11,9 @@ import qs.core.widgets
 // coloridas, com a transparência e um desfoque parecido com o do Hyprland.
 ClippingRectangle {
     id: root
+
+    // A escala da janela (fracionária: 1,25), para as linhas finas (ver Pixel).
+    readonly property real dpr: Window.window?.devicePixelRatio ?? 1
 
     property bool transparency: true
     property real panelOpacity: 0.8
@@ -98,7 +102,7 @@ ClippingRectangle {
             anchors.fill: parent
             radius: ThemeManager.radius.large
             color: ThemeManager.alpha(ThemeManager.colors.base, root.transparency ? root.panelOpacity : 1)
-            border.width: ThemeManager.outlines ? 1 : 0
+            border.width: ThemeManager.outlines ? Pixel.hairline(root.dpr) : 0
             border.color: ThemeManager.colors.border
 
             Behavior on color { ColorAnim {} }
@@ -118,7 +122,7 @@ ClippingRectangle {
                         height: parent.height
                         radius: ThemeManager.radius.normal
                         color: ThemeManager.alpha(ThemeManager.colors.surface, root.transparency ? root.cardOpacity : 1)
-                        border.width: ThemeManager.outlines ? 1 : 0
+                        border.width: ThemeManager.outlines ? Pixel.hairline(root.dpr) : 0
                         border.color: ThemeManager.colors.border
 
                         Behavior on color { ColorAnim {} }

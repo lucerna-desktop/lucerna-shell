@@ -1,12 +1,18 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.settings.state
 
 // Aparência: tema e velocidade das animações.
 Column {
+    id: page
+
+    // A escala da janela (fracionária: 1,25), para as linhas finas (ver Pixel).
+    readonly property real dpr: Window.window?.devicePixelRatio ?? 1
+
     spacing: ThemeManager.spacing.large
 
     SettingSection {
@@ -41,7 +47,7 @@ Column {
                         radius: ThemeManager.radius.normal
                         pressScale: 0.95
                         color: modelData.colors.base ?? "black"
-                        border.width: current ? 2 : ThemeManager.outlines ? 1 : 0
+                        border.width: current ? 2 : ThemeManager.outlines ? Pixel.hairline(page.dpr) : 0
                         border.color: current ? ThemeManager.colors.accent : (modelData.colors.border ?? "gray")
                         onClicked: SettingsState.applyTheme(modelData.id)
 
@@ -61,7 +67,7 @@ Column {
                                     height: 14
                                     radius: 7
                                     color: chip.modelData.colors[modelData] ?? "gray"
-                                    border.width: 1
+                                    border.width: Pixel.hairline(page.dpr)
                                     border.color: chip.modelData.colors.border ?? "gray"
                                 }
                             }

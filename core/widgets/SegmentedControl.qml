@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 
 // Botões segmentados: uma escolha entre poucas opções. A seleção é uma pílula
@@ -23,7 +24,7 @@ Item {
         anchors.fill: parent
         radius: height / 2
         color: ThemeManager.alpha(ThemeManager.colors.text, 0.05)
-        border.width: ThemeManager.outlines ? 1 : 0
+        border.width: ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
         border.color: ThemeManager.colors.border
     }
 

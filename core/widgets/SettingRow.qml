@@ -1,4 +1,5 @@
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 
 // Uma linha de opção: ícone, título, descrição e o controle à direita.
@@ -28,7 +29,7 @@ Item {
         anchors.right: parent.right
         anchors.leftMargin: ThemeManager.spacing.large
         anchors.rightMargin: ThemeManager.spacing.large
-        height: 1
+        height: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
         color: ThemeManager.colors.border
         opacity: 0.6
     }

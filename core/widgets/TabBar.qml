@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 
 // Abas com ícone e rótulo. O indicador desliza e estica até a aba atual, e o
@@ -100,7 +101,7 @@ Item {
     Rectangle {
         anchors.bottom: parent.bottom
         width: parent.width
-        height: 1
+        height: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
         color: ThemeManager.colors.border
         z: -1
     }

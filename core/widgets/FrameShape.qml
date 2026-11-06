@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.core.frame
+import qs.core.pixel
 import qs.core.theme
 
 // A forma da tela (ver Frame), desenhada por um shader: a moldura e os pedaços
@@ -32,7 +33,10 @@ Item {
     readonly property vector4d frame: Qt.vector4d(Frame.thicknessAt(fuse), Frame.radius * fuse, screenSize.width, screenSize.height)
     readonly property vector4d fill: vec(ThemeManager.glass(ThemeManager.colors.base, 0))
     readonly property vector4d edge: vec(ThemeManager.colors.border)
-    readonly property real outline: ThemeManager.outlines ? 1 : 0
+    // A escala da janela (fracionária: 1,25), para pôr as beiras dos pedaços
+    // e a borda no pixel físico (ver Pixel).
+    readonly property real dpr: Window.window?.devicePixelRatio ?? 1
+    readonly property real outline: ThemeManager.outlines ? Pixel.hairline(dpr) : 0
     readonly property real reach: Frame.reach
     readonly property vector4d b0: slot(0)
     readonly property vector4d k0: props(0)
@@ -53,9 +57,13 @@ Item {
         return Qt.vector4d(c.r, c.g, c.b, c.a);
     }
 
+    // A vaga `i`, com as beiras no pixel físico da janela (a vaga vazia fica).
     function slot(i: int): vector4d {
         const r = packed.rects[i];
-        return Qt.vector4d(r[0], r[1], r[2], r[3]);
+        if (r[2] <= 0 || r[3] <= 0)
+            return Qt.vector4d(0, 0, 0, 0);
+        const s = Frame.snapRect(Qt.rect(r[0], r[1], r[2], r[3]), dpr, originX);
+        return Qt.vector4d(s.x, s.y, s.width, s.height);
     }
 
     function props(i: int): vector4d {

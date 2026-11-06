@@ -1,5 +1,6 @@
 import QtQuick
 import qs.core.config
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.capture.state
@@ -38,7 +39,7 @@ Surface {
 
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 1
+                width: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
                 height: 28
                 color: ThemeManager.colors.border
             }
@@ -57,7 +58,7 @@ Surface {
                     height: 60
                     radius: ThemeManager.radius.normal
                     color: current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.18) : "transparent"
-                    border.width: current ? 1 : 0
+                    border.width: current ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
                     border.color: ThemeManager.alpha(ThemeManager.colors.accent, 0.6)
                     onClicked: CaptureState.setTarget(modelData.value)
 
@@ -85,7 +86,7 @@ Surface {
 
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 1
+                width: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
                 height: 28
                 color: ThemeManager.colors.border
             }

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.powerMenu.state
@@ -28,8 +29,8 @@ OverlayPanel {
 
     Surface {
         level: 0
-        anchors.centerIn: parent
-        anchors.verticalCenterOffset: (1 - panel.progress) * 24
+        x: panel.snap((parent.width - width) / 2)
+        y: panel.snap((parent.height - height) / 2 + (1 - panel.progress) * 24)
         width: column.implicitWidth + ThemeManager.spacing.large * 2
         height: column.implicitHeight + ThemeManager.spacing.large * 2
 
@@ -100,7 +101,7 @@ OverlayPanel {
                             color: confirming ? ThemeManager.alpha(ThemeManager.colors.danger, 0.18)
                                 : current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.12)
                                 : ThemeManager.glass(ThemeManager.colors.raised, 1)
-                            border.width: ThemeManager.outlines ? 1 : 0
+                            border.width: ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
                             border.color: ThemeManager.colors.border
                             onHoveredChanged: {
                                 if (hovered)

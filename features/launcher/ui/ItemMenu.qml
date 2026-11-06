@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.launcher.state
@@ -40,7 +41,7 @@ Item {
         height: list.height + 12
         level: 1
         radius: ThemeManager.radius.normal
-        border.width: 1
+        border.width: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
         border.color: ThemeManager.colors.border
 
         Column {

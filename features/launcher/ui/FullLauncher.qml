@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.launcher.state
@@ -9,6 +10,9 @@ import qs.features.launcher.state
 // grade, Tab troca de categoria, Enter abre e Ctrl+1…9 rodam as ações do app.
 Item {
     id: root
+
+    // A escala da janela (fracionária: 1,25), para as linhas finas (ver Pixel).
+    readonly property real dpr: Window.window?.devicePixelRatio ?? 1
 
     required property real progress
 
@@ -23,7 +27,9 @@ Item {
     Surface {
         id: window
 
-        anchors.centerIn: parent
+        // Centrada no pixel físico (escala fracionária; ver Pixel).
+        x: Pixel.snap((parent.width - width) / 2, root.dpr)
+        y: Pixel.snap((parent.height - height) / 2, root.dpr)
         width: Math.min(1200, parent.width - 80)
         height: Math.min(740, parent.height - 120)
         level: 0
@@ -121,7 +127,7 @@ Item {
 
             Rectangle {
                 width: side.width
-                height: 1
+                height: Pixel.hairline(root.dpr)
                 color: ThemeManager.colors.border
                 opacity: 0.6
             }
@@ -180,7 +186,7 @@ Item {
         Rectangle {
             x: side.x + side.width + root.pad / 2
             y: side.y
-            width: 1
+            width: Pixel.hairline(root.dpr)
             height: window.height - side.y - root.pad
             color: ThemeManager.colors.border
             opacity: 0.5
@@ -219,7 +225,7 @@ Item {
                     anchors.margins: 5
                     radius: ThemeManager.radius.normal
                     color: cell.current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.14) : "transparent"
-                    border.width: cell.current ? 1 : 0
+                    border.width: cell.current ? Pixel.hairline(root.dpr) : 0
                     border.color: ThemeManager.alpha(ThemeManager.colors.accent, 0.6)
                     onClicked: mouse => {
                         if (mouse.button === Qt.RightButton) {

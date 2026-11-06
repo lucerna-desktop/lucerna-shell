@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.workspaces.state
@@ -42,7 +43,7 @@ Item {
         anchors.fill: parent
         radius: 6
         color: ThemeManager.colors.surface
-        border.width: mouse.containsMouse || root.dragging ? 2 : root.win.focused ? 1 : 0
+        border.width: mouse.containsMouse || root.dragging ? 2 : root.win.focused ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
         border.color: mouse.containsMouse || root.dragging ? ThemeManager.colors.accent : ThemeManager.alpha(ThemeManager.colors.accent, 0.5)
         clip: true
 

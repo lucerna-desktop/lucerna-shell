@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.workspaces.state
@@ -31,7 +32,7 @@ Item {
         height: root.tileWidth * root.monitor.height / root.monitor.width
         radius: ThemeManager.radius.normal
         color: ThemeManager.alpha(ThemeManager.colors.base, 0.6)
-        border.width: drop.containsDrag || root.selected ? 2 : root.current ? 1 : 0
+        border.width: drop.containsDrag || root.selected ? 2 : root.current ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
         border.color: drop.containsDrag || root.selected ? ThemeManager.colors.accent : ThemeManager.alpha(ThemeManager.colors.accent, 0.5)
 
         Image {

@@ -1,4 +1,5 @@
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 
@@ -84,7 +85,7 @@ Clickable {
         anchors.right: more.left
         anchors.verticalCenter: parent.verticalCenter
         visible: root.hasPage
-        width: 1
+        width: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
         height: parent.height * 0.5
         color: ThemeManager.alpha(root.foreground, 0.18)
     }

@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.launcher.state
@@ -199,7 +200,7 @@ Surface {
 
             Rectangle {
                 width: parent.width
-                height: 1
+                height: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
                 color: ThemeManager.colors.border
                 opacity: 0.6
             }
@@ -260,7 +261,7 @@ Surface {
 
                 Rectangle {
                     width: parent.width
-                    height: 1
+                    height: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
                     color: ThemeManager.colors.border
                     opacity: 0.6
                 }

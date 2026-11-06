@@ -4,7 +4,7 @@
 // arredondados: a pílula e os fundos dos painéis) fundidos a ela com a união
 // suave circular, a mesma do blob.frag do Caelestia. Uma forma só, numa cor
 // só: sem dupla transparência onde os pedaços se encontram.
-// Coordenadas em pixels da janela.
+// Coordenadas em pixels lógicos da janela.
 
 layout(location = 0) in vec2 qt_TexCoord0;
 layout(location = 0) out vec4 fragColor;
@@ -81,9 +81,16 @@ void main() {
     u = blend(u, p, b3, k3);
     u = blend(u, p, b4, k4);
     u = blend(u, p, b5, k5);
-    float a = clamp(0.5 - u, 0.0, 1.0);
-    // A borda (com o contorno do tema ligado): a faixa logo dentro da beira.
-    float o = outline > 0.0 ? a - clamp(0.5 - u - outline, 0.0, 1.0) : 0.0;
+    // A suavização em 1 px físico, não lógico: fwidth(u) é quanto a distância
+    // muda de um pixel físico ao vizinho (1/dpr numa beira reta; em 1,25,
+    // 0,8). Com as beiras dos pedaços no pixel físico (Frame.snapRect), a
+    // beira reta sai nítida. Junto ao discard a derivada pode vir torta, mas
+    // ali u passa de `reach` e `a` é 0 com qualquer largura positiva.
+    float w = max(fwidth(u), 1e-4);
+    float a = clamp(0.5 - u / w, 0.0, 1.0);
+    // A borda (com o contorno do tema ligado): a faixa logo dentro da beira,
+    // com `outline` lógicos (Pixel.hairline: 1 px físico).
+    float o = outline > 0.0 ? a - clamp(0.5 - (u + outline) / w, 0.0, 1.0) : 0.0;
     vec4 c = mix(fill, edge, o / max(a, 0.001));
     fragColor = vec4(c.rgb * c.a, c.a) * a * qt_Opacity;
 }

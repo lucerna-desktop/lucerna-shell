@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 
 // Escolha numa lista longa (resoluções, taxas, layouts): um campo que mostra a
@@ -46,7 +47,7 @@ Item {
         height: 40
         radius: height / 2
         color: ThemeManager.alpha(ThemeManager.colors.text, 0.05)
-        border.width: root.expanded ? 2 : ThemeManager.outlines ? 1 : 0
+        border.width: root.expanded ? 2 : ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
         border.color: root.expanded ? ThemeManager.colors.accent : ThemeManager.colors.border
         onClicked: root.expanded = !root.expanded
 

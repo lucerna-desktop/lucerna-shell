@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Quickshell.Widgets
 import qs.core.config
 import qs.core.format
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.dashboard.state
@@ -568,7 +569,7 @@ Item {
         radius: ThemeManager.radius.small
         color: ThemeManager.colors.raised
         border.color: ThemeManager.colors.border
-        border.width: 1
+        border.width: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
 
         onTargetChanged: {
             tipDelay.done = false;

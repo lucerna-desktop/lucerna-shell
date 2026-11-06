@@ -1,4 +1,5 @@
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 
 // Campo de busca: lupa, texto e um botão de limpar. Controlado: emite
@@ -21,7 +22,7 @@ Rectangle {
     implicitHeight: 48
     radius: ThemeManager.radius.normal
     color: ThemeManager.colors.raised
-    border.width: input.activeFocus ? 1 : 0
+    border.width: input.activeFocus ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
     border.color: ThemeManager.alpha(ThemeManager.colors.accent, 0.5)
 
     Icon {

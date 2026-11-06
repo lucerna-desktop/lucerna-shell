@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.launcher.state
@@ -34,8 +35,9 @@ Item {
         SearchField {
             id: search
 
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: Math.max(40, parent.height * 0.08)
+            // No pixel físico (escala fracionária; ver Pixel).
+            x: Pixel.snap((parent.width - width) / 2, Window.window?.devicePixelRatio ?? 1)
+            y: Pixel.snap(Math.max(40, parent.height * 0.08), Window.window?.devicePixelRatio ?? 1)
             width: Math.min(640, parent.width - 80)
             height: 52
             placeholder: "Buscar apps e ações  ·  / arquivos  ·  ? web"

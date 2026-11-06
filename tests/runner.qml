@@ -17,6 +17,7 @@ import qs.core.input
 import qs.core.launcher
 import qs.core.nightlight
 import qs.core.panels
+import qs.core.pixel
 import qs.core.shapes
 import qs.core.theme
 import qs.core.time
@@ -68,6 +69,7 @@ import "notifications.test.js" as NotificationsTest
 import "osd.test.js" as OsdTest
 import "overview.test.js" as OverviewTest
 import "panels.test.js" as PanelsTest
+import "pixel.test.js" as PixelTest
 import "performance.test.js" as PerformanceTest
 import "searchengines.test.js" as SearchEnginesTest
 import "session.test.js" as SessionTest
@@ -105,6 +107,7 @@ ShellRoot {
         ["nightschedule", NightScheduleTest],
         ["theme", ThemeTest],
         ["panels", PanelsTest],
+        ["pixel", PixelTest],
         ["frame", FrameTest],
         ["bar", BarTest],
         ["central", CentralTest],
@@ -258,6 +261,7 @@ ShellRoot {
             get SearchEngines() { return SearchEngines; },
             get NightSchedule() { return NightSchedule; },
             get Panels() { return Panels; },
+            get Pixel() { return Pixel; },
             get ServeLauncher() { return ServeLauncher; },
             get Frame() { return Frame; },
             get BarState() { return BarState; },

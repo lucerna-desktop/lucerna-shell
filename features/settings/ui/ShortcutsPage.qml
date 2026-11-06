@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.core.input
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.settings.state
@@ -78,7 +79,7 @@ Column {
                                     height: 30
                                     radius: 8
                                     color: current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.2) : ThemeManager.glass(ThemeManager.colors.raised, 1)
-                                    border.width: current ? 1 : ThemeManager.outlines ? 1 : 0
+                                    border.width: current || ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
                                     border.color: current ? ThemeManager.colors.accent : ThemeManager.colors.border
                                     enabled: ShortcutsState.editable(entry.modelData)
                                     onClicked: ShortcutsState.start(entry.modelData, index)
@@ -175,7 +176,7 @@ Column {
                     height: 30
                     radius: 8
                     color: ThemeManager.glass(ThemeManager.colors.raised, 1)
-                    border.width: ThemeManager.outlines ? 1 : 0
+                    border.width: ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
                     border.color: ThemeManager.colors.border
 
                     Txt {

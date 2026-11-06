@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.core.frame
 import qs.core.panels
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.dashboard.state
@@ -85,7 +86,8 @@ Item {
         readonly property real grow: Frame.clamp(panel.progress)
 
         width: panel.startWidth + (panel.fullWidth - panel.startWidth) * grow
-        x: (panel.width - width) / 2
+        // Centrada no pixel físico (escala fracionária; ver Pixel).
+        x: Pixel.snap((panel.width - width) / 2, Window.window?.devicePixelRatio ?? 1)
         y: panel.fromPill ? panel.pill.y : 0
         height: Math.max(0, panel.startHeight + (panel.fullHeight - panel.startHeight) * panel.progress)
         clip: true

@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import qs.core.pixel
 
 // A moldura da tela e o que sai dela: uma forma só por monitor, desenhada
 // pelo core/widgets/FrameShape (união suave por SDF) na janela da forma
@@ -243,6 +244,17 @@ Singleton {
         if (sides.includes("right"))
             w += overhang;
         return Qt.rect(x, y, w, h);
+    }
+
+    // O retângulo com as quatro beiras no pixel físico mais próximo (`dpr`, a
+    // escala da janela), contadas a partir de `originX` (onde a janela começa
+    // na tela): em escala fracionária, a beira da forma fica nítida, sem
+    // cair no meio de um pixel. A largura sai da diferença das beiras, não
+    // arredondada à parte.
+    function snapRect(r: rect, dpr: real, originX: real): rect {
+        const x0 = Pixel.snap(r.x - originX, dpr) + originX, y0 = Pixel.snap(r.y, dpr);
+        const x1 = Pixel.snap(r.x + r.width - originX, dpr) + originX, y1 = Pixel.snap(r.y + r.height, dpr);
+        return Qt.rect(x0, y0, x1 - x0, y1 - y0);
     }
 
     // A largura da janela da forma (presa à direita), num dos quatro níveis:

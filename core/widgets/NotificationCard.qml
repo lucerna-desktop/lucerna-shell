@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Notifications
 import Quickshell.Widgets
+import qs.core.pixel
 import qs.core.theme
 
 // Cartão de uma notificação, usado nos popups e na central. Em modo popup,
@@ -48,7 +49,7 @@ Surface {
     level: popup ? 0 : 1
     radius: ThemeManager.radius.normal
     border.color: critical ? ThemeManager.colors.danger : ThemeManager.colors.border
-    border.width: critical ? 2 : ThemeManager.outlines ? 1 : 0
+    border.width: critical ? 2 : ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
     implicitHeight: layout.implicitHeight + ThemeManager.spacing.normal * 2
     clip: true
 

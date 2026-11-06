@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.launcher.state
@@ -19,8 +20,9 @@ Item {
     Surface {
         id: box
 
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: parent.height * 0.22 + (1 - root.progress) * 16
+        // No pixel físico (escala fracionária; ver Pixel).
+        x: Pixel.snap((parent.width - width) / 2, Window.window?.devicePixelRatio ?? 1)
+        y: Pixel.snap(parent.height * 0.22 + (1 - root.progress) * 16, Window.window?.devicePixelRatio ?? 1)
         width: 560
         level: 0
         height: column.implicitHeight + ThemeManager.spacing.normal * 2

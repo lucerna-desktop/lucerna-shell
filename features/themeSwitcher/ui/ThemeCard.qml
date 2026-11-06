@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell.Widgets
 import qs.core.carousel
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 
@@ -14,6 +15,9 @@ import qs.core.widgets
 // terceiro, some. O central ganha a borda na cor de destaque do tema ativo.
 Item {
     id: card
+
+    // A escala da janela (fracionária: 1,25), para as linhas finas (ver Pixel).
+    readonly property real dpr: Window.window?.devicePixelRatio ?? 1
 
     required property var theme
     required property int distance
@@ -110,7 +114,7 @@ Item {
             anchors.fill: parent
             radius: ThemeManager.radius.large
             color: card.c.base ?? "black"
-            border.width: ThemeManager.outlines ? 1 : 0
+            border.width: ThemeManager.outlines ? Pixel.hairline(card.dpr) : 0
             border.color: card.c.border ?? "gray"
 
             Image {
@@ -161,7 +165,7 @@ Item {
                         height: 12
                         radius: 6
                         color: card.c[modelData] ?? "gray"
-                        border.width: 1
+                        border.width: Pixel.hairline(card.dpr)
                         border.color: card.c.border ?? "gray"
                     }
                 }

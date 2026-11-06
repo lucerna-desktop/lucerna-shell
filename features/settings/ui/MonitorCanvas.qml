@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.settings.state
@@ -11,6 +12,9 @@ import qs.features.settings.state
 // onde). Clicar seleciona para ajustar abaixo.
 Rectangle {
     id: canvas
+
+    // A escala da janela (fracionária: 1,25), para as linhas finas (ver Pixel).
+    readonly property real dpr: Window.window?.devicePixelRatio ?? 1
 
     readonly property var area: MonitorsState.bounds
     readonly property real pad: 28
@@ -27,7 +31,7 @@ Rectangle {
     implicitHeight: 250
     radius: ThemeManager.radius.normal
     color: ThemeManager.alpha(ThemeManager.colors.text, 0.03)
-    border.width: ThemeManager.outlines ? 1 : 0
+    border.width: ThemeManager.outlines ? Pixel.hairline(canvas.dpr) : 0
     border.color: ThemeManager.colors.border
 
     Behavior on k { enabled: canvas.dragging === ""; Anim { type: Anim.Spatial } }
@@ -73,7 +77,7 @@ Rectangle {
             z: tile.moving ? 2 : tile.selected ? 1 : 0
             radius: ThemeManager.radius.small + 2
             color: tile.selected ? ThemeManager.alpha(ThemeManager.colors.accent, 0.22) : ThemeManager.colors.surface
-            border.width: tile.selected ? 2 : 1
+            border.width: tile.selected ? 2 : Pixel.hairline(canvas.dpr)
             border.color: tile.selected ? ThemeManager.colors.accent : ThemeManager.colors.border
             scale: tile.moving ? 1.03 : 1
             opacity: tile.moving ? 0.9 : 1

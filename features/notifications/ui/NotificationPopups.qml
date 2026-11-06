@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs.core.frame
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.notifications.state
@@ -86,7 +87,7 @@ Item {
                 implicitHeight: summaryRow.implicitHeight + ThemeManager.spacing.normal * 2
                 radius: ThemeManager.radius.normal
                 border.color: ThemeManager.colors.border
-                border.width: ThemeManager.outlines ? 1 : 0
+                border.width: ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
 
                 Clickable {
                     anchors.fill: parent

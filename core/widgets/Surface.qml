@@ -1,4 +1,5 @@
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 
 // Cartão/painel com o fundo, a borda e o raio do tema. `level` 0 é um painel
@@ -11,5 +12,5 @@ Rectangle {
     color: ThemeManager.glass(raisedLevel ? ThemeManager.colors.raised : ThemeManager.colors.surface, level)
     radius: ThemeManager.radius.large
     border.color: ThemeManager.colors.border
-    border.width: ThemeManager.outlines ? 1 : 0
+    border.width: ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
 }

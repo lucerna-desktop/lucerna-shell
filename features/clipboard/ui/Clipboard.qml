@@ -25,8 +25,8 @@ OverlayPanel {
         id: window
 
         level: 0
-        anchors.centerIn: parent
-        anchors.verticalCenterOffset: (1 - panel.progress) * 24
+        x: panel.snap((parent.width - width) / 2)
+        y: panel.snap((parent.height - height) / 2 + (1 - panel.progress) * 24)
         width: Math.min(640, parent.width - 80)
         height: Math.min(700, parent.height - 140)
         radius: ThemeManager.radius.large + 4

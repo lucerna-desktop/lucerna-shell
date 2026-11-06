@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Effects
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.lockscreen.state
@@ -77,7 +78,7 @@ Item {
             height: 48
             radius: height / 2
             color: ThemeManager.alpha(ThemeManager.colors.surface, 0.9)
-            border.width: LockscreenState.error || input.activeFocus ? 2 : ThemeManager.outlines ? 1 : 0
+            border.width: LockscreenState.error || input.activeFocus ? 2 : ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
             border.color: LockscreenState.error ? ThemeManager.colors.danger : input.activeFocus ? ThemeManager.alpha(ThemeManager.colors.accent, 0.6) : ThemeManager.colors.border
 
             Behavior on border.color { ColorAnim {} }

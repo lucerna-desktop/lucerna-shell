@@ -52,8 +52,8 @@ OverlayPanel {
 
             Surface {
                 level: 0
-                anchors.centerIn: parent
-                anchors.verticalCenterOffset: (1 - panel.progress) * 24
+                x: panel.snap((parent.width - width) / 2)
+                y: panel.snap((parent.height - height) / 2 + (1 - panel.progress) * 24)
                 width: grid.width + ThemeManager.spacing.large * 2
                 height: grid.height + header.height + ThemeManager.spacing.large * 3
                 radius: ThemeManager.radius.large + 4

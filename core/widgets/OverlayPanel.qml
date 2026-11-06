@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.core.panels
+import qs.core.pixel
 import qs.core.theme
 
 // Janela de sobreposição em tela cheia para painéis (launcher, temas, energia,
@@ -27,6 +28,10 @@ PanelWindow {
     readonly property real areaWidth: area.width
     readonly property real areaHeight: area.height
     default property alias content: container.data
+    // A escala da janela (fracionária: 1,25). O conteúdo centralizado se põe
+    // com `snap`, no pixel físico: o anchors.centerIn arredonda em pixel
+    // lógico, que em 1,25 pode cair no meio de um físico (texto borrado).
+    readonly property real dpr: container.Window.window?.devicePixelRatio ?? 1
 
     signal dismissed
 
@@ -65,6 +70,11 @@ PanelWindow {
         id: companionMask
 
         item: root.inputItem
+    }
+
+    // `v` lógico no pixel físico desta janela (ver Pixel).
+    function snap(v: real): real {
+        return Pixel.snap(v, dpr);
     }
 
     Component.onCompleted: Panels.register(root)
