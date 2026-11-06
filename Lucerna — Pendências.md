@@ -53,6 +53,13 @@ Os marcos seguem esta ordem; cada um só começa quando o anterior fecha. Os ite
 - **Vídeo:** gravar região, janela ou tela, com a escolha do formato e outros recursos.
 Passa por brainstorming, spec e desenho estático; criar o repositório com as configurações espelhando os outros.
 
+**Gerenciador do sistema (projeto aprovado, nome a definir), depois da troca, com os outros apps:** algo como o NitroSense da Acer, mas em Linux, para qualquer hardware e com mais recursos. Cobre ventoinhas (com curvas), processador, placa de vídeo, RAM, armazenamento, energia e bateria, sensores e RGB. Começa por brainstorming, spec e plano. Separação espelhando o explorador de arquivos (`lucerna-files`):
+- **Projeto:** repositório próprio; núcleo e serviço em Rust, linha de comando em inglês, TUI e interface Qt. Funciona sozinho em qualquer ambiente (KDE, GNOME, servidor); o shell é só um cliente opcional.
+- **Arquitetura:** um serviço de sistema pequeno (root) é o único que toca o hardware, com polkit e D-Bus do sistema; as interfaces rodam como usuário. O núcleo tem a API comum, perfis, permissões, validação e o estado do hardware. Os adaptadores são: notebook (EC, ACPI, sysfs e drivers de fabricante: Acer/Nitro pelo módulo da comunidade, Asus, Lenovo, ThinkPad, Dell, Framework; aproveitar as configs do nbfc-linux), desktop (Super I/O e placa-mãe pelo hwmon, controladores), CPU e GPU (cpufreq, RAPL, platform_profile, Nvidia, amdgpu, Intel) e RGB (OpenRGB e periféricos). Detecta o que o hardware suporta e só mostra o que existe.
+- **Segurança:** se o serviço ou o cliente cair, volta ao controle automático do firmware; há limites de temperatura; tudo é desfeito ao sair.
+- **Conflitos:** detectar power-profiles-daemon, TLP, auto-cpufreq e similares, e integrar ou avisar, sem disputar o hardware.
+- **Shell:** o shell já tem um painel de desempenho, e nada pode ficar redundante. Na hora de implementar, trazer recomendações de como dividir (painel de desempenho × bloco rápido na central × app). O bloco de perfil de energia (power-profiles-daemon) pode vir antes, sem o serviço.
+
 Depois dos marcos, sem pressa e sem bloquear a troca: o item 15 (lógica fora do shell), o porte para o KWin e as outras distros (item 14), os apps e os bugs de gravidade média e baixa que a triagem listou.
 
 ### Itens numerados
