@@ -20,8 +20,8 @@ Item {
     readonly property bool hasMedia: OverviewState.hasMedia
     readonly property bool live: onScreen && OverviewState.mediaPlaying
     // Lado do visualizador: a capa e o espaço das barras em volta.
-    readonly property real visualSize: 88
-    readonly property real coverSize: 52
+    readonly property real visualSize: ThemeManager.px(88)
+    readonly property real coverSize: ThemeManager.px(52)
 
     Item {
         id: visual
@@ -54,7 +54,7 @@ Item {
                 anchors.centerIn: parent
                 visible: !root.hasMedia
                 icon: Icons.musicOff
-                size: 26
+                size: ThemeManager.px(26)
                 color: ThemeManager.colors.textFaint
             }
 
@@ -77,7 +77,7 @@ Item {
                     anchors.centerIn: parent
                     visible: art.status !== Image.Ready
                     icon: Icons.album
-                    size: 26
+                    size: ThemeManager.px(26)
                     color: ThemeManager.colors.textFaint
                 }
 
@@ -86,7 +86,7 @@ Item {
 
                     anchors.fill: parent
                     source: OverviewState.mediaArt
-                    sourceSize: Qt.size(104, 104)
+                    sourceSize: Qt.size(ThemeManager.px(104), ThemeManager.px(104))
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                 }
@@ -110,7 +110,7 @@ Item {
         anchors.leftMargin: ThemeManager.spacing.normal
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 2
+        spacing: ThemeManager.px(2)
 
         Txt {
             width: parent.width
@@ -135,25 +135,25 @@ Item {
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
                 icon: Icons.previous
-                iconSize: 20
+                iconSize: ThemeManager.px(20)
                 onClicked: OverviewState.previousTrack()
             }
 
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
-                implicitWidth: 36
-                implicitHeight: 36
-                radius: 18
+                implicitWidth: ThemeManager.px(36)
+                implicitHeight: ThemeManager.px(36)
+                radius: ThemeManager.px(18)
                 active: true
                 icon: OverviewState.mediaPlaying ? Icons.pause : Icons.play
-                iconSize: 22
+                iconSize: ThemeManager.px(22)
                 onClicked: OverviewState.togglePlaying()
             }
 
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
                 icon: Icons.next
-                iconSize: 20
+                iconSize: ThemeManager.px(20)
                 onClicked: OverviewState.nextTrack()
             }
 
@@ -162,7 +162,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: OverviewState.playerCount > 1
                 icon: Icons.swap
-                iconSize: 16
+                iconSize: ThemeManager.px(16)
                 foreground: ThemeManager.colors.textFaint
                 onClicked: {
                     OverviewState.cyclePlayer();

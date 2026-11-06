@@ -43,7 +43,7 @@ Item {
         Clickable {
             anchors.horizontalCenter: parent.horizontalCenter
             implicitWidth: openRow.implicitWidth + ThemeManager.spacing.large * 2
-            implicitHeight: 44
+            implicitHeight: ThemeManager.px(44)
             radius: height / 2
             pressScale: 0.96
             active: true
@@ -58,7 +58,7 @@ Item {
                 Icon {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: Icons.settings
-                    size: 20
+                    size: ThemeManager.px(20)
                     color: ThemeManager.colors.accentText
                 }
 
@@ -85,7 +85,7 @@ Item {
         // sol; umidade, sensação e vento.
         Surface {
             Layout.fillWidth: true
-            Layout.preferredHeight: 140
+            Layout.preferredHeight: ThemeManager.px(140)
             radius: ThemeManager.radius.large
 
             RowLayout {
@@ -102,7 +102,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         icon: WeatherState.icon
                         filled: true
-                        size: 76
+                        size: ThemeManager.px(76)
                         color: ThemeManager.colors.accent
                     }
 
@@ -111,12 +111,12 @@ Item {
 
                         Txt {
                             text: WeatherState.temp
-                            font.pixelSize: ThemeManager.font.huge + 4
+                            font.pixelSize: ThemeManager.font.huge + ThemeManager.px(4)
                             font.weight: Font.Medium
                         }
 
                         Txt {
-                            leftPadding: 2
+                            leftPadding: ThemeManager.px(2)
                             text: WeatherState.condition
                             muted: true
                         }
@@ -126,16 +126,16 @@ Item {
                 Column {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
-                    spacing: ThemeManager.spacing.small + 2
+                    spacing: ThemeManager.spacing.small + ThemeManager.px(2)
 
                     Column {
                         width: parent.width
-                        spacing: 2
+                        spacing: ThemeManager.px(2)
 
                         Txt {
                             width: parent.width
                             text: WeatherState.city
-                            font.pixelSize: ThemeManager.font.large + 4
+                            font.pixelSize: ThemeManager.font.large + ThemeManager.px(4)
                             font.weight: Font.DemiBold
                         }
 
@@ -157,7 +157,7 @@ Item {
                     }
 
                     Row {
-                        spacing: ThemeManager.spacing.large - 2
+                        spacing: ThemeManager.spacing.large - ThemeManager.px(2)
 
                         SunStat {
                             icon: Icons.sunrise
@@ -173,7 +173,7 @@ Item {
 
                 Column {
                     Layout.alignment: Qt.AlignVCenter
-                    Layout.preferredWidth: 170
+                    Layout.preferredWidth: ThemeManager.px(170)
                     spacing: ThemeManager.spacing.small
 
                     DetailRow {
@@ -242,7 +242,7 @@ Item {
                             anchors.horizontalCenter: parent.horizontalCenter
                             icon: day.modelData.icon
                             filled: true
-                            size: 28
+                            size: ThemeManager.px(28)
                         }
 
                         Txt {
@@ -270,12 +270,12 @@ Item {
         property string icon
         property string value
 
-        spacing: ThemeManager.spacing.small - 2
+        spacing: ThemeManager.spacing.small - ThemeManager.px(2)
 
         Icon {
             anchors.verticalCenter: parent.verticalCenter
             icon: sun.icon
-            size: 18
+            size: ThemeManager.px(18)
             color: ThemeManager.colors.accent
         }
 
@@ -294,11 +294,11 @@ Item {
         property string value
 
         width: parent?.width ?? 0
-        spacing: ThemeManager.spacing.small + 2
+        spacing: ThemeManager.spacing.small + ThemeManager.px(2)
 
         Icon {
             icon: detail.icon
-            size: 20
+            size: ThemeManager.px(20)
             color: ThemeManager.colors.accent
         }
 

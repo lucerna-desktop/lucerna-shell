@@ -30,7 +30,7 @@ OverlayPanel {
     Surface {
         level: 0
         x: panel.snap((parent.width - width) / 2)
-        y: panel.snap((parent.height - height) / 2 + (1 - panel.progress) * 24)
+        y: panel.snap((parent.height - height) / 2 + (1 - panel.progress) * ThemeManager.px(24))
         width: column.implicitWidth + ThemeManager.spacing.large * 2
         height: column.implicitHeight + ThemeManager.spacing.large * 2
 
@@ -49,13 +49,13 @@ OverlayPanel {
                     readonly property Item target: buttons.count > 0 ? buttons.itemAt(panel.selected) : null
                     readonly property bool confirming: PowerMenuState.pending !== ""
 
-                    x: (target?.x ?? 0) - 3
-                    y: -3
-                    width: (target?.width ?? 0) + 6
-                    height: (target?.height ?? 0) + 6
-                    radius: ThemeManager.radius.normal + 3
+                    x: (target?.x ?? 0) - ThemeManager.px(3)
+                    y: -ThemeManager.px(3)
+                    width: (target?.width ?? 0) + ThemeManager.px(6)
+                    height: (target?.height ?? 0) + ThemeManager.px(6)
+                    radius: ThemeManager.radius.normal + ThemeManager.px(3)
                     color: "transparent"
-                    border.width: 2
+                    border.width: ThemeManager.px(2)
                     border.color: confirming ? ThemeManager.colors.danger : ThemeManager.colors.accent
 
                     Behavior on x { Anim { type: Anim.FastSpatial } }
@@ -94,8 +94,8 @@ OverlayPanel {
                             readonly property bool confirming: PowerMenuState.pending === modelData.id
                             readonly property bool current: index === panel.selected
 
-                            width: 104
-                            height: 104
+                            width: ThemeManager.px(104)
+                            height: ThemeManager.px(104)
                             radius: ThemeManager.radius.normal
                             pressScale: 0.92
                             color: confirming ? ThemeManager.alpha(ThemeManager.colors.danger, 0.18)
@@ -116,7 +116,7 @@ OverlayPanel {
                                 Icon {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     icon: button.modelData.icon
-                                    size: 30
+                                    size: ThemeManager.px(30)
                                     color: button.confirming ? ThemeManager.colors.danger : button.current ? ThemeManager.colors.accent : ThemeManager.colors.text
                                 }
 

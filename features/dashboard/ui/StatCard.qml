@@ -45,7 +45,7 @@ Surface {
     // Um tamanho só para a bolha de todo card, que cabe o pior caso, "100%" ou
     // "0000" com "MHz" embaixo, com folga; 64 px no mínimo. Não muda com o
     // valor, nem com a troca de GPU, nem de um card para o outro.
-    readonly property real blobSize: Math.max(64, Math.ceil(Math.max(percentMetrics.advanceWidth + percentUnitMetrics.advanceWidth, clockMetrics.advanceWidth, clockUnitMetrics.advanceWidth)) + 20)
+    readonly property real blobSize: Math.max(ThemeManager.px(64), Math.ceil(Math.max(percentMetrics.advanceWidth + percentUnitMetrics.advanceWidth, clockMetrics.advanceWidth, clockUnitMetrics.advanceWidth)) + ThemeManager.px(20))
 
     implicitHeight: Math.max(margin * 2 + titleRow.height + ThemeManager.spacing.normal + (root.hasTemp ? temp.height : 0), blobSize + margin * 2)
 
@@ -142,7 +142,7 @@ Surface {
                 Icon {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: Icons.temperature
-                    size: 18
+                    size: ThemeManager.px(18)
                     color: root.hot ? ThemeManager.colors.danger : ThemeManager.colors.textMuted
                 }
 
@@ -154,7 +154,7 @@ Surface {
             }
 
             LinearGauge {
-                width: Math.min(220, root.leftLimit - root.margin - ThemeManager.spacing.normal)
+                width: Math.min(ThemeManager.px(220), root.leftLimit - root.margin - ThemeManager.spacing.normal)
                 value: root.tempFraction
                 // O trilho padrão tem a cor do véu do uso e some por cima dele; o texto
                 // com transparência aparece sobre o véu e sobre o fundo, em todos os temas.
@@ -206,7 +206,7 @@ Surface {
                     x: root.stackUnit ? (parent.width - width) / 2 : 0
                     text: root.value
                     mono: true
-                    font.pixelSize: ThemeManager.font.large + 10
+                    font.pixelSize: ThemeManager.font.large + ThemeManager.px(10)
                     font.weight: Font.DemiBold
                 }
 
@@ -217,7 +217,7 @@ Surface {
                     // Embaixo: o topo das letras 3 px abaixo da linha de
                     // base do número (os algarismos não descem dela); ao lado:
                     // na mesma linha de base.
-                    y: root.stackUnit ? number.baselineOffset + 3 - (baselineOffset - clockUnitMetrics.tightBoundingRect.height) : number.baselineOffset - baselineOffset
+                    y: root.stackUnit ? number.baselineOffset + ThemeManager.px(3) - (baselineOffset - clockUnitMetrics.tightBoundingRect.height) : number.baselineOffset - baselineOffset
                     text: root.unit
                     muted: true
                     font.pixelSize: ThemeManager.font.small + 1

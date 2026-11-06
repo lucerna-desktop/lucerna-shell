@@ -12,10 +12,10 @@ Item {
     readonly property bool onScreen: DashboardState.isShowing("overview")
 
     // Altura de cada linha de dias: fixa, o calendário não se espalha pela altura do card.
-    readonly property int rowHeight: 30
+    readonly property int rowHeight: ThemeManager.px(30)
 
     // Título, cabeçalho e seis linhas.
-    implicitHeight: 28 + ThemeManager.spacing.small + 22 + 6 * rowHeight
+    implicitHeight: ThemeManager.px(28) + ThemeManager.spacing.small + ThemeManager.px(22) + 6 * rowHeight
 
     MouseArea {
         anchors.fill: parent
@@ -34,13 +34,13 @@ Item {
 
         Item {
             width: parent.width
-            height: 28
+            height: ThemeManager.px(28)
 
             IconButton {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 icon: Icons.chevronLeft
-                iconSize: 18
+                iconSize: ThemeManager.px(18)
                 onClicked: {
                     grid.direction = -1;
                     OverviewState.shiftMonth(-1);
@@ -50,7 +50,7 @@ Item {
             Clickable {
                 anchors.centerIn: parent
                 width: title.implicitWidth + ThemeManager.spacing.normal
-                height: 26
+                height: ThemeManager.px(26)
                 onClicked: OverviewState.resetMonth()
 
                 Txt {
@@ -67,7 +67,7 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 icon: Icons.chevronRight
-                iconSize: 18
+                iconSize: ThemeManager.px(18)
                 onClicked: {
                     grid.direction = 1;
                     OverviewState.shiftMonth(1);
@@ -94,7 +94,7 @@ Item {
                 id: monthSlide
 
                 Anim { target: grid; property: "opacity"; from: 0; to: 1; type: Anim.Effects }
-                Anim { target: slide; property: "x"; from: 24 * grid.direction; to: 0; type: Anim.Spatial }
+                Anim { target: slide; property: "x"; from: ThemeManager.px(24) * grid.direction; to: 0; type: Anim.Spatial }
             }
 
             transform: Translate {
@@ -111,7 +111,7 @@ Item {
                     required property var modelData
 
                     width: grid.cell
-                    height: 22
+                    height: ThemeManager.px(22)
                     horizontalAlignment: Text.AlignHCenter
                     text: modelData.initial
                     color: modelData.sunday ? ThemeManager.colors.danger : ThemeManager.colors.textFaint
@@ -136,8 +136,8 @@ Item {
                         active: parent.modelData.today
 
                         sourceComponent: Blob {
-                            width: 30
-                            height: 30
+                            width: ThemeManager.px(30)
+                            height: ThemeManager.px(30)
                             active: root.onScreen
                             morphing: true
                             spinning: true

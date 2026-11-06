@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.core.config
+import qs.core.theme
 import qs.core.panels
 import qs.core.widgets
 import qs.services
@@ -19,7 +20,7 @@ Singleton {
     readonly property var screen: Panels.screenFor(openedOn, Quickshell.screens, Hypr.focusedScreen)
     // A altura comum das abas: o painel não pula ao trocar de aba. O
     // Desempenho cabe nela com os anéis do disco e da memória de 109 px.
-    readonly property int pageHeight: 300
+    readonly property int pageHeight: ThemeManager.px(300)
 
     // Todas as abas; `tabs` são as visíveis, na ordem escolhida nas configurações.
     readonly property var allTabs: [

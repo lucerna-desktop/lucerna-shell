@@ -37,7 +37,7 @@ Item {
     anchors.fill: parent
     visible: open || progress > 0
 
-    readonly property real fullWidth: Math.min(920, width - ThemeManager.spacing.small * 2)
+    readonly property real fullWidth: Math.min(ThemeManager.px(920), width - ThemeManager.spacing.small * 2)
     // Da borda de cima (com a moldura) até o fim do conteúdo.
     readonly property real fullHeight: Frame.thickness + contentScope.height + ThemeManager.spacing.large * 2
     // A aba da barra dessa tela, de onde a peça parte; sem ela, sai direto da moldura.
