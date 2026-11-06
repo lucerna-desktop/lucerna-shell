@@ -22,8 +22,8 @@ Item {
 
         // No pixel físico (escala fracionária; ver Pixel).
         x: Pixel.snap((parent.width - width) / 2, Window.window?.devicePixelRatio ?? 1)
-        y: Pixel.snap(parent.height * 0.22 + (1 - root.progress) * 16, Window.window?.devicePixelRatio ?? 1)
-        width: 560
+        y: Pixel.snap(parent.height * 0.22 + (1 - root.progress) * ThemeManager.px(16), Window.window?.devicePixelRatio ?? 1)
+        width: ThemeManager.px(560)
         level: 0
         height: column.implicitHeight + ThemeManager.spacing.normal * 2
 
@@ -42,7 +42,7 @@ Item {
                 id: search
 
                 width: parent.width
-                height: 44
+                height: ThemeManager.px(44)
                 placeholder: "Buscar apps e ações  ·  / arquivos  ·  ? web"
                 onKey: event => {
                     if (LauncherState.handleShortcut(event)) {
@@ -74,7 +74,7 @@ Item {
                     readonly property Item target: resultItems.count > 0 ? resultItems.itemAt(LauncherState.selected) : null
 
                     width: parent.width
-                    height: target?.height ?? 48
+                    height: target?.height ?? ThemeManager.px(48)
                     y: target?.y ?? 0
                     radius: ThemeManager.radius.normal
                     color: ThemeManager.alpha(ThemeManager.colors.accent, 0.14)
@@ -118,7 +118,7 @@ Item {
             Txt {
                 visible: LauncherState.items.length === 0
                 width: parent.width
-                height: 48
+                height: ThemeManager.px(48)
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 text: LauncherState.prefixMode === "files" && !LauncherState.searchText ? "Digite o nome do arquivo" : LauncherState.prefixMode === "files" && LauncherState.searchingFiles ? "Procurando…" : "Nada encontrado"

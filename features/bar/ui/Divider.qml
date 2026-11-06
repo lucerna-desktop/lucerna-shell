@@ -6,7 +6,7 @@ import qs.core.theme
 Rectangle {
     anchors.verticalCenter: parent.verticalCenter
     width: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
-    height: 16
+    height: ThemeManager.px(16)
     color: ThemeManager.colors.border
     opacity: 0.8
 }

@@ -17,8 +17,8 @@ Item {
     // `point` no sistema de coordenadas deste item.
     function openFor(target: var, point: point): void {
         item = target;
-        menu.x = Math.min(point.x, width - menu.width - 8);
-        menu.y = Math.min(point.y, height - menu.height - 8);
+        menu.x = Math.min(point.x, width - menu.width - ThemeManager.px(8));
+        menu.y = Math.min(point.y, height - menu.height - ThemeManager.px(8));
     }
 
     function close(): void {
@@ -37,8 +37,8 @@ Item {
     Surface {
         id: menu
 
-        width: 240
-        height: list.height + 12
+        width: ThemeManager.px(240)
+        height: list.height + ThemeManager.px(12)
         level: 1
         radius: ThemeManager.radius.normal
         border.width: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
@@ -47,9 +47,9 @@ Item {
         Column {
             id: list
 
-            x: 6
-            y: 6
-            width: parent.width - 12
+            x: ThemeManager.px(6)
+            y: ThemeManager.px(6)
+            width: parent.width - ThemeManager.px(12)
 
             Repeater {
                 model: root.options
@@ -60,8 +60,8 @@ Item {
                     required property var modelData
 
                     width: list.width
-                    height: 36
-                    radius: ThemeManager.radius.small + 2
+                    height: ThemeManager.px(36)
+                    radius: ThemeManager.radius.small + ThemeManager.px(2)
                     onClicked: {
                         opt.modelData.run();
                         root.close();
@@ -74,7 +74,7 @@ Item {
                         anchors.leftMargin: ThemeManager.spacing.small
                         anchors.verticalCenter: parent.verticalCenter
                         icon: opt.modelData.icon
-                        size: 18
+                        size: ThemeManager.px(18)
                         color: ThemeManager.colors.accent
                     }
 

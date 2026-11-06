@@ -37,7 +37,7 @@ Column {
 
         visible: PowerState.hasBattery
         width: parent.width
-        height: 76
+        height: ThemeManager.px(76)
 
         // O que vai por cima do card, nas duas cores: a porcentagem (com o
         // raio, carregando) à esquerda e o tempo à direita.
@@ -52,15 +52,15 @@ Column {
             height: body.height
 
             Row {
-                x: ThemeManager.spacing.normal + 2
+                x: ThemeManager.spacing.normal + ThemeManager.px(2)
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
+                spacing: ThemeManager.px(2)
 
                 Icon {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: PowerState.charging
                     icon: Icons.bolt
-                    size: 26
+                    size: ThemeManager.px(26)
                     filled: true
                     color: label.tint
                 }
@@ -69,14 +69,14 @@ Column {
                     text: Format.percent(PowerState.percentage)
                     mono: true
                     color: label.tint
-                    font.pixelSize: ThemeManager.font.huge - 8
+                    font.pixelSize: ThemeManager.font.huge - ThemeManager.px(8)
                     font.weight: Font.DemiBold
                 }
             }
 
             Txt {
                 anchors.right: parent.right
-                anchors.rightMargin: ThemeManager.spacing.normal + 2
+                anchors.rightMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
                 anchors.verticalCenter: parent.verticalCenter
                 text: PowerState.batteryNote
                 color: label.tint
@@ -89,7 +89,7 @@ Column {
         ClippingRectangle {
             id: body
 
-            width: parent.width - pole.width - 3
+            width: parent.width - pole.width - ThemeManager.px(3)
             height: parent.height
             radius: ThemeManager.radius.normal
             color: card.empty
@@ -122,10 +122,10 @@ Column {
 
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            width: 5
+            width: ThemeManager.px(5)
             height: parent.height * 0.36
-            topRightRadius: 3
-            bottomRightRadius: 3
+            topRightRadius: ThemeManager.px(3)
+            bottomRightRadius: ThemeManager.px(3)
             color: card.shown >= 0.995 ? card.fill : card.empty
 
             Behavior on color { ColorAnim {} }
@@ -150,7 +150,7 @@ Column {
                 readonly property var item: PowerState.profileButtons[profile.index] ?? null
 
                 width: (profiles.width - profiles.spacing * (PowerState.profileButtons.length - 1)) / PowerState.profileButtons.length
-                height: 40
+                height: ThemeManager.px(40)
                 label: profile.item?.label ?? ""
                 checked: profile.item?.value === PowerState.profile
                 onClicked: PowerState.setProfile(profile.item?.value ?? PowerState.profile)
@@ -164,7 +164,7 @@ Column {
 
         Item {
             width: parent.width
-            height: 32
+            height: ThemeManager.px(32)
 
             Txt {
                 x: ThemeManager.spacing.small
@@ -186,7 +186,7 @@ Column {
         Sparkline {
             x: ThemeManager.spacing.small
             width: parent.width - x * 2
-            height: 72
+            height: ThemeManager.px(72)
             normalized: PowerState.chart
 
             Txt {
@@ -218,7 +218,7 @@ Column {
                 readonly property var item: PowerState.devices[device.index] ?? null
 
                 width: parent?.width ?? 0
-                height: 44
+                height: ThemeManager.px(44)
 
                 Icon {
                     id: deviceIcon
@@ -226,7 +226,7 @@ Column {
                     x: ThemeManager.spacing.small
                     anchors.verticalCenter: parent.verticalCenter
                     icon: device.item?.icon ?? ""
-                    size: 20
+                    size: ThemeManager.px(20)
                     color: ThemeManager.colors.textMuted
                 }
 

@@ -13,17 +13,17 @@ Item {
     signal back
 
     width: parent?.width ?? 0
-    height: 40
+    height: ThemeManager.px(40)
 
     IconButton {
         id: backButton
 
         anchors.verticalCenter: parent.verticalCenter
         icon: Icons.chevronLeft
-        iconSize: 22
-        implicitWidth: 36
-        implicitHeight: 36
-        radius: 18
+        iconSize: ThemeManager.px(22)
+        implicitWidth: ThemeManager.px(36)
+        implicitHeight: ThemeManager.px(36)
+        radius: ThemeManager.px(18)
         onClicked: root.back()
     }
 

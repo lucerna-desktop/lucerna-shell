@@ -17,13 +17,13 @@ Item {
     required property real margin
     // Largura da tela, para colar na borda direita.
     required property real areaWidth
-    property real panelWidth: 440
+    property real panelWidth: ThemeManager.px(440)
     // Entrada e saída (0 → 1), animadas por enter() e leave().
     property real shown: 0
     // Pedido aberto (o último enter() ou leave()).
     property bool wanted: false
     readonly property real padding: ThemeManager.spacing.normal
-    readonly property real travel: width + margin + 24
+    readonly property real travel: width + margin + ThemeManager.px(24)
     property real reveal: 1
     readonly property real shownHeight: height * reveal
     default property alias content: body.data

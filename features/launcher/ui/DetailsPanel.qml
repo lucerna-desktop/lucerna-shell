@@ -73,7 +73,7 @@ Surface {
                 Image {
                     anchors.fill: parent
                     source: parent.visible ? `file://${root.item.path}` : ""
-                    sourceSize: Qt.size(560, 360)
+                    sourceSize: Qt.size(ThemeManager.px(560), ThemeManager.px(360))
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                 }
@@ -87,19 +87,19 @@ Surface {
                 ItemIcon {
                     anchors.verticalCenter: parent.verticalCenter
                     item: root.item
-                    size: 56
+                    size: ThemeManager.px(56)
                     highlighted: true
                 }
 
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - 56 - parent.spacing
-                    spacing: 2
+                    width: parent.width - ThemeManager.px(56) - parent.spacing
+                    spacing: ThemeManager.px(2)
 
                     Txt {
                         width: parent.width
                         text: root.item?.name ?? ""
-                        font.pixelSize: ThemeManager.font.large + 2
+                        font.pixelSize: ThemeManager.font.large + ThemeManager.px(2)
                         font.weight: Font.DemiBold
                         wrapMode: Text.Wrap
                         maximumLineCount: 2
@@ -120,7 +120,7 @@ Surface {
             // Abrir
             Clickable {
                 width: parent.width
-                height: 44
+                height: ThemeManager.px(44)
                 radius: ThemeManager.radius.normal
                 color: ThemeManager.colors.accent
                 pressScale: 0.97
@@ -139,7 +139,7 @@ Surface {
                     anchors.rightMargin: ThemeManager.spacing.normal
                     anchors.verticalCenter: parent.verticalCenter
                     icon: "keyboard_return"
-                    size: 18
+                    size: ThemeManager.px(18)
                     color: ThemeManager.colors.accentText
                 }
             }
@@ -159,8 +159,8 @@ Surface {
                         required property int index
 
                         width: parent.width
-                        height: 38
-                        radius: ThemeManager.radius.small + 2
+                        height: ThemeManager.px(38)
+                        radius: ThemeManager.radius.small + ThemeManager.px(2)
                         onClicked: LauncherState.runAction(root.item, actionRow.index)
 
                         Icon {
@@ -170,7 +170,7 @@ Surface {
                             anchors.leftMargin: ThemeManager.spacing.small
                             anchors.verticalCenter: parent.verticalCenter
                             icon: "open_in_new"
-                            size: 18
+                            size: ThemeManager.px(18)
                             color: ThemeManager.colors.textMuted
                         }
 
@@ -236,7 +236,7 @@ Surface {
                     required property var modelData
 
                     width: content.width
-                    spacing: 3
+                    spacing: ThemeManager.px(3)
 
                     Txt {
                         text: infoRow.modelData.label
@@ -268,8 +268,8 @@ Surface {
 
                 Clickable {
                     width: parent.width
-                    height: 42
-                    radius: ThemeManager.radius.small + 2
+                    height: ThemeManager.px(42)
+                    radius: ThemeManager.radius.small + ThemeManager.px(2)
                     onClicked: root.moreOpen = !root.moreOpen
 
                     Icon {
@@ -279,7 +279,7 @@ Surface {
                         anchors.leftMargin: ThemeManager.spacing.small
                         anchors.verticalCenter: parent.verticalCenter
                         icon: Icons.settings
-                        size: 18
+                        size: ThemeManager.px(18)
                         color: ThemeManager.colors.textMuted
                     }
 
@@ -295,7 +295,7 @@ Surface {
                         anchors.rightMargin: ThemeManager.spacing.small
                         anchors.verticalCenter: parent.verticalCenter
                         icon: Icons.expand
-                        size: 20
+                        size: ThemeManager.px(20)
                         rotation: root.moreOpen ? 180 : -90
                         color: ThemeManager.colors.textMuted
 
@@ -312,8 +312,8 @@ Surface {
                         required property var modelData
 
                         width: parent.width
-                        height: 38
-                        radius: ThemeManager.radius.small + 2
+                        height: ThemeManager.px(38)
+                        radius: ThemeManager.radius.small + ThemeManager.px(2)
                         onClicked: optRow.modelData.run()
 
                         Icon {
@@ -323,7 +323,7 @@ Surface {
                             anchors.leftMargin: ThemeManager.spacing.large
                             anchors.verticalCenter: parent.verticalCenter
                             icon: optRow.modelData.icon
-                            size: 18
+                            size: ThemeManager.px(18)
                             color: ThemeManager.colors.accent
                         }
 

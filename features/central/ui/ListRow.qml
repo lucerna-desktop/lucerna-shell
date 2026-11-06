@@ -15,17 +15,17 @@ Clickable {
     default property alias trailing: slot.data
 
     width: parent?.width ?? 0
-    height: 58
-    radius: ThemeManager.radius.normal + 2
+    height: ThemeManager.px(58)
+    radius: ThemeManager.radius.normal + ThemeManager.px(2)
 
     Rectangle {
         id: tile
 
         x: ThemeManager.spacing.small
         anchors.verticalCenter: parent.verticalCenter
-        width: 40
-        height: 40
-        radius: root.lit ? 20 : ThemeManager.radius.normal
+        width: ThemeManager.px(40)
+        height: ThemeManager.px(40)
+        radius: root.lit ? ThemeManager.px(20) : ThemeManager.radius.normal
         color: root.lit ? ThemeManager.colors.accent : ThemeManager.alpha(ThemeManager.colors.text, 0.06)
 
         Behavior on radius { Anim { type: Anim.FastSpatial } }
@@ -36,7 +36,7 @@ Clickable {
 
             anchors.centerIn: parent
             icon: root.icon
-            size: 20
+            size: ThemeManager.px(20)
             filled: root.lit || root.hovered
             color: root.lit ? ThemeManager.colors.accentText : ThemeManager.colors.textMuted
 
@@ -82,6 +82,6 @@ Clickable {
         anchors.right: parent.right
         anchors.rightMargin: ThemeManager.spacing.small
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 2
+        spacing: ThemeManager.px(2)
     }
 }

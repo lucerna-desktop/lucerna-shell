@@ -21,8 +21,8 @@ Item {
     }
 
     readonly property real pad: ThemeManager.spacing.large
-    readonly property real sideWidth: 230
-    readonly property real detailsWidth: 320
+    readonly property real sideWidth: ThemeManager.px(230)
+    readonly property real detailsWidth: ThemeManager.px(320)
 
     Surface {
         id: window
@@ -30,10 +30,10 @@ Item {
         // Centrada no pixel físico (escala fracionária; ver Pixel).
         x: Pixel.snap((parent.width - width) / 2, root.dpr)
         y: Pixel.snap((parent.height - height) / 2, root.dpr)
-        width: Math.min(1200, parent.width - 80)
-        height: Math.min(740, parent.height - 120)
+        width: Math.min(ThemeManager.px(1200), parent.width - ThemeManager.px(80))
+        height: Math.min(ThemeManager.px(740), parent.height - ThemeManager.px(120))
         level: 0
-        radius: ThemeManager.radius.large + 4
+        radius: ThemeManager.radius.large + ThemeManager.px(4)
         scale: 0.95 + 0.05 * root.progress
 
         SearchField {
@@ -78,7 +78,7 @@ Item {
             x: root.pad
             y: search.y + search.height + root.pad
             width: root.sideWidth
-            spacing: 2
+            spacing: ThemeManager.px(2)
 
             Repeater {
                 model: LauncherState.categories
@@ -90,7 +90,7 @@ Item {
                     readonly property bool current: LauncherState.category === modelData.id
 
                     width: side.width
-                    height: 42
+                    height: ThemeManager.px(42)
                     radius: ThemeManager.radius.normal
                     color: current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.16) : "transparent"
                     onClicked: {
@@ -106,7 +106,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         icon: catRow.modelData.icon
                         filled: catRow.current
-                        size: 20
+                        size: ThemeManager.px(20)
                         color: catRow.current ? ThemeManager.colors.accent : ThemeManager.colors.textMuted
                     }
 
@@ -140,7 +140,7 @@ Item {
             Txt {
                 visible: LauncherState.favoriteApps.length > 0
                 leftPadding: ThemeManager.spacing.normal
-                bottomPadding: 4
+                bottomPadding: ThemeManager.px(4)
                 text: LauncherState.hasPinned ? "Favoritos" : "Mais usados"
                 faint: true
                 font.pixelSize: ThemeManager.font.small
@@ -156,7 +156,7 @@ Item {
                     required property var modelData
 
                     width: side.width
-                    height: 38
+                    height: ThemeManager.px(38)
                     radius: ThemeManager.radius.normal
                     onClicked: LauncherState.activate(LauncherState.fromApp(favRow.modelData))
 
@@ -167,7 +167,7 @@ Item {
                         anchors.leftMargin: ThemeManager.spacing.normal
                         anchors.verticalCenter: parent.verticalCenter
                         item: LauncherState.fromApp(favRow.modelData)
-                        size: 22
+                        size: ThemeManager.px(22)
                     }
 
                     Txt {
@@ -203,7 +203,7 @@ Item {
             width: details.x - x - root.pad
             height: window.height - y - root.pad
             cellWidth: width / columns
-            cellHeight: 128
+            cellHeight: ThemeManager.px(128)
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             model: LauncherState.items
@@ -222,7 +222,7 @@ Item {
 
                 Clickable {
                     anchors.fill: parent
-                    anchors.margins: 5
+                    anchors.margins: ThemeManager.px(5)
                     radius: ThemeManager.radius.normal
                     color: cell.current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.14) : "transparent"
                     border.width: cell.current ? Pixel.hairline(root.dpr) : 0
@@ -242,9 +242,9 @@ Item {
                         id: tileIcon
 
                         anchors.horizontalCenter: parent.horizontalCenter
-                        y: 16
+                        y: ThemeManager.px(16)
                         item: cell.modelData
-                        size: 52
+                        size: ThemeManager.px(52)
                         highlighted: cell.current
                     }
 
@@ -253,8 +253,8 @@ Item {
                         anchors.topMargin: ThemeManager.spacing.small
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        anchors.leftMargin: 6
-                        anchors.rightMargin: 6
+                        anchors.leftMargin: ThemeManager.px(6)
+                        anchors.rightMargin: ThemeManager.px(6)
                         horizontalAlignment: Text.AlignHCenter
                         text: cell.modelData.name
                         wrapMode: Text.Wrap
@@ -275,7 +275,7 @@ Item {
                 Icon {
                     anchors.horizontalCenter: parent.horizontalCenter
                     icon: LauncherState.searchingFiles && LauncherState.fileCategory ? "hourglass_top" : LauncherState.fileCategory && !LauncherState.query ? "history" : Icons.magnify
-                    size: 36
+                    size: ThemeManager.px(36)
                     color: ThemeManager.colors.textFaint
                 }
 

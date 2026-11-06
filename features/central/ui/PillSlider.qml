@@ -39,7 +39,7 @@ Item {
     }
 
     width: parent?.width ?? 0
-    height: 40
+    height: ThemeManager.px(40)
 
     function setFromX(x: real): void {
         const f = Math.max(0, Math.min(1, (x - height / 2) / (width - height)));
@@ -61,14 +61,14 @@ Item {
             x: (root.height - width) / 2
             anchors.verticalCenter: parent.verticalCenter
             icon: root.icon
-            size: 20
+            size: ThemeManager.px(20)
             filled: true
             color: content.tint
         }
 
         Txt {
             anchors.left: parent.left
-            anchors.leftMargin: root.height + 2
+            anchors.leftMargin: root.height + ThemeManager.px(2)
             anchors.verticalCenter: parent.verticalCenter
             text: root.label
             color: content.tint
@@ -77,7 +77,7 @@ Item {
 
         Txt {
             anchors.right: parent.right
-            anchors.rightMargin: ThemeManager.spacing.normal + 2
+            anchors.rightMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
             anchors.verticalCenter: parent.verticalCenter
             text: Format.percent(root.value)
             color: content.tint

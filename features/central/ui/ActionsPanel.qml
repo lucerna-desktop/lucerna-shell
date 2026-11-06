@@ -12,7 +12,7 @@ import qs.features.central.state
 CentralPanel {
     id: root
 
-    property real maxHeight: 600
+    property real maxHeight: ThemeManager.px(600)
 
     height: Math.min(card.implicitHeight + padding * 2, maxHeight)
 
@@ -51,7 +51,7 @@ CentralPanel {
                 id: pageIn
 
                 Anim { target: card; property: "opacity"; from: 0; to: 1; type: Anim.Effects }
-                Anim { target: cardOffset; property: "x"; from: CentralState.page ? 16 : -16; to: 0; type: Anim.Spatial }
+                Anim { target: cardOffset; property: "x"; from: CentralState.page ? ThemeManager.px(16) : -ThemeManager.px(16); to: 0; type: Anim.Spatial }
             }
         }
     }
@@ -65,16 +65,16 @@ CentralPanel {
             // A engrenagem, numa faixa fina acima dos tiles.
             Item {
                 width: parent.width
-                height: 28
+                height: ThemeManager.px(28)
 
                 IconButton {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     icon: Icons.settings
-                    iconSize: 20
-                    implicitWidth: 32
-                    implicitHeight: 28
-                    radius: 14
+                    iconSize: ThemeManager.px(20)
+                    implicitWidth: ThemeManager.px(32)
+                    implicitHeight: ThemeManager.px(28)
+                    radius: ThemeManager.px(14)
                     foreground: ThemeManager.colors.textMuted
                     onClicked: ControlsState.openSettings()
                 }
