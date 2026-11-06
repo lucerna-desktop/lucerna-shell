@@ -46,7 +46,7 @@ Column {
             Flow {
                 id: options
 
-                readonly property int columns: Math.max(2, Math.floor((width + spacing) / (170 + spacing)))
+                readonly property int columns: Math.max(2, Math.floor((width + spacing) / (ThemeManager.px(170) + spacing)))
                 readonly property real cardWidth: (width - (columns - 1) * spacing) / columns
 
                 x: ThemeManager.spacing.large

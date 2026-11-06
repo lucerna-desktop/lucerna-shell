@@ -189,10 +189,10 @@ def check_layers(root):
     return out
 
 
-# Onde a regra `medidas` vale. A varredura entra por partes: cada pasta entra
-# aqui quando as medidas dela já passam pela escala interna (o próximo é
-# "features/*/ui/*.qml").
-MEASURE_SCOPE = ("core/widgets/*.qml",)
+# Onde a regra `medidas` vale: os componentes e as telas das features. As
+# medidas do tema, do Frame e dos serviços ficam de fora (já são escaladas ou
+# vêm do Hyprland).
+MEASURE_SCOPE = ("core/widgets/*.qml", "features/*/ui/*.qml")
 MEASURE = re.compile(
     r"^\s*(width|height|implicitWidth|implicitHeight|font\.pixelSize|radius|spacing|(anchors\.)?\w*[mM]argins?|size):"
     r"\s*(\d+(\.\d+)?)\s*$"

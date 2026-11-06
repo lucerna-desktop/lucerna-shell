@@ -113,7 +113,7 @@ Item {
             id: grid
 
             readonly property real cell: ThemeManager.px(150)
-            readonly property int columns: Math.max(3, Math.min(8, Math.floor(Math.min(parent.width - 160, 1300) / cell)))
+            readonly property int columns: Math.max(3, Math.min(8, Math.floor(Math.min(parent.width - ThemeManager.px(160), ThemeManager.px(1300)) / cell)))
 
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: chips.bottom

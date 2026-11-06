@@ -80,7 +80,7 @@ Surface {
         GridView {
             id: grid
 
-            readonly property int columns: Math.max(2, Math.floor(width / 150))
+            readonly property int columns: Math.max(2, Math.floor(width / ThemeManager.px(150)))
 
             width: parent.width
             height: ThemeManager.px(330)

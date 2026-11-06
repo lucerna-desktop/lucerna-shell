@@ -416,6 +416,10 @@ class MeasuresTest(RepoCase):
         found = rules.check_measures(self.repo({"core/widgets/P.qml": text}))
         self.assertEqual([n for _, n, _ in found], [2, 3, 4, 5, 6, 7])
         self.assertIn("ThemeManager.px(40)", found[0][2])
+        # As telas das features também.
+        self.assertEqual(
+            self.found({"features/bar/ui/Bar.qml": "Item {\n    width: 40\n}\n"}), [("features/bar/ui/Bar.qml", 2)]
+        )
 
     def test_medidas_accepts_px_and_comment(self):
         text = (

@@ -196,7 +196,7 @@ Item {
         GridView {
             id: grid
 
-            readonly property int columns: Math.max(2, Math.floor(width / 140))
+            readonly property int columns: Math.max(2, Math.floor(width / ThemeManager.px(140)))
 
             x: side.x + side.width + root.pad
             y: side.y
