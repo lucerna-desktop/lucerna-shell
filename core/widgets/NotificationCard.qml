@@ -49,7 +49,7 @@ Surface {
     level: popup ? 0 : 1
     radius: ThemeManager.radius.normal
     border.color: critical ? ThemeManager.colors.danger : ThemeManager.colors.border
-    border.width: critical ? 2 : ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
+    border.width: critical ? ThemeManager.px(2) : ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
     implicitHeight: layout.implicitHeight + ThemeManager.spacing.normal * 2
     clip: true
 
@@ -83,8 +83,8 @@ Surface {
 
         ClippingRectangle {
             Layout.alignment: Qt.AlignTop
-            Layout.preferredWidth: 40
-            Layout.preferredHeight: 40
+            Layout.preferredWidth: ThemeManager.px(40)
+            Layout.preferredHeight: ThemeManager.px(40)
             visible: card.image !== ""
             radius: ThemeManager.radius.small
             color: "transparent"
@@ -92,7 +92,7 @@ Surface {
             Image {
                 anchors.fill: parent
                 source: card.image
-                sourceSize: Qt.size(80, 80)
+                sourceSize: Qt.size(ThemeManager.px(80), ThemeManager.px(80))
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
             }
@@ -100,7 +100,7 @@ Surface {
 
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 2
+            spacing: ThemeManager.px(2)
 
             RowLayout {
                 Layout.fillWidth: true
@@ -121,9 +121,9 @@ Surface {
 
                 IconButton {
                     icon: Icons.close
-                    iconSize: 13
-                    implicitWidth: 20
-                    implicitHeight: 20
+                    iconSize: ThemeManager.px(13)
+                    implicitWidth: ThemeManager.px(20)
+                    implicitHeight: ThemeManager.px(20)
                     foreground: ThemeManager.colors.textMuted
                     onClicked: card.dismissRequested()
                 }
@@ -164,8 +164,8 @@ Surface {
                         required property var modelData
 
                         implicitWidth: actionLabel.implicitWidth + ThemeManager.spacing.normal * 2
-                        implicitHeight: 28
-                        radius: 14
+                        implicitHeight: ThemeManager.px(28)
+                        radius: height / 2
                         color: ThemeManager.alpha(ThemeManager.colors.accent, 0.14)
                         onClicked: card.actionInvoked(modelData)
 
@@ -187,8 +187,8 @@ Surface {
         anchors.bottom: parent.bottom
         x: card.radius
         width: (parent.width - card.radius * 2) * card.remaining
-        height: 2
-        radius: 1
+        height: ThemeManager.px(2)
+        radius: height / 2
         color: card.critical ? ThemeManager.colors.danger : ThemeManager.colors.accent
         opacity: 0.8
     }

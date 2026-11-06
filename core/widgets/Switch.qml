@@ -11,8 +11,8 @@ Item {
 
     signal toggled(bool checked)
 
-    implicitWidth: 52
-    implicitHeight: 32
+    implicitWidth: ThemeManager.px(52)
+    implicitHeight: ThemeManager.px(32)
     activeFocusOnTab: true
 
     function toggle(): void {
@@ -26,7 +26,7 @@ Item {
         anchors.fill: parent
         radius: height / 2
         color: root.checked ? ThemeManager.colors.accent : "transparent"
-        border.width: root.checked ? 0 : 2
+        border.width: root.checked ? 0 : ThemeManager.px(2)
         border.color: ThemeManager.colors.textFaint
 
         Behavior on color { ColorAnim {} }
@@ -35,12 +35,12 @@ Item {
     Rectangle {
         id: thumb
 
-        property real size: mouse.pressed ? 28 : root.checked ? 24 : 16
+        property real size: mouse.pressed ? ThemeManager.px(28) : root.checked ? ThemeManager.px(24) : ThemeManager.px(16)
 
         width: size
         height: size
         radius: size / 2
-        x: root.checked ? root.width - 4 - size : 8 + (16 - size) / 2
+        x: root.checked ? root.width - ThemeManager.px(4) - size : ThemeManager.px(8) + (ThemeManager.px(16) - size) / 2
         anchors.verticalCenter: parent.verticalCenter
         color: root.checked ? ThemeManager.colors.accentText : ThemeManager.colors.textMuted
 
@@ -51,9 +51,9 @@ Item {
         // Véu de hover em volta do polegar.
         Rectangle {
             anchors.centerIn: parent
-            width: 40
-            height: 40
-            radius: 20
+            width: ThemeManager.px(40)
+            height: ThemeManager.px(40)
+            radius: width / 2
             color: ThemeManager.colors.text
             opacity: mouse.containsMouse || root.activeFocus ? 0.08 : 0
             z: -1
@@ -64,7 +64,7 @@ Item {
         Icon {
             anchors.centerIn: parent
             icon: Icons.check
-            size: 16
+            size: ThemeManager.px(16)
             weight: 600
             color: ThemeManager.colors.accent
             opacity: root.checked ? 1 : 0
@@ -79,7 +79,7 @@ Item {
         id: mouse
 
         anchors.fill: parent
-        anchors.margins: -4
+        anchors.margins: -ThemeManager.px(4)
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.toggle()

@@ -21,7 +21,7 @@ Item {
     readonly property bool dragging: mouse.pressed
     property real shownFraction: fraction
     readonly property real handleX: shownFraction * (width - handle.width)
-    readonly property real gap: 6
+    readonly property real gap: ThemeManager.px(6)
 
     // Arrastando, segue o dedo; senão (teclado, valor externo), anima.
     Behavior on shownFraction {
@@ -30,8 +30,8 @@ Item {
         Anim { type: Anim.Standard }
     }
 
-    implicitWidth: 260
-    implicitHeight: 36
+    implicitWidth: ThemeManager.px(260)
+    implicitHeight: ThemeManager.px(36)
     activeFocusOnTab: true
     opacity: enabled ? 1 : 0.4
 
@@ -52,10 +52,10 @@ Item {
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         width: Math.max(0, root.handleX - root.gap)
-        height: 16
-        radius: 8
-        topRightRadius: 3
-        bottomRightRadius: 3
+        height: ThemeManager.px(16)
+        radius: height / 2
+        topRightRadius: ThemeManager.px(3)
+        bottomRightRadius: ThemeManager.px(3)
         color: ThemeManager.colors.accent
     }
 
@@ -64,19 +64,19 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         x: root.handleX + handle.width + root.gap
         width: Math.max(0, root.width - x)
-        height: 16
-        radius: 8
-        topLeftRadius: 3
-        bottomLeftRadius: 3
+        height: ThemeManager.px(16)
+        radius: height / 2
+        topLeftRadius: ThemeManager.px(3)
+        bottomLeftRadius: ThemeManager.px(3)
         color: ThemeManager.colors.track
 
         Rectangle {
             anchors.right: parent.right
-            anchors.rightMargin: 5
+            anchors.rightMargin: ThemeManager.px(5)
             anchors.verticalCenter: parent.verticalCenter
-            width: 6
-            height: 6
-            radius: 3
+            width: ThemeManager.px(6)
+            height: ThemeManager.px(6)
+            radius: width / 2
             color: ThemeManager.colors.accent
             opacity: 0.7
         }
@@ -87,9 +87,9 @@ Item {
 
         x: root.handleX
         anchors.verticalCenter: parent.verticalCenter
-        width: root.dragging ? 2 : 4
-        height: root.dragging ? 40 : 32
-        radius: 2
+        width: root.dragging ? ThemeManager.px(2) : ThemeManager.px(4)
+        height: root.dragging ? ThemeManager.px(40) : ThemeManager.px(32)
+        radius: ThemeManager.px(2)
         color: ThemeManager.colors.accent
 
         Behavior on width { Anim { type: Anim.FastSpatial } }
@@ -101,10 +101,10 @@ Item {
         readonly property bool shown: root.dragging || root.activeFocus && keyHint.running
 
         x: root.handleX + handle.width / 2 - width / 2
-        y: -height - 6
-        width: bubbleText.implicitWidth + 20
-        height: 30
-        radius: 15
+        y: -height - ThemeManager.px(6)
+        width: bubbleText.implicitWidth + ThemeManager.px(20)
+        height: ThemeManager.px(30)
+        radius: height / 2
         color: ThemeManager.colors.text
         opacity: shown ? 1 : 0
         scale: shown ? 1 : 0.6
@@ -141,8 +141,8 @@ Item {
         id: mouse
 
         anchors.fill: parent
-        anchors.topMargin: -6
-        anchors.bottomMargin: -6
+        anchors.topMargin: -ThemeManager.px(6)
+        anchors.bottomMargin: -ThemeManager.px(6)
         enabled: root.enabled
         cursorShape: Qt.PointingHandCursor
         preventStealing: true

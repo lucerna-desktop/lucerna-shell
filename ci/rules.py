@@ -189,6 +189,44 @@ def check_layers(root):
     return out
 
 
+# Onde a regra `medidas` vale. A varredura entra por partes: cada pasta entra
+# aqui quando as medidas dela já passam pela escala interna (o próximo é
+# "features/*/ui/*.qml").
+MEASURE_SCOPE = ("core/widgets/*.qml",)
+MEASURE = re.compile(
+    r"^\s*(width|height|implicitWidth|implicitHeight|font\.pixelSize|radius|spacing|(anchors\.)?\w*[mM]argins?|size):"
+    r"\s*(\d+(\.\d+)?)\s*$"
+)
+FIXED_PX = re.compile(r"^px fixo:\s*\S")
+
+
+def check_measures(root):
+    """Nos componentes (MEASURE_SCOPE), uma medida não é um número solto (2 ou
+    mais): passa pela escala interna do shell, `ThemeManager.px(n)` ou um token
+    do tema, senão não cresce com o "Tamanho do shell". Uma medida que não deve
+    escalar (pixels de uma imagem) leva `// px fixo: <motivo>` na mesma linha."""
+    out = []
+    for rel in repo_files(root):
+        where = rel.as_posix()
+        if rel.suffix != ".qml" or not any(fnmatch.fnmatch(where, g) for g in MEASURE_SCOPE):
+            continue
+        for number, line in enumerate((root / rel).read_text(encoding="utf-8").splitlines(), 1):
+            code, _, comment = line.partition("//")
+            match = MEASURE.match(code)
+            if not match or float(match.group(3)) < 2 or FIXED_PX.match(comment.strip()):
+                continue
+            out.append(
+                (
+                    where,
+                    number,
+                    f"medida fixa ({match.group(1)}: {match.group(3)}): use ThemeManager.px({match.group(3)}) "
+                    "ou um token do tema, para crescer com o tamanho do shell; "
+                    "uma medida que não escala leva `// px fixo: <motivo>` na linha",
+                )
+            )
+    return out
+
+
 # Texto de terceiros, copiado como veio: não se mexe no espaçamento.
 THIRD_PARTY = {"LICENSE", "themes/fonts/Rubik-OFL.txt"}
 
@@ -569,6 +607,7 @@ RULES = {
     "acentos": check_accents,
     "links": check_links,
     "animações": check_behaviors,
+    "medidas": check_measures,
     "shaders": check_shaders,
     "temas": check_themes,
 }

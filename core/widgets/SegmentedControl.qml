@@ -17,7 +17,7 @@ Item {
 
     readonly property int currentIndex: options.findIndex(o => o.value === value)
 
-    implicitHeight: 40
+    implicitHeight: ThemeManager.px(40)
     implicitWidth: row.implicitWidth
 
     Rectangle {
@@ -32,10 +32,10 @@ Item {
         readonly property Item target: buttons.count > 0 ? buttons.itemAt(root.currentIndex) : null
 
         visible: target !== null
-        x: (target?.x ?? 0) + 3
-        y: 3
-        width: (target?.width ?? 0) - 6
-        height: parent.height - 6
+        x: (target?.x ?? 0) + ThemeManager.px(3)
+        y: ThemeManager.px(3)
+        width: (target?.width ?? 0) - ThemeManager.px(6)
+        height: parent.height - ThemeManager.px(6)
         radius: height / 2
         color: ThemeManager.alpha(ThemeManager.colors.accent, 0.2)
 
@@ -60,7 +60,7 @@ Item {
                 required property int index
                 readonly property bool current: index === root.currentIndex
 
-                width: root.width > 0 ? root.width / root.options.length : content.implicitWidth + 32
+                width: root.width > 0 ? root.width / root.options.length : content.implicitWidth + ThemeManager.px(32)
                 height: root.height
                 radius: height / 2
                 onClicked: root.selected(modelData.value)
@@ -69,13 +69,13 @@ Item {
                     id: content
 
                     anchors.centerIn: parent
-                    spacing: 6
+                    spacing: ThemeManager.px(6)
 
                     Icon {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: option.current
                         icon: Icons.check
-                        size: 16
+                        size: ThemeManager.px(16)
                         color: ThemeManager.colors.accent
                     }
 

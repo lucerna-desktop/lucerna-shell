@@ -398,5 +398,54 @@ class BehaviorsTest(RepoCase):
         self.assertEqual(self.found(text), [])
 
 
+class MeasuresTest(RepoCase):
+    def found(self, files):
+        return [(p, n) for p, n, _ in rules.check_measures(self.repo(files))]
+
+    def test_medidas_flags_literal_width(self):
+        text = (
+            "Item {\n"
+            "    width: 40\n"
+            "    implicitHeight: 2\n"
+            "    font.pixelSize: 13.5\n"
+            "    anchors.leftMargin: 8\n"
+            "    anchors.margins: 10\n"
+            "    size: 18\n"
+            "}\n"
+        )
+        found = rules.check_measures(self.repo({"core/widgets/P.qml": text}))
+        self.assertEqual([n for _, n, _ in found], [2, 3, 4, 5, 6, 7])
+        self.assertIn("ThemeManager.px(40)", found[0][2])
+
+    def test_medidas_accepts_px_and_comment(self):
+        text = (
+            "Item {\n"
+            "    width: ThemeManager.px(40)\n"
+            "    height: ThemeManager.spacing.normal\n"
+            "    sourceSize.width: 256 // px fixo: a textura do efeito, em pixels da imagem\n"
+            "    implicitWidth: 256 // px fixo: a miniatura em pixels da imagem\n"
+            "    radius: height / 2\n"
+            "}\n"
+        )
+        self.assertEqual(self.found({"core/widgets/P.qml": text}), [])
+        # O comentário precisa do motivo.
+        self.assertEqual(
+            self.found({"core/widgets/P.qml": "Item {\n    width: 256 // px fixo:\n}\n"}), [("core/widgets/P.qml", 2)]
+        )
+
+    def test_medidas_ignores_zero_one_and_state(self):
+        text = "Item {\n    width: 0\n    height: 1\n    spacing: 0.5\n    radius: 1.5\n}\n"
+        self.assertEqual(
+            self.found(
+                {
+                    "core/widgets/P.qml": text,
+                    "features/bar/state/BarState.qml": "QtObject {\n    property int size: 40\n    width: 40\n}\n",
+                    "core/frame/Frame.qml": "QtObject {\n    width: 40\n}\n",
+                }
+            ),
+            [],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

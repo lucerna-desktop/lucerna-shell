@@ -18,7 +18,7 @@ Clickable {
         id: row
 
         anchors.centerIn: parent
-        spacing: ThemeManager.spacing.tiny + 2
+        spacing: ThemeManager.spacing.tiny + ThemeManager.px(2)
 
         Icon {
             id: glyph

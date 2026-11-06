@@ -14,8 +14,8 @@ Column {
 
     Item {
         anchors.horizontalCenter: parent.horizontalCenter
-        width: 88
-        height: 88
+        width: ThemeManager.px(88)
+        height: ThemeManager.px(88)
 
         Blob {
             anchors.fill: parent
@@ -29,7 +29,7 @@ Column {
         Icon {
             anchors.centerIn: parent
             icon: root.icon
-            size: 36
+            size: ThemeManager.px(36)
             color: ThemeManager.colors.textFaint
         }
     }

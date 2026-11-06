@@ -41,7 +41,7 @@ Item {
         x: ThemeManager.spacing.large
         y: labels.y + 1
         icon: root.icon
-        size: 22
+        size: ThemeManager.px(22)
         color: ThemeManager.colors.textMuted
     }
 
@@ -54,7 +54,7 @@ Item {
         anchors.rightMargin: ThemeManager.spacing.large
         anchors.verticalCenter: root.wide ? undefined : parent.verticalCenter
         y: ThemeManager.spacing.large * 0.7
-        spacing: 2
+        spacing: ThemeManager.px(2)
 
         Txt {
             width: parent.width
