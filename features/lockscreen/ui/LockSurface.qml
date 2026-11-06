@@ -86,9 +86,9 @@ Item {
             SequentialAnimation {
                 id: shake
 
-                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: -10; duration: 50 }
-                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: 10; duration: 70 }
-                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: -6; duration: 70 }
+                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: -ThemeManager.px(10); duration: 50 }
+                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: ThemeManager.px(10); duration: 70 }
+                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: -ThemeManager.px(6); duration: 70 }
                 NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: 0; duration: 50 }
             }
 

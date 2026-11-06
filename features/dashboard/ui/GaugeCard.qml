@@ -25,7 +25,7 @@ Surface {
 
     signal swapped
 
-    readonly property int margin: ThemeManager.spacing.normal + 2
+    readonly property int margin: ThemeManager.spacing.normal + ThemeManager.px(2)
 
     implicitHeight: margin * 2 + titleRow.height + ThemeManager.spacing.tiny + body.height
 

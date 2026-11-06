@@ -17,14 +17,14 @@ Item {
 
     readonly property bool onScreen: DashboardState.isShowing("overview")
     // Os cards de cima das colunas esquerda (usuário) e direita (sistema) têm a mesma altura.
-    readonly property int topCardHeight: 126
+    readonly property int topCardHeight: ThemeManager.px(126)
     // Margem interna dos cards, a mesma das outras abas.
-    readonly property int cardMargin: ThemeManager.spacing.normal + 2
+    readonly property int cardMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
     // O clima só entra com dados (ou o aviso do modo offline); senão o relógio fica sozinho.
     readonly property bool weatherOn: OverviewState.shows("weather") && (OverviewState.hasWeather || Config.offline)
 
     // A barra de ações rápidas: a altura dela e o espaço normal até os cards.
-    readonly property int barHeight: 32
+    readonly property int barHeight: ThemeManager.px(32)
     // Margem vertical do calendário, menor que a dos outros cards: os cards de
     // cima cabem na altura comum junto da barra.
     readonly property int calendarMargin: ThemeManager.spacing.small

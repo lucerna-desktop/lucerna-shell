@@ -38,7 +38,7 @@ Surface {
 
     signal swapped
 
-    readonly property int margin: ThemeManager.spacing.normal + 2
+    readonly property int margin: ThemeManager.spacing.normal + ThemeManager.px(2)
     // Onde acaba a área da esquerda: antes do rótulo, se há, ou da bolha.
     readonly property real leftLimit: label ? valueLabel.x : blobBox.x
     readonly property bool stackUnit: unit.length > 1
