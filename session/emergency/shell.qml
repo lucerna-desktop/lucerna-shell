@@ -13,6 +13,8 @@ import Quickshell.Wayland
 //                           power (o Ctrl+Alt+Delete com o shell morto)
 //   LUCERNA_EMERGENCY_LOG   o registro da última queda (as 30 últimas linhas)
 //   LUCERNA_SESSION_BIN     o lucerna-session que roda os botões
+// No modo power, "Reiniciar o shell" (o primeiro, o do Enter) sobe o shell de
+// novo pelo supervisor: é a saída para um shell travado.
 // Um véu escuro em cada tela, com o cartão no centro. Setas e Tab escolhem,
 // Enter aperta; Esc fecha no modo power. "Abrir um terminal" e "Ver o
 // registro" recolhem o véu numa pílula embaixo (no modo crashed; no power, a
@@ -49,6 +51,10 @@ ShellRoot {
             label: "Sair da sessão"
         }
     ] : [
+        {
+            id: "restart",
+            label: "Reiniciar o shell"
+        },
         {
             id: "terminal",
             label: "Abrir um terminal"
@@ -91,6 +97,11 @@ ShellRoot {
     function press(id) {
         if (id === "retry" && root.mode === "crashed") {
             root.run(["shell", "start"]);
+            Qt.quit();
+        } else if (id === "restart" && root.mode === "power") {
+            // O shell travado (vivo, mas sem responder) ou morto na pausa: o
+            // supervisor para o que houver e sobe de novo (bloqueado, se estava).
+            root.run(["shell", "restart"]);
             Qt.quit();
         } else if (id === "terminal" || id === "log") {
             root.run(id === "log" && root.logPath !== "" ? ["open", "terminal", "less", "+G", root.logPath] : ["open", "terminal"]);

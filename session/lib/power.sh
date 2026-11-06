@@ -56,7 +56,29 @@ close_emergency() {
     fi
 }
 
+# emergency_state: o modo da tela de emergência aberta (crashed|power), pelo
+# IPC dela; vazio se ela não responde em 2 s.
+emergency_state() {
+    timeout 2 qs -p "$(emergency_qml)" ipc call emergency state 2> /dev/null | tail -n 1
+}
+
+# replace_emergency: fecha a tela aberta (close_emergency) e espera o qs dela
+# sair (até 5 s; depois, KILL), para a nova não abrir por cima.
+replace_emergency() {
+    local old
+    emergency_alive || return 0
+    old=$pid
+    close_emergency
+    for _ in $(seq 50); do
+        kill -0 "$old" 2> /dev/null || return 0
+        sleep 0.1
+    done
+    log "a tela de emergência ($old) não fechou em 5 s; KILL"
+    kill -KILL "$old" 2> /dev/null || true
+}
+
 # cmd_emergency [--mode crashed|power]: a tela de emergência; espera ela fechar.
+# Com a do modo power aberta, o modo crashed a troca (replace_emergency).
 cmd_emergency() {
     local mode=crashed qs_log start status elapsed emergency_qs
     while [ $# -gt 0 ]; do
@@ -74,8 +96,17 @@ cmd_emergency() {
     esac
     mkdir -p "$runtime_dir"
     if emergency_alive; then
-        log "a tela de emergência já está aberta ($pid)"
-        exit 0
+        # A queda com a tela do Ctrl+Alt+Delete (power) aberta: ela não tem o
+        # "Tentar de novo" nem o registro, e o supervisor espera o shell start.
+        # A power fecha e a crashed abre no lugar. Uma tela que não responde
+        # ao `state` também é trocada.
+        if [ "$mode" = crashed ] && [ "$(emergency_state)" != crashed ]; then
+            log "a tela de emergência aberta ($pid) é a do Ctrl+Alt+Delete; troco pela da queda"
+            replace_emergency
+        else
+            log "a tela de emergência já está aberta ($pid)"
+            exit 0
+        fi
     fi
     qs_log=${LUCERNA_EMERGENCY_LOG:-$(latest_log)}
     log "a tela de emergência abre (modo $mode)"

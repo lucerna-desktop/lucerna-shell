@@ -27,9 +27,11 @@
 #   lucerna-session emergency [--mode crashed|power]
 #                                   a tela de emergência, feita sem o shell
 #                                   (session/emergency/shell.qml, qs -p);
-#                                   se ela não abrir, um aviso do Hyprland
+#                                   se ela não abrir, um aviso do Hyprland;
+#                                   com a do power aberta, a crashed a troca
 #   lucerna-session power           o Ctrl+Alt+Delete: o menu de energia do
 #                                   shell, ou a emergência se ele não responder
+#                                   (com o "Reiniciar o shell")
 #   lucerna-session poweroff|reboot desliga ou reinicia (systemctl ou
 #                                   loginctl); com LUCERNA_DEV=1, só simula
 #   lucerna-session unlock          do TTY, depois de entrar com a senha:
@@ -38,8 +40,12 @@
 #                                   shell parado, esvazia a marca do bloqueio
 #                                   (o shell start seguinte não bloqueia de
 #                                   novo). Com o shell de pé, a tela dele
-#                                   continua e pede a senha
-# Tudo é anotado em ~/.local/state/lucerna/session.log. As raízes do sistema
+#                                   continua e pede a senha; se ele está
+#                                   travado na tela de bloqueio, do TTY:
+#                                   lucerna-session shell restart (volta
+#                                   bloqueado e pede a senha de novo)
+# Tudo é anotado em ~/.local/state/lucerna/session.log (no começo de cada
+# sessão, ficam só as últimas 5000 linhas). As raízes do sistema
 # (LUCERNA_SYSFS, LUCERNA_DEVFS, LUCERNA_ETC, LUCERNA_USR_SHARE, LUCERNA_RUN) só mudam nos
 # testes (ci/tests/test_session.py).
 set -uo pipefail
@@ -107,9 +113,25 @@ cmd_detect() {
     echo
 }
 
+# rotate_session_log: no começo da sessão, o session.log fica só com as
+# últimas 5000 linhas (LUCERNA_SESSION_LOG_LINES nos testes), como os
+# qs-*.log ficam só com os 5 últimos: o `exec >>` manda para lá toda a saída
+# do Hyprland, de todas as sessões. Cópia e mv: uma falha deixa o de antes.
+rotate_session_log() {
+    local keep=${LUCERNA_SESSION_LOG_LINES:-5000}
+    [ -f "$log_file" ] || return 0
+    [ "$(wc -l < "$log_file")" -gt "$keep" ] || return 0
+    if tail -n "$keep" "$log_file" > "$log_file.tmp"; then
+        mv -f "$log_file.tmp" "$log_file"
+    else
+        rm -f "$log_file.tmp"
+    fi
+}
+
 cmd_session() {
     local line base status
     mkdir -p "$state_dir" "$runtime_dir"
+    rotate_session_log
     exec >> "$log_file" 2>&1
     log "a sessão começa (dados: $LUCERNA_DATA_DIR)"
     write_session_json

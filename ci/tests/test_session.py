@@ -527,6 +527,84 @@ fi
         # no container); um dia inteiro é o "fica até a pessoa agir".
         self.assertIn("timeout = 86400000", evals[0])
 
+    # A tela de emergência falsa que fica aberta e responde ao `state` pelo
+    # modo dela (gravado num arquivo); o ipc do shell falha (shell morto).
+    def lasting_emergency_qs(self):
+        state = self.tmp / "emergency-state.txt"
+        self.fake(
+            "qs",
+            f"""if [ "$1" = -p ] && [ "$3" = ipc ]; then
+    [ "$6" = state ] && cat "{state}" 2> /dev/null
+    exit 0
+fi
+if [ "$1" = -p ]; then
+    mode=${{LUCERNA_EMERGENCY_MODE-}}
+    echo "mode=$mode" >> "{self.tmp / "emergency.txt"}"
+    echo "$mode" > "{state}"
+    trap 'kill $s 2> /dev/null; echo "fechada=$mode" >> "{self.tmp / "emergency.txt"}"; exit 143' TERM
+    sleep 600 & s=$!
+    wait $s
+    exit 0
+fi
+exit 1""",
+        )
+
+    def background_session(self, *args):
+        proc = subprocess.Popen([str(SCRIPT), *args], env=self.env())
+        self.addCleanup(proc.wait)
+        self.addCleanup(proc.kill)
+        return proc
+
+    def test_crashed_replaces_power_emergency(self):
+        # O Ctrl+Alt+Delete com o shell travado abriu a tela power; o shell
+        # cai e o supervisor pede a crashed: a power fecha e a crashed abre.
+        self.lasting_emergency_qs()
+        power = self.background_session("power")
+        self.wait_for(lambda: self.emergency_modes() == ["mode=power"], what="a tela power")
+        self.wait_for(lambda: (self.runtime / "lucerna" / "emergency.pid").exists(), what="o emergency.pid")
+        crashed = self.background_session("emergency", "--mode", "crashed")
+        self.wait_for(
+            lambda: self.emergency_modes() == ["mode=power", "fechada=power", "mode=crashed"],
+            what="a troca pela crashed",
+        )
+        self.assertEqual(power.wait(timeout=10), 0, "o power sai quando a tela dele fecha")
+        self.assertIsNone(crashed.poll(), "a crashed fica aberta, esperando")
+        self.assertIn("é a do Ctrl+Alt+Delete; troco pela da queda", self.supervisor_log())
+        # Uma segunda queda com a crashed aberta não troca nada.
+        self.run_session("emergency", "--mode", "crashed")
+        self.assertEqual(self.emergency_modes()[-1], "mode=crashed")
+        self.assertIn("a tela de emergência já está aberta", self.supervisor_log())
+        # Nem o power: ele só traz a tela inteira de volta.
+        self.run_session("power")
+        self.assertEqual(len(self.emergency_modes()), 3)
+        pid = int((self.runtime / "lucerna" / "emergency.pid").read_text().strip())
+        os.kill(pid, signal.SIGTERM)
+        self.assertEqual(crashed.wait(timeout=10), 0)
+
+    def test_session_log_rotates_at_start(self):
+        # O session.log de sessões antigas fica só com as últimas linhas.
+        log = self.home / ".local" / "state" / "lucerna" / "session.log"
+        self.write(log, "".join(f"antiga {n}\n" for n in range(1, 31)))
+        self.fake("start-hyprland")
+        env = self.env()
+        env["LUCERNA_SESSION_LOG_LINES"] = "10"
+        proc = subprocess.run([str(SCRIPT)], env=env, capture_output=True, text=True, timeout=30, check=False)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        lines = log.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(lines[:10], [f"antiga {n}" for n in range(21, 31)], "as 10 últimas antigas, na ordem")
+        self.assertIn("a sessão começa", "\n".join(lines[10:]), "e a sessão nova depois delas")
+        self.assertFalse(log.with_name("session.log.tmp").exists())
+        # Abaixo do limite, nada muda.
+        before = log.read_text(encoding="utf-8")
+        env["LUCERNA_SESSION_LOG_LINES"] = "100000"
+        subprocess.run([str(SCRIPT)], env=env, capture_output=True, text=True, timeout=30, check=False)
+        self.assertTrue(log.read_text(encoding="utf-8").startswith(before))
+
+    def test_help_tells_the_tty_way_out_of_a_stuck_lockscreen(self):
+        proc = self.run_session("--help")
+        self.assertIn("travado na tela de bloqueio", proc.stderr)
+        self.assertIn("lucerna-session shell restart (volta", proc.stderr)
+
     def test_emergency_rejects_unknown_mode(self):
         self.emergency_qs()
         proc = self.run_session("emergency", "--mode", "nada", check=False)
