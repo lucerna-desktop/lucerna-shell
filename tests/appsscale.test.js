@@ -84,6 +84,14 @@ function run(t) {
         t.eq(A.gapsLua("x"), "", "o que não é número não vai");
     });
 
+    t.test("appsscale: a volta no ambiente do systemd do usuário", () => {
+        t.eq(A.systemdRestore(null), [["systemctl", "--user", "unset-environment", "QT_SCALE_FACTOR", "GDK_SCALE", "GDK_DPI_SCALE", "XCURSOR_SIZE", "HYPRCURSOR_SIZE"]], "sem nada antes, todos saem");
+        t.eq(A.systemdRestore({ env: { XCURSOR_SIZE: "32", QT_SCALE_FACTOR: null, GDK_SCALE: "" } }), [
+            ["systemctl", "--user", "unset-environment", "QT_SCALE_FACTOR", "GDK_SCALE", "GDK_DPI_SCALE", "HYPRCURSOR_SIZE"],
+            ["systemctl", "--user", "set-environment", "XCURSOR_SIZE=32"]
+        ], "o que havia antes volta ao valor de antes");
+    });
+
     t.test("appsscale: a leitura dos arquivos", () => {
         // O formato do `hyprctl getoption general:gaps_in -j` do Hyprland 0.57.1.
         const text = "\x1eelectron-flags.conf\x1f1--a\n\x1egtk-3.0/settings.ini\x1f0\x1e@xrdb\x1f1\n120\n\x1e@gaps_in\x1f{\"option\": \"general:gaps_in\", \"css\": \"0 0 0 0\", \"set\": true }\n";

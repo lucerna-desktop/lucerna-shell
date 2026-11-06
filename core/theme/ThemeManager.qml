@@ -125,8 +125,15 @@ Singleton {
     // dos apps. Toda medida do shell passa por px(): os tokens daqui já vêm
     // multiplicados, e as medidas próprias de um componente usam
     // ThemeManager.px(n). Não usa o QT_SCALE_FACTOR: o texto e as bordas
-    // continuam no pixel lógico inteiro.
-    readonly property real scale: Config.shellScale * (Config.scaleMode === "apps" ? Config.appsScale : 1)
+    // continuam no pixel lógico inteiro. Fica entre 0,5 e 3 (clampScale): um
+    // shellScale 0 ou negativo num config.json editado à mão zeraria todas as
+    // medidas, até o campo de senha da tela de bloqueio.
+    readonly property real scale: clampScale(Config.shellScale * (Config.scaleMode === "apps" ? Config.appsScale : 1))
+
+    // A escala dentro de [0,5, 3]; um valor que não é número vira 1.
+    function clampScale(n: real): real {
+        return Number.isFinite(n) ? Math.min(3, Math.max(0.5, n)) : 1;
+    }
 
     readonly property var data: parse(activeFile.text())
     readonly property bool dark: data.dark ?? true

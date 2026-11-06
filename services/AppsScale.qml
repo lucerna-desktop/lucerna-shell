@@ -200,6 +200,24 @@ Singleton {
         return lines.join("\n");
     }
 
+    // A volta no ambiente do systemd do usuário: o `lucerna-session ready`
+    // importou nele os nomes do session.env, e os apps ativados pelo D-Bus ou
+    // pelo systemd seguiriam escalados até a sessão acabar. O que não existia
+    // antes do modo sai (unset-environment); o que existia volta ao valor de
+    // antes (set-environment). Só na sessão Lucerna (fora dela, nada foi
+    // importado). Pura: [argv, ...].
+    function systemdRestore(backup: var): var {
+        const before = backup?.env ?? {};
+        const unset = envNames.filter(n => !before[n]);
+        const set = envNames.filter(n => before[n]).map(n => `${n}=${before[n]}`);
+        const out = [];
+        if (unset.length)
+            out.push(["systemctl", "--user", "unset-environment"].concat(unset));
+        if (set.length)
+            out.push(["systemctl", "--user", "set-environment"].concat(set));
+        return out;
+    }
+
     // A saída do leitor: registros "\x1e<nome>\x1f<corpo>". Arquivos: o corpo
     // começa com 1 (e o conteúdo) ou 0 (não existe). Os extras começam com @.
     function parseRead(text: string): var {
@@ -424,6 +442,10 @@ printf '\\036@gaps_out\\037'; hyprctl getoption general:gaps_out -j 2> /dev/null
         // modo. Uma cópia que já existe nunca é sobrescrita (com o JSON
         // perdido no meio do modo, a cópia nova seria a versão do modo).
         // Só os da pessoa (o que o modo gerou não tem cópia).
+        // Cada arquivo é gravado inteiro num .lucerna-tmp ao lado e trocado
+        // pelo mv (uma queda ou o disco cheio no meio não deixa o arquivo da
+        // pessoa pela metade). Um link simbólico (dotfiles com stow) é gravado
+        // no lugar, para o link continuar apontando para o arquivo dela.
         const copies = job.op === "apply" && plan.fresh ? files.filter(n => plan.backup.files[n]).join("\n") : "";
         writer.command = ["sh", "-c", `cd "$1" || exit 1; mode=$2; copies=$3; shift 3
 if [ "$mode" = fresh ]; then
@@ -435,7 +457,17 @@ fi
 st=0
 while [ $# -ge 3 ]; do
     case $2 in
-        w) mkdir -p "$(dirname "$1")" && printf '%s' "$3" > "$1" || st=1 ;;
+        w) if ! mkdir -p "$(dirname "$1")"; then
+            st=1
+        elif [ -L "$1" ]; then
+            printf '%s' "$3" > "$1" || st=1
+        elif printf '%s' "$3" > "$1.lucerna-tmp"; then
+            [ -e "$1" ] && chmod --reference="$1" "$1.lucerna-tmp" 2> /dev/null
+            mv -f -- "$1.lucerna-tmp" "$1" || { rm -f -- "$1.lucerna-tmp"; st=1; }
+        else
+            rm -f -- "$1.lucerna-tmp"
+            st=1
+        fi ;;
         rm) rm -f -- "$1" || st=1 ;;
     esac
     shift 3
@@ -459,7 +491,7 @@ exit $st`, "sh", configHome, job.op === "restore" ? "restore" : plan.fresh ? "fr
     }
 
     // Depois de gravar: o Hyprland (a seção do arquivo e o mesmo Lua na hora),
-    // o cursor e o xrdb.
+    // o cursor, o xrdb e, na volta, o ambiente do systemd do usuário.
     function announce(job: var, backup: var): void {
         const theme = Quickshell.env("HYPRCURSOR_THEME") || Quickshell.env("XCURSOR_THEME") || "default";
         if (job.op === "apply") {
@@ -475,6 +507,10 @@ exit $st`, "sh", configHome, job.op === "restore" ? "restore" : plan.fresh ? "fr
             Quickshell.execDetached(["hyprctl", "setcursor", theme, String(backup?.env?.XCURSOR_SIZE || 24)]);
             if (hasXrdb)
                 Quickshell.execDetached(["sh", "-c", 'printf "Xft.dpi: %s\\n" "$1" | xrdb -merge', "sh", String(backup?.xftDpi || 96)]);
+            // Sem systemd (o elogind), não há o que desfazer.
+            if (HyprFile.layered)
+                for (const argv of systemdRestore(backup))
+                    Quickshell.execDetached(["sh", "-c", 'command -v systemctl > /dev/null || exit 0; exec "$@"', "sh"].concat(argv));
         }
     }
 
