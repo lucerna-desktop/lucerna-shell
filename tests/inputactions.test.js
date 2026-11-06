@@ -57,7 +57,7 @@ function run(t) {
 
     t.test("inputactions: o modo jogo e a barra, sem tecla padrão", () => {
         t.eq(["game", "bar"].map(id => A.describe({ id })), ["Ligar/desligar o modo jogo", "Mostrar/esconder a barra"]);
-        const keys = t.ShellShortcuts.effective({});
+        const keys = t.ShellShortcuts.effective({}, true);
         t.eq(["game", "bar"].map(id => keys.find(k => k.id === id)?.keys), [[], []], "na lista, sem tecla");
     });
 

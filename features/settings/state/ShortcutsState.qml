@@ -30,7 +30,7 @@ Singleton {
         { combo: "Ctrl + Alt + Shift + Esc", label: "Sair da sessão" }
     ]
 
-    readonly property var shortcuts: ShellShortcuts.effective(Config.shellShortcuts)
+    readonly property var shortcuts: ShellShortcuts.effective(Config.shellShortcuts, HyprFile.layered)
 
     function shortcut(id: string): var {
         return shortcuts.find(s => s.id === id) ?? { id, keys: [], custom: false };
@@ -84,7 +84,7 @@ Singleton {
     }
 
     function setKeys(id: string, keys: var): void {
-        Config.shellShortcuts = ShellShortcuts.withKeys(Config.shellShortcuts, id, keys);
+        Config.shellShortcuts = ShellShortcuts.withKeys(Config.shellShortcuts, id, keys, HyprFile.layered);
     }
 
     // De quem é a combinação hoje, fora o próprio atalho: { kind: "shell", id },
@@ -137,7 +137,7 @@ Singleton {
     }
 
     function reset(id: string): void {
-        setKeys(id, ShellShortcuts.defaultKeys(id));
+        setKeys(id, ShellShortcuts.defaultKeys(id, HyprFile.layered));
     }
 
     function resetAll(): void {

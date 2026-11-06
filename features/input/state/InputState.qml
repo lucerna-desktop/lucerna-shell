@@ -107,11 +107,13 @@ Singleton {
     }
 
     // Os atalhos do shell viram binds como os outros. Uma tecla mapeada na aba
-    // Teclado vence o atalho do shell na mesma tecla.
-    function shellEntries(): var {
+    // Teclado vence o atalho do shell na mesma tecla. Fora da sessão Lucerna
+    // valem os padrões de antes: as teclas de janela e área de trabalho ficam
+    // com o hyprland.lua da pessoa.
+    function shellEntries(layered: bool): var {
         const own = Config.inputBinds ?? [];
         const out = [];
-        for (const shortcut of ShellShortcuts.effective(Config.shellShortcuts)) {
+        for (const shortcut of ShellShortcuts.effective(Config.shellShortcuts, layered)) {
             for (const k of shortcut.keys) {
                 if (!own.some(b => ShellShortcuts.same(b, k)) && !out.some(e => ShellShortcuts.same(e, k)))
                     out.push({ trigger: k.trigger, mods: ShellShortcuts.normalizeMods(k.mods), release: k.release ?? false, action: { id: shortcut.id } });
@@ -133,7 +135,7 @@ Singleton {
     function applyBinds(): void {
         if (!applies)
             return;
-        const list = shellEntries().concat(Config.inputBinds ?? []).map(bindFor).filter(b => b);
+        const list = shellEntries(HyprFile.layered).concat(Config.inputBinds ?? []).map(bindFor).filter(b => b);
         const base = baseUnbinds(HyprFile.layered);
         Input.setBinds(list, base);
         HyprFile.setSection("binds", [Input.unbindLua(base), Input.bindLua(list)].filter(l => l).join("\n"));
