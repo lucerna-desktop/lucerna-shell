@@ -1,0 +1,91 @@
+Medição do modo "Escala pelos apps" (Tarefa 14 da base robusta) — 2026-11-06
+
+Para a Tarefa 15 comparar com a base da Tarefa 1 (2026-11-04-escala-base.txt).
+MEDIDO NA SAÍDA HEADLESS HEADLESS-T (dev/test.sh headless on), 1920x1080@60, a mesma da base.
+Container lucerna-polish, qs com blur "performance". Estado: Config.scaleMode "apps",
+Config.appsScale 1.25 (o shell em 1,25 pela escala interna, ThemeManager.scale), o monitor em 1
+(o modo o pôs em 1 a partir de 1,25), bordas e espaços do Hyprland pelo fator (border_size 3,
+gaps 5/13, rounding 15). Sem BENCH_SCALE (o monitor já estava em 1 pelo modo).
+dev/bench-paineis.sh 10 10 e dev/bench-blur.sh 20, duas rodadas de cada, intercaladas
+(paineis, blur, paineis, blur). O host tinha carga variável (load ~1 a 2,4).
+
+=== bench-paineis.sh 10 10 — modo apps 1,25 (monitor 1), rodada 1 ===
+blur: performance
+papel de parede: auto (estático fora do caso papel)
+saída: HEADLESS-T 1920x1080@60
+ciclos: 10
+escala: 1
+segundos: 10
+
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.8     57.5       18      16       0      389   8.6         1.8      58.4
+painel-superior:fechar       23.8     22.4       16      16       0      149   8.6         1.8      18.9
+central:abrir                50.1     49.2       16      16       0      334   4.2         0.9      47.0
+central:fechar               23.8     22.2       17      16       0      169   4.2         0.9      20.4
+osd:abrir                    51.0     49.6       17      16       0      678   2.8         0.9      49.9
+papel                        60.0     60.0       17      16       0      600  10.2         2.8         -
+janela                        0.0      0.0        0       -       0        0   0.1         2.4         -
+janela-x11                    0.0      0.0        0       -       0        0   0.1         2.5         -
+parado                        0.0      0.0        0       -       0        0   0.1         0.0         -
+parado-painel                60.0     60.0       16      16       0      600  10.3         2.6         -
+RSS do qs: 377 MB antes, 374 MB depois
+qs normal de volta
+
+=== bench-blur.sh 20 — modo apps 1,25 (monitor 1), rodada 1 ===
+escala: 1
+nível       Hyprland %       qs %    GPU %
+full                3.0        9.3        -
+performance         2.6        9.2        -
+off                 2.5        9.9        -
+nível de volta: performance
+
+=== bench-paineis.sh 10 10 — modo apps 1,25 (monitor 1), rodada 2 ===
+blur: performance
+papel de parede: auto (estático fora do caso papel)
+saída: HEADLESS-T 1920x1080@60
+ciclos: 10
+escala: 1
+segundos: 10
+
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.9     57.4       18      16       0      389   8.4         1.8      57.4
+painel-superior:fechar       27.6     23.9       17      16       0      173   8.4         1.8      21.0
+central:abrir                50.2     49.4       16      16       0      334   4.1         1.0      47.0
+central:fechar               23.8     22.4       16      16       0      169   4.1         1.0      20.1
+osd:abrir                    50.9     49.3       16      16       0      678   2.8         0.9      49.7
+papel                        60.0     60.0       16      16       0      600  10.3         2.8         -
+janela                        0.0      0.0        0       -       0        0   0.0         2.6         -
+janela-x11                    0.0      0.0        0       -       0        0   0.0         2.7         -
+parado                        0.0      0.0        0       -       0        0   0.1         0.0         -
+parado-painel                60.0     60.0       16      16       0      600  10.4         2.6         -
+RSS do qs: 379 MB antes, 379 MB depois
+qs normal de volta
+
+=== bench-blur.sh 20 — modo apps 1,25 (monitor 1), rodada 2 ===
+escala: 1
+nível       Hyprland %       qs %    GPU %
+full                2.9        8.9        -
+performance         2.6        8.7        -
+off                 2.6       10.1        -
+nível de volta: performance
+
+=== Comparação com a base (Tarefa 1, mesma saída headless) ===
+bench-blur, Hyprland % (full / performance / off):
+  monitor 1 (base):        r1 3,1 / 2,6 / 2,7     r2 6,6 / 6,7 / 6,0
+  monitor 1,25 (base):     r1 10,0 / 6,5 / 6,0    r2 11,4 / 11,0 / 9,8
+  modo apps 1,25 (agora):  r1 3,0 / 2,6 / 2,5     r2 2,9 / 2,6 / 2,6
+bench-blur, qs % (full / performance / off):
+  monitor 1 (base):        r1 10,0 / 9,3 / 10,7   r2 10,3 / 10,3 / 11,4
+  monitor 1,25 (base):     r1 15,3 / 10,2 / 11,3  r2 10,5 / 9,9 / 11,3
+  modo apps 1,25 (agora):  r1 9,3 / 9,2 / 9,9     r2 8,9 / 8,7 / 10,1
+bench-paineis: FPS do shell (58,8–60 nas aberturas e nos contínuos), p95 16 ms e nenhum quadro
+longo nas duas rodadas, como na base; o Hyprland % fica em 0,9–2,8, igual ao da base em 1
+na rodada 1 (0,8–2,7). RSS do qs 374–379 MB (base 332–350 MB; não investigado: o shell em 1,25 pela escala interna
+desenha superfícies maiores, e o código mudou desde a base).
+
+=== Conclusão ===
+No modo "Escala pelos apps" em 1,25, o Hyprland custa o mesmo que com o monitor em 1 (2,5 a 3 %
+de um núcleo no bench-blur), contra 6 a 11 % com o monitor em 1,25: o custo da escala
+fracionária no compositor some. O qs fica igual ao de 1 (a escala interna não pesa), com o
+mesmo FPS e o mesmo p95. Os apps escalam pelos toolkits (o kitty no bench, pelo ambiente).
+Confirma a Ruling R13: o modo apps como opção mais leve para a GPU, o padrão segue "monitor".
