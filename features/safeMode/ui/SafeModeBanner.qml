@@ -49,7 +49,7 @@ Variants {
                 Icon {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: "warning"
-                    size: 20
+                    size: ThemeManager.px(20)
                     color: ThemeManager.colors.accent
                 }
 

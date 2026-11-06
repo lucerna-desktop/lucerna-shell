@@ -30,7 +30,7 @@ OverlayPanel {
 
             readonly property int count: WorkspacesState.ids.length
             readonly property int columns: count <= 5 ? count : Math.ceil(count / 2)
-            readonly property real tileWidth: Math.min(380, (width - 160 - (columns - 1) * ThemeManager.spacing.large) / columns)
+            readonly property real tileWidth: Math.min(ThemeManager.px(380), (width - ThemeManager.px(160) - (columns - 1) * ThemeManager.spacing.large) / columns)
 
             Keys.onPressed: event => {
                 if (event.key === Qt.Key_Right || event.key === Qt.Key_Tab)
@@ -53,10 +53,10 @@ OverlayPanel {
             Surface {
                 level: 0
                 x: panel.snap((parent.width - width) / 2)
-                y: panel.snap((parent.height - height) / 2 + (1 - panel.progress) * 24)
+                y: panel.snap((parent.height - height) / 2 + (1 - panel.progress) * ThemeManager.px(24))
                 width: grid.width + ThemeManager.spacing.large * 2
                 height: grid.height + header.height + ThemeManager.spacing.large * 3
-                radius: ThemeManager.radius.large + 4
+                radius: ThemeManager.radius.large + ThemeManager.px(4)
                 scale: 0.96 + 0.04 * panel.progress
 
                 Row {

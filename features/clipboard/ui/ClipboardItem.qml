@@ -16,7 +16,7 @@ Clickable {
     signal chosen
     signal hoveredIn
 
-    height: isImage ? 104 : entry.kind === "files" ? 56 : 64
+    height: isImage ? ThemeManager.px(104) : entry.kind === "files" ? ThemeManager.px(56) : ThemeManager.px(64)
     radius: ThemeManager.radius.normal
     color: current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.14) : "transparent"
     onClicked: root.chosen()
@@ -31,9 +31,9 @@ Clickable {
         anchors.left: parent.left
         anchors.leftMargin: ThemeManager.spacing.normal
         anchors.verticalCenter: parent.verticalCenter
-        width: root.isImage ? 136 : 36
-        height: root.isImage ? 84 : 36
-        radius: root.isImage ? ThemeManager.radius.small : 18
+        width: root.isImage ? ThemeManager.px(136) : ThemeManager.px(36)
+        height: root.isImage ? ThemeManager.px(84) : ThemeManager.px(36)
+        radius: root.isImage ? ThemeManager.radius.small : ThemeManager.px(18)
         color: root.isImage ? ThemeManager.alpha(ThemeManager.colors.text, 0.05) : ThemeManager.alpha(ThemeManager.colors.accent, root.current ? 0.22 : 0.12)
         clip: true
 
@@ -41,7 +41,7 @@ Clickable {
             anchors.fill: parent
             visible: root.hasThumb
             source: root.hasThumb ? `file://${root.entry.thumb}` : ""
-            sourceSize: Qt.size(272, 168)
+            sourceSize: Qt.size(ThemeManager.px(272), ThemeManager.px(168))
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
         }
@@ -50,7 +50,7 @@ Clickable {
             anchors.centerIn: parent
             visible: !root.hasThumb
             icon: root.isImage ? "image" : root.entry.kind === "files" ? "folder" : "notes"
-            size: 20
+            size: ThemeManager.px(20)
             color: ThemeManager.colors.accent
         }
     }
@@ -61,7 +61,7 @@ Clickable {
         anchors.right: actions.left
         anchors.rightMargin: ThemeManager.spacing.small
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 2
+        spacing: ThemeManager.px(2)
 
         Txt {
             width: parent.width
@@ -74,14 +74,14 @@ Clickable {
         }
 
         Row {
-            spacing: 4
+            spacing: ThemeManager.px(4)
 
             Icon {
                 visible: root.entry.pinned
                 anchors.verticalCenter: parent.verticalCenter
                 icon: Icons.pin
                 filled: true
-                size: 13
+                size: ThemeManager.px(13)
                 color: ThemeManager.colors.accent
             }
 
@@ -100,20 +100,20 @@ Clickable {
         anchors.rightMargin: ThemeManager.spacing.small
         anchors.verticalCenter: parent.verticalCenter
         opacity: root.hovered || root.current ? 1 : 0
-        spacing: 2
+        spacing: ThemeManager.px(2)
 
         Behavior on opacity { Anim { type: Anim.FastEffects } }
 
         IconButton {
             icon: Icons.pin
-            iconSize: 18
+            iconSize: ThemeManager.px(18)
             active: root.entry.pinned
             onClicked: ClipboardState.togglePin(root.entry)
         }
 
         IconButton {
             icon: Icons.trash
-            iconSize: 18
+            iconSize: ThemeManager.px(18)
             onClicked: ClipboardState.remove(root.entry)
         }
     }

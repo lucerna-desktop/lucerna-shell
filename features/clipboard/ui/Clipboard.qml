@@ -26,10 +26,10 @@ OverlayPanel {
 
         level: 0
         x: panel.snap((parent.width - width) / 2)
-        y: panel.snap((parent.height - height) / 2 + (1 - panel.progress) * 24)
-        width: Math.min(640, parent.width - 80)
-        height: Math.min(700, parent.height - 140)
-        radius: ThemeManager.radius.large + 4
+        y: panel.snap((parent.height - height) / 2 + (1 - panel.progress) * ThemeManager.px(24))
+        width: Math.min(ThemeManager.px(640), parent.width - ThemeManager.px(80))
+        height: Math.min(ThemeManager.px(700), parent.height - ThemeManager.px(140))
+        radius: ThemeManager.radius.large + ThemeManager.px(4)
 
         readonly property real pad: ThemeManager.spacing.large
 
@@ -39,7 +39,7 @@ OverlayPanel {
             x: window.pad
             y: window.pad
             width: window.width - window.pad * 2
-            height: 32
+            height: ThemeManager.px(32)
 
             Row {
                 anchors.verticalCenter: parent.verticalCenter
@@ -71,7 +71,7 @@ OverlayPanel {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 icon: Icons.settings
-                iconSize: 18
+                iconSize: ThemeManager.px(18)
                 onClicked: ClipboardState.openSettings()
             }
         }
@@ -129,7 +129,7 @@ OverlayPanel {
             width: window.width - (window.pad - ThemeManager.spacing.small) * 2
             height: hintBar.y - y - ThemeManager.spacing.small
             clip: true
-            spacing: 2
+            spacing: ThemeManager.px(2)
             boundsBehavior: Flickable.StopAtBounds
             model: ClipboardState.items
             currentIndex: ClipboardState.selected
@@ -152,7 +152,7 @@ OverlayPanel {
 
             EmptyState {
                 anchors.centerIn: parent
-                width: parent.width - 60
+                width: parent.width - ThemeManager.px(60)
                 visible: ClipboardState.items.length === 0 && ClipboardState.emptyKind === "unavailable"
                 icon: "content_paste_off"
                 text: ClipboardState.unavailableText
@@ -160,14 +160,14 @@ OverlayPanel {
 
             Column {
                 anchors.centerIn: parent
-                width: parent.width - 60
+                width: parent.width - ThemeManager.px(60)
                 visible: ClipboardState.items.length === 0 && ClipboardState.emptyKind !== "unavailable"
                 spacing: ThemeManager.spacing.small
 
                 Icon {
                     anchors.horizontalCenter: parent.horizontalCenter
                     icon: !ClipboardState.enabled ? "content_paste_off" : ClipboardState.query ? Icons.magnify : "content_paste"
-                    size: 36
+                    size: ThemeManager.px(36)
                     color: ThemeManager.colors.textFaint
                 }
 
@@ -189,7 +189,7 @@ OverlayPanel {
             x: window.pad
             y: window.height - height - window.pad
             width: window.width - window.pad * 2
-            height: 36
+            height: ThemeManager.px(36)
 
             Txt {
                 anchors.left: parent.left

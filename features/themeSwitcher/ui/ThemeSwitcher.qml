@@ -21,8 +21,8 @@ OverlayPanel {
     onDismissed: ThemeSwitcherState.cancel()
 
     // Centro vertical da fila: a base do card central a 120 px da borda de baixo.
-    readonly property real cardHeight: 180
-    readonly property real rowY: height - 120 - cardHeight / 2
+    readonly property real cardHeight: ThemeManager.px(180)
+    readonly property real rowY: height - ThemeManager.px(120) - cardHeight / 2
 
     // Entrada em cascata, depois de o estado centrar a fila.
     Connections {
