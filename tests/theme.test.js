@@ -12,6 +12,22 @@ function run(t) {
         t.eq([T.font.sans, T.font.normal, T.radius.large, T.spacing.large, T.barHeight], ["Rubik", 13, 22, 20, 44]);
     });
 
+    t.test("theme: a escala interna multiplica as medidas", () => {
+        try {
+            t.eq([T.scale, T.px(34), T.spacing.normal, T.font.normal], [1, 34, 12, 13], "escala 1: os valores do tema");
+            C.shellScale = 1.25;
+            t.eq(T.scale, 1.25);
+            t.eq([T.spacing.normal, T.font.normal, T.px(34)], [15, 16, 43]);
+            t.eq([T.radius.large, T.barHeight, T.px(0), T.px(1)], [28, 55, 0, 1], "os outros tokens também; 0 e 1 ficam");
+            C.scaleMode = "apps";
+            t.eq(T.scale, 1.25 * 1.25, "no modo pelos apps, a escala dos apps entra junto");
+        } finally {
+            C.shellScale = 1;
+            C.scaleMode = "monitor";
+        }
+        t.eq([T.scale, T.spacing.normal, T.font.normal], [1, 12, 13], "restaurado");
+    });
+
     t.test("theme: o eixo de peso da fonte variável", () => {
         t.eq([T.fontAxes(Font.Normal), T.fontAxes(Font.DemiBold), T.fontAxes(300)], [{ wght: 400 }, { wght: 600 }, { wght: 300 }]);
     });

@@ -24,6 +24,9 @@ Singleton {
     property alias blurOverride: adapter.blurOverride
     property alias blurWindows: adapter.blurWindows
     property alias animationScale: adapter.animationScale
+    property alias shellScale: adapter.shellScale
+    property alias scaleMode: adapter.scaleMode
+    property alias appsScale: adapter.appsScale
     property alias notificationTimeout: adapter.notificationTimeout
     property alias settingsTopic: adapter.settingsTopic
     property alias outlines: adapter.outlines
@@ -163,6 +166,14 @@ Singleton {
             property bool blurWindows: true
             // Velocidade das animações; negativo = seguir o tema.
             property real animationScale: -1
+            // O tamanho do shell (1 = o do tema): multiplica as medidas do
+            // tema (ThemeManager.px), sem mudar a escala do monitor.
+            property real shellScale: 1
+            // De onde vem a escala da tela: "monitor" (a do Hyprland) ou
+            // "apps" (o monitor em 1 e a escala pelos toolkits, com
+            // appsScale também no shell).
+            property string scaleMode: "monitor"
+            property real appsScale: 1.25
             // Tempo padrão dos popups de notificação, em ms.
             property int notificationTimeout: 5000
             property string settingsTopic: "glass"

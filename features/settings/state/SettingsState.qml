@@ -27,7 +27,7 @@ Singleton {
 
     // Tópicos da lista à esquerda. `soon` marca os que ainda não têm opções.
     readonly property var topics: [
-        { id: "appearance", icon: Icons.palette, label: "Aparência", description: "Tema e animações" },
+        { id: "appearance", icon: Icons.palette, label: "Aparência", description: "Tema, tamanho e animações" },
         { id: "wallpaper", icon: Icons.wallpaper, label: "Papel de parede", description: "Por tema, animado ou seu" },
         { id: "displays", icon: Icons.monitor, label: "Monitores", description: "Disposição, resolução e escala" },
         { id: "idle", icon: "timer", label: "Tela e ociosidade", description: "Brilho, escurecer, desligar e bloquear" },
@@ -115,6 +115,20 @@ Singleton {
 
     function setAnimationScale(value: real): void {
         Config.animationScale = value;
+    }
+
+    // O tamanho do shell: a escala interna (ThemeManager.scale), sem mexer na
+    // escala do monitor.
+    readonly property var shellScaleOptions: [
+        { label: "100%", value: 1 },
+        { label: "110%", value: 1.1 },
+        { label: "125%", value: 1.25 },
+        { label: "150%", value: 1.5 }
+    ]
+    readonly property real shellScale: Config.shellScale
+
+    function setShellScale(value: real): void {
+        Config.shellScale = value;
     }
 
     readonly property bool outlines: ThemeManager.outlines

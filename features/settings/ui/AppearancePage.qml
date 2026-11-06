@@ -6,7 +6,7 @@ import qs.core.theme
 import qs.core.widgets
 import qs.features.settings.state
 
-// Aparência: tema e velocidade das animações.
+// Aparência: tema, tamanho do shell e velocidade das animações.
 Column {
     id: page
 
@@ -111,6 +111,24 @@ Column {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    SettingSection {
+        title: "Tamanho"
+
+        SettingRow {
+            icon: Icons.zoom
+            title: "Tamanho do shell"
+            description: "Aumenta o shell sem mudar a escala do monitor."
+            wide: true
+
+            SegmentedControl {
+                width: parent.width
+                options: SettingsState.shellScaleOptions
+                value: SettingsState.shellScale
+                onSelected: v => SettingsState.setShellScale(v)
             }
         }
     }

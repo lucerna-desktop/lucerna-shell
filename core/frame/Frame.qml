@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import qs.core.pixel
+import qs.core.theme
 
 // A moldura da tela e o que sai dela: uma forma só por monitor, desenhada
 // pelo core/widgets/FrameShape (união suave por SDF) na janela da forma
@@ -29,10 +30,11 @@ Singleton {
 
     // Espessura da moldura aberta, raio dos cantos de dentro e a suavização
     // (o raio do arco que funde dois pedaços; os cantos dos pedaços seguem o
-    // raio grande do tema, no FrameBlob).
-    readonly property real thickness: 8
-    readonly property real radius: 24
-    readonly property real smoothing: 22
+    // raio grande do tema, no FrameBlob). Medidas do tema: crescem com a
+    // escala interna do shell (ThemeManager.px).
+    readonly property real thickness: ThemeManager.px(8)
+    readonly property real radius: ThemeManager.px(24)
+    readonly property real smoothing: ThemeManager.px(22)
     // Até onde o arco de uma união chega da beira (a suavização e um pixel de
     // borda): o shader descarta além disso, e as faixas têm essa folga.
     readonly property real reach: smoothing + 2
@@ -41,17 +43,19 @@ Singleton {
     // canto no cartão (o pior é o canto reto, na diagonal do arco).
     readonly property real cornerClear: thickness + radius * (1 - Math.SQRT1_2)
     // Quanto um lado preso a uma borda passa dela: os cantos desse lado ficam
-    // fora da tela, e a junção com a borda vira o arco côncavo.
-    readonly property real overhang: 64
+    // fora da tela, e a junção com a borda vira o arco côncavo. Cresce com os
+    // raios, pela escala interna.
+    readonly property real overhang: ThemeManager.px(64)
     // Quantos pedaços a forma desenha numa tela (o shader tem um tanto fixo).
     readonly property int slotCount: 6
     // Quantas faixas a forma usa no máximo (um ShaderEffect cada; ver regions).
     readonly property int regionCount: 16
     // A coluna da direita, onde o OSD sai sem a moldura, e a coluna larga,
     // onde cabem os popups de notificação: a janela da forma encolhe para
-    // elas, e para 1 px sem nada à mostra (ver extentOn).
-    readonly property real column: 128
-    readonly property real wideColumn: 420
+    // elas, e para 1 px sem nada à mostra (ver extentOn). Crescem com o
+    // conteúdo, pela escala interna.
+    readonly property real column: ThemeManager.px(128)
+    readonly property real wideColumn: ThemeManager.px(420)
     readonly property real idleWidth: 1
 
     // De que borda cada um sai.

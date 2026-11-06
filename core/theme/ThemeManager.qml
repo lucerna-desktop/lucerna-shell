@@ -8,10 +8,11 @@ import Quickshell.Io
 import qs.core.config
 
 // Único ponto de verdade do visual. Carrega o tema ativo de themes/<id>.json
-// e expõe os tokens; nenhum componente usa cor ou tamanho fixo. Cada grupo de
-// tokens tem um tipo declarado (ColorTokens, FontTokens...), para o qmllint
-// conhecer ThemeManager.colors.accent e os outros; os valores vêm nas
-// instâncias, logo abaixo das declarações.
+// e expõe os tokens; nenhum componente usa cor ou tamanho fixo (as medidas
+// passam pela escala interna, px). Cada grupo de tokens tem um tipo declarado
+// (ColorTokens, FontTokens...), para o qmllint conhecer
+// ThemeManager.colors.accent e os outros; os valores vêm nas instâncias, logo
+// abaixo das declarações.
 Singleton {
     id: root
 
@@ -119,6 +120,14 @@ Singleton {
     // wallpaper, shader } (wallpaper é a imagem; shader, o animado, se houver).
     property var themes: []
 
+    // A escala interna do shell: o tamanho escolhido pelo usuário (Config.shellScale)
+    // e, no modo "Escala pelos apps" (o monitor fica em 1), também a escala
+    // dos apps. Toda medida do shell passa por px(): os tokens daqui já vêm
+    // multiplicados, e as medidas próprias de um componente usam
+    // ThemeManager.px(n). Não usa o QT_SCALE_FACTOR: o texto e as bordas
+    // continuam no pixel lógico inteiro.
+    readonly property real scale: Config.shellScale * (Config.scaleMode === "apps" ? Config.appsScale : 1)
+
     readonly property var data: parse(activeFile.text())
     readonly property bool dark: data.dark ?? true
     // Logo do Lucerna na versão que se lê sobre o tema: estrela clara no escuro, escura no claro.
@@ -166,23 +175,23 @@ Singleton {
         sans: root.data.font?.sans ?? "sans-serif"
         mono: root.data.font?.mono ?? "monospace"
         icon: root.data.font?.icon ?? "monospace"
-        small: root.data.font?.size?.small ?? 11
-        normal: root.data.font?.size?.normal ?? 13
-        large: root.data.font?.size?.large ?? 16
-        huge: root.data.font?.size?.huge ?? 44
+        small: root.px(root.data.font?.size?.small ?? 11)
+        normal: root.px(root.data.font?.size?.normal ?? 13)
+        large: root.px(root.data.font?.size?.large ?? 16)
+        huge: root.px(root.data.font?.size?.huge ?? 44)
     }
 
     readonly property RadiusTokens radius: RadiusTokens {
-        small: root.data.radius?.small ?? 6
-        normal: root.data.radius?.normal ?? 10
-        large: root.data.radius?.large ?? 16
+        small: root.px(root.data.radius?.small ?? 6)
+        normal: root.px(root.data.radius?.normal ?? 10)
+        large: root.px(root.data.radius?.large ?? 16)
     }
 
     readonly property SpacingTokens spacing: SpacingTokens {
-        tiny: root.data.spacing?.tiny ?? 4
-        small: root.data.spacing?.small ?? 8
-        normal: root.data.spacing?.normal ?? 12
-        large: root.data.spacing?.large ?? 20
+        tiny: root.px(root.data.spacing?.tiny ?? 4)
+        small: root.px(root.data.spacing?.small ?? 8)
+        normal: root.px(root.data.spacing?.normal ?? 12)
+        large: root.px(root.data.spacing?.large ?? 20)
     }
 
     // Tokens de movimento do Material 3 (as mesmas curvas do Caelestia). O tema
@@ -194,7 +203,7 @@ Singleton {
         scale: root.lightMode ? Math.min(baseScale, 0.6) : baseScale
     }
 
-    readonly property int barHeight: data.bar?.height ?? 34
+    readonly property int barHeight: px(data.bar?.height ?? 34)
 
     // Modo leve (em tempo de execução, não é salvo): sem transparência e
     // desfoque, e animações mais curtas. Ligado pela feature de energia quando
@@ -230,6 +239,12 @@ Singleton {
         size: custom.size ?? root.data.hyprland?.blurSize ?? 8
         passes: custom.passes ?? root.data.hyprland?.blurPasses ?? 2
         customized: Object.keys(custom).length > 0
+    }
+
+    // Uma medida do shell (em pixels lógicos na escala 1) na escala interna,
+    // arredondada ao pixel lógico inteiro (0 fica 0; 1 fica 1 abaixo de 1,5).
+    function px(v: real): int {
+        return Math.round(v * scale);
     }
 
     function setTransparency(key: string, value: var): void {
