@@ -10,12 +10,19 @@ import qs.services
 // sessão Lucerna, o arranjo do conjunto conectado vai sempre para a seção
 // "monitors" do arquivo do shell (HyprFile), que vale desde o login; fora
 // dela, com "desde o login", vai para um arquivo que o hyprland.lua inclui.
+// E a tampa do notebook (Monitors.lidPlan): fechada com um monitor externo
+// ativo, desliga a tela interna (e bloqueia, com a opção de Energia); aberta,
+// ou sem outro monitor sobrando, religa.
 // Sem interface própria; o arranjo se monta em Configurações → Monitores.
 Singleton {
     id: root
 
     readonly property string setup: Monitors.setup
     property bool loginWasOn: false
+    // O último plano da tampa mandado por um monitor que mudou: o mesmo plano
+    // de novo não é mandado (o Hyprland que recusa a mudança não vira laço a
+    // cada leitura dos monitores).
+    property string lastLidPlan: ""
 
     onSetupChanged: {
         restore();
@@ -55,6 +62,52 @@ Singleton {
         }
     }
 
+    // A tampa abriu ou fechou: o plano inteiro, com o bloqueio. Só nesta
+    // virada: um monitor que entra ou sai depois não bloqueia de novo.
+    Connections {
+        target: Logind
+
+        function onLidClosedChanged() {
+            root.followLid(true);
+        }
+    }
+
+    // Com a tampa fechada, um monitor que entra ou sai muda o plano (o externo
+    // ligado depois de fechar; o externo que sai religa o interno). Com ela
+    // aberta, não: um interno desligado nas Configurações fica desligado.
+    Connections {
+        target: Monitors
+
+        function onMonitorsChanged() {
+            if (Logind.lidClosed)
+                root.followLid(false);
+        }
+    }
+
+    function followLid(withLock: bool): void {
+        const plan = Monitors.lidPlan(Logind.lidClosed, Monitors.monitors, Config.lockOnLidDocked);
+        const text = JSON.stringify([plan.disable, plan.enable]);
+        if (!withLock && text === lastLidPlan)
+            return;
+        lastLidPlan = plan.disable.length || plan.enable.length ? text : "";
+        for (const name of plan.disable)
+            Monitors.setEnabled(name, false);
+        for (const name of plan.enable)
+            Monitors.setEnabled(name, true);
+        if (plan.enable.length)
+            restoreDelay.restart();
+        if (withLock && plan.lock)
+            Session.lock();
+    }
+
+    // O interno religado volta ao arranjo salvo depois que o Hyprland o liga.
+    Timer {
+        id: restoreDelay
+
+        interval: 300
+        onTriggered: root.restore()
+    }
+
     Timer {
         id: reloadDelay
 
@@ -90,7 +143,11 @@ Singleton {
             return;
         // O arranjo é salvo pela chave do monitor; a porta pode ter mudado.
         const specs = Monitors.monitors.filter(m => saved[m.key]).map(m => Object.assign({}, saved[m.key], { name: m.name }));
-        if (specs.length === Monitors.monitors.length)
-            Monitors.apply(specs);
+        if (specs.length !== Monitors.monitors.length)
+            return;
+        // Com a tampa fechada e um externo ativo no arranjo, o interno fica
+        // desligado (senão acenderia e apagaria a cada monitor que entra).
+        const off = Monitors.lidPlan(Logind.lidClosed, specs, false).disable;
+        Monitors.apply(specs.map(s => off.includes(s.name) ? Object.assign({}, s, { enabled: false }) : s));
     }
 }

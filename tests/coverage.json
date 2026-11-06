@@ -22,7 +22,7 @@
         "services/lucerna/ServeLauncher.qml": ["logPath", "serveArgs", "launch", "release"],
         "services/Lyrics.qml": ["wantedTopics", "sync", "trackParams", "sendTrack", "toLine", "apply", "applyLyrics", "clear", "connectionChanged", "lineAt", "lineRole"],
         "services/Media.qml": ["select", "nextPlayer", "cycle", "albumShown", "seekTo"],
-        "services/Monitors.qml": ["keyOf", "parseMode", "normalize", "logicalSize", "luaFor", "lua"],
+        "services/Monitors.qml": ["keyOf", "parseMode", "normalize", "logicalSize", "luaFor", "lua", "lidPlan"],
         "services/Network.qml": ["isSecure", "needsPassword"],
         "services/Notifications.qml": ["hidePopup", "clearPopups", "popsUp", "timeoutFor", "timeOf"],
         "services/Session.qml": ["lock", "unlock", "restoreLock", "setSecure", "onSleep"],

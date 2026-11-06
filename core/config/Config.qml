@@ -58,6 +58,7 @@ Singleton {
     property alias saverBelowEnabled: adapter.saverBelowEnabled
     property alias saverBelow: adapter.saverBelow
     property alias batteryLightMode: adapter.batteryLightMode
+    property alias lockOnLidDocked: adapter.lockOnLidDocked
     property alias panelsTogether: adapter.panelsTogether
     property alias monitorSetups: adapter.monitorSetups
     property alias monitorsAtLogin: adapter.monitorsAtLogin
@@ -217,6 +218,9 @@ Singleton {
             property int saverBelow: 20
             // Na bateria: sem transparência/desfoque e animações mais rápidas
             property bool batteryLightMode: false
+            // Bloquear ao fechar a tampa com um monitor externo ligado (desligado:
+            // só apaga a tela do notebook).
+            property bool lockOnLidDocked: false
             // Painéis que ficam abertos junto das configurações (só o
             // dashboard; os outros são modais).
             property var panelsTogether: ["dashboard"]

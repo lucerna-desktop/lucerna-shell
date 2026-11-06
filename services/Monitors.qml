@@ -106,6 +106,38 @@ Singleton {
         settle.restart();
     }
 
+    // O que fazer com a tampa: { disable, enable, lock }. `monitors` traz
+    // { name, enabled } (os normalizados ou as specs de um arranjo). Interno é
+    // o painel do notebook (eDP, LVDS, DSI); sem ele (desktop), nada.
+    // - Fechada com outro monitor ativo: desliga o interno; bloqueia só com a
+    //   opção (lockOnDocked). O logind não suspende com monitor externo.
+    // - Fechada sem outro: nada (o logind decide; ao dormir, a Session bloqueia).
+    // - Aberta, ou sem nenhum monitor ativo sobrando com o interno desligado
+    //   (o externo saiu com a tampa fechada): religa o interno.
+    function lidPlan(lidClosed: bool, monitors: var, lockOnDocked: bool): var {
+        const isInternal = m => /^(eDP|LVDS|DSI)-/.test(m.name);
+        const internal = monitors.filter(isInternal);
+        const othersOn = monitors.some(m => !isInternal(m) && m.enabled);
+        const plan = { disable: [], enable: [], lock: false };
+        if (!internal.length)
+            return plan;
+        if (lidClosed && othersOn) {
+            plan.disable = internal.filter(m => m.enabled).map(m => m.name);
+            plan.lock = lockOnDocked;
+        } else if (!lidClosed || !internal.some(m => m.enabled)) {
+            plan.enable = internal.filter(m => !m.enabled).map(m => m.name);
+        }
+        return plan;
+    }
+
+    // Liga ou desliga um monitor só pelo "disabled" (o Hyprland mescla as
+    // regras: o resto do monitor fica como estava). Quem liga reaplica o
+    // arranjo salvo depois (DisplaysState.restore).
+    function setEnabled(name: string, on: bool): void {
+        Quickshell.execDetached(["hyprctl", "eval", `hl.monitor({ output = ${JSON.stringify(name)}, disabled = ${!on} })`]);
+        settle.restart();
+    }
+
     // Arranjo no login: um arquivo Lua que o hyprland.lua inclui, para o arranjo
     // valer desde o início da sessão (antes, só depois que o shell sobe).
     readonly property string configDir: `${Quickshell.env("XDG_CONFIG_HOME") || `${Quickshell.env("HOME")}/.config`}/hypr`

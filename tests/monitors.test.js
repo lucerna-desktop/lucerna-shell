@@ -1,4 +1,4 @@
-// Testes de services/Monitors: normalização do hyprctl e o Lua do arranjo.
+// Testes de services/Monitors: normalização do hyprctl, o Lua do arranjo e a tampa.
 function run(t) {
     const M = t.Monitors;
     const raw = {
@@ -42,5 +42,42 @@ function run(t) {
         const line = 'hl.monitor({ output = "DP-1", disabled = false, mode = "2560x1440@143.97", position = "0x0", scale = 1.25, transform = 1, vrr = 1, bitdepth = 10, mirror = "" })';
         t.eq(M.luaFor(spec), line);
         t.eq(M.lua([spec, { name: "HDMI-A-1", enabled: false }]), `${line}\nhl.monitor({ output = "HDMI-A-1", disabled = true })`);
+    });
+
+    // A tampa: o interno casa com eDP/LVDS/DSI; os outros são externos.
+    const mon = (name, enabled) => ({ name: name, enabled: enabled });
+    const laptop = mon("eDP-1", true);
+
+    t.test("monitors: tampa fechada com externo só desliga o interno", () => {
+        t.eq(M.lidPlan(true, [laptop, mon("HDMI-A-1", true)], false), { disable: ["eDP-1"], enable: [], lock: false });
+        t.eq(M.lidPlan(true, [mon("eDP-1", false), mon("HDMI-A-1", true)], false), { disable: [], enable: [], lock: false }, "já desligado");
+    });
+
+    t.test("monitors: com a opção ligada também bloqueia", () => {
+        t.eq(M.lidPlan(true, [laptop, mon("DP-2", true)], true), { disable: ["eDP-1"], enable: [], lock: true });
+    });
+
+    t.test("monitors: tampa fechada sem externo não faz nada", () => {
+        t.eq(M.lidPlan(true, [laptop], true), { disable: [], enable: [], lock: false });
+        t.eq(M.lidPlan(true, [laptop, mon("HDMI-A-1", false)], true), { disable: [], enable: [], lock: false }, "externo desligado não conta");
+    });
+
+    t.test("monitors: tampa aberta religa o interno", () => {
+        t.eq(M.lidPlan(false, [mon("eDP-1", false), mon("HDMI-A-1", true)], true), { disable: [], enable: ["eDP-1"], lock: false });
+        t.eq(M.lidPlan(false, [laptop, mon("HDMI-A-1", true)], true), { disable: [], enable: [], lock: false }, "já ligado");
+        t.eq(M.lidPlan(false, [mon("LVDS-1", false)], false), { disable: [], enable: ["LVDS-1"], lock: false });
+    });
+
+    t.test("monitors: o externo saiu com a tampa fechada religa o interno", () => {
+        t.eq(M.lidPlan(true, [mon("eDP-1", false)], true), { disable: [], enable: ["eDP-1"], lock: false });
+        t.eq(M.lidPlan(true, [mon("DSI-1", false), mon("HDMI-A-1", false)], false), { disable: [], enable: ["DSI-1"], lock: false });
+    });
+
+    t.test("monitors: desktop sem interno ignora a tampa", () => {
+        const none = { disable: [], enable: [], lock: false };
+        t.eq(M.lidPlan(true, [mon("WAYLAND-1", true)], true), none);
+        t.eq(M.lidPlan(true, [mon("DP-1", true), mon("HDMI-A-1", true)], true), none);
+        t.eq(M.lidPlan(false, [mon("DP-1", false), mon("HDMI-A-1", true)], true), none);
+        t.eq(M.lidPlan(true, [], true), none);
     });
 }

@@ -337,6 +337,7 @@ Singleton {
     readonly property bool saverBelowEnabled: Config.saverBelowEnabled
     readonly property int saverBelow: Config.saverBelow
     readonly property bool batteryLightMode: Config.batteryLightMode
+    readonly property bool lockOnLidDocked: Config.lockOnLidDocked
     readonly property var profileOptions: [
         { label: Battery.profileNames[0], value: 0 },
         { label: Battery.profileNames[1], value: 1 },
@@ -398,6 +399,10 @@ Singleton {
 
     function setBatteryLightMode(on: bool): void {
         Config.batteryLightMode = on;
+    }
+
+    function setLockOnLidDocked(on: bool): void {
+        Config.lockOnLidDocked = on;
     }
 
     // Barra
