@@ -30,6 +30,13 @@ function run(t) {
         t.eq(L.parseLine("/org/freedesktop/login1: org.freedesktop.login1.Manager.PrepareForSleep (false,)", ""), { kind: "sleep", value: false }, "sem o caminho da sessão também");
     });
 
+    t.test("logind: a tampa lida na partida", () => {
+        t.eq(L.parseLidReply("(<true>,)\n"), true, "fechada");
+        t.eq(L.parseLidReply("(<false>,)"), false, "aberta");
+        t.eq(L.parseLidReply(""), null, "sem resposta");
+        t.eq(L.parseLidReply("Error: GDBus.Error:org.freedesktop.DBus.Error.UnknownProperty"), null, "erro");
+    });
+
     t.test("logind: LidClosed no PropertiesChanged", () => {
         const head = "/org/freedesktop/login1: org.freedesktop.DBus.Properties.PropertiesChanged ('org.freedesktop.login1.Manager', ";
         t.eq(L.parseLine(`${head}{'LidClosed': <true>}, @as [])`, ours), { kind: "lid", value: true }, "<true>");

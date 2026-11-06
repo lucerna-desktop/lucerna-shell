@@ -63,12 +63,19 @@ Singleton {
     }
 
     // A tampa abriu ou fechou: o plano inteiro, com o bloqueio. Só nesta
-    // virada: um monitor que entra ou sai depois não bloqueia de novo.
+    // virada: um monitor que entra ou sai depois não bloqueia de novo, nem a
+    // leitura da tampa na partida (o shell reiniciado com ela fechada).
+    // Lida a tampa, o plano vale mesmo sem mudança: o interno apagado por um
+    // shell anterior volta com a tampa aberta (o arranjo salvo vem depois).
     Connections {
         target: Logind
 
         function onLidClosedChanged() {
-            root.followLid(true);
+            root.followLid(Logind.lidFromEvent);
+        }
+
+        function onLidRead() {
+            root.followLid(false);
         }
     }
 

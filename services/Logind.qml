@@ -25,6 +25,9 @@ Singleton {
 
     property string sessionPath: ""
     property bool lidClosed: false
+    // A última mudança do lidClosed veio de um evento de verdade (a tampa
+    // abriu ou fechou), e não da leitura na partida: só ela pode bloquear.
+    property bool lidFromEvent: false
     // O shell quer o inibidor (o processo só roda com o serviço ligado e a
     // ferramenta achada).
     property bool holding: false
@@ -47,6 +50,8 @@ Singleton {
     signal lockRequested
     signal unlockRequested
     signal prepareForSleep(start: bool)
+    // O LidClosed foi lido (na partida e a cada volta do monitor), mudando ou não.
+    signal lidRead
 
     // Uma linha do `gdbus monitor --dest org.freedesktop.login1`: null ou
     // { kind: "lock"|"unlock"|"sleep"|"lid", value }. Lock e Unlock só da nossa
@@ -83,6 +88,12 @@ Singleton {
 
     // Pega o inibidor delay de sono (de novo, ao acordar). Sem nenhuma
     // ferramenta, segue sem ele (o aviso sai uma vez, na busca).
+    // A resposta do Properties.Get do LidClosed: "(<true>,)" → true; outra coisa → null.
+    function parseLidReply(text: string): var {
+        const m = /\(<(true|false)>,\)/.exec(text ?? "");
+        return m ? m[1] === "true" : null;
+    }
+
     function holdSleep(): void {
         if (holding)
             return;
@@ -135,6 +146,9 @@ Singleton {
         if (sessionPath === "")
             session.running = true;
         monitor.running = true;
+        // A tampa pode estar fechada desde antes (o shell reiniciado com ela
+        // fechada) ou ter mudado enquanto o monitor estava fora.
+        lid.running = true;
     }
 
     function handle(event: var): void {
@@ -146,8 +160,10 @@ Singleton {
             unlockRequested();
         else if (event.kind === "sleep")
             prepareForSleep(event.value);
-        else if (event.kind === "lid")
+        else if (event.kind === "lid") {
+            lidFromEvent = true;
             lidClosed = event.value;
+        }
     }
 
     Component.onCompleted: {
@@ -194,6 +210,24 @@ Singleton {
                     root.sessionPath = path;
                 else
                     console.warn(`Logind: a sessão "${root.sessionId}" não foi achada; o Lock e o Unlock do logind ficam de fora até a próxima tentativa`);
+            }
+        }
+    }
+
+    Process {
+        id: lid
+
+        command: ["gdbus", "call"].concat(root.busArgs, ["--dest", "org.freedesktop.login1", "--object-path", "/org/freedesktop/login1", "--method", "org.freedesktop.DBus.Properties.Get", "org.freedesktop.login1.Manager", "LidClosed"])
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const closed = root.parseLidReply(text);
+                if (closed === null) {
+                    console.warn("Logind: o estado da tampa (LidClosed) não foi lido; fica o último conhecido");
+                    return;
+                }
+                root.lidFromEvent = false;
+                root.lidClosed = closed;
+                root.lidRead();
             }
         }
     }
