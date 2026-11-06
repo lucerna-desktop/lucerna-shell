@@ -1,0 +1,103 @@
+O shell alinhado ao pixel físico (Tarefa 12 da base robusta) — 2026-11-06
+
+Medido como a base (2026-11-04-escala-base.txt): saída headless HEADLESS-T do container
+lucerna-polish (dev/test.sh headless on), 1920x1080@60, blur "performance", escala 1,25 pelo
+BENCH_SCALE. O host estava com carga variável (load 1,9 a 3,4); o Hyprland % sobe com ela.
+
+Origem do dpr de cada janela, conferida com um console.log no container em 1,25:
+  Window.window.devicePixelRatio = 1,25 (e 1,5 depois de trocar a escala; avisa a mudança)
+  Screen.devicePixelRatio = 2 e ShellScreen.devicePixelRatio = 2 (a escala inteira da saída)
+Logo o Pixel recebe o Window.window?.devicePixelRatio ?? 1.
+
+=== bench-paineis.sh 10 10 — escala 1.25, final, rodada 1 ===
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.4     57.3       17      16       0      389  10.0         2.0      57.3
+painel-superior:fechar       25.1     23.9       17      16       0      158  10.0         2.0      59.5
+central:abrir                49.7     48.6       18      16       0      333   5.1         1.3      55.5
+central:fechar               23.7     22.1       32      16       1      169   5.1         1.3      57.8
+osd:abrir                    50.7     49.3       18      16       0      677   3.3         1.0      57.3
+papel                        60.0     60.0       18      16       0      600  12.7         3.6         -
+janela                        0.0      0.0        0       -       0        0   0.2         3.0         -
+janela-x11                    0.1      0.1        1       1       0        1   0.0         3.1         -
+parado                        0.0      0.0        0       -       0        0   0.2         0.0         -
+parado-painel                54.9     54.9      357      19      21      549  19.1         4.4         -
+RSS do qs: 344 MB antes, 344 MB depois
+
+=== bench-paineis.sh 10 10 — escala 1.25, final, rodada 2 (load 2,5) ===
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.3     56.5       17      16       0      388   9.7         4.7      45.0
+painel-superior:fechar       24.8     23.7       17      17       0      156   9.7         4.7      53.8
+central:abrir                50.1     48.4       25      16       1      335   4.8         2.6      53.0
+central:fechar               23.9     23.4       18      17       0      170   4.8         2.6      55.2
+osd:abrir                    50.7     49.4       18      17       0      679   3.4         2.5      50.8
+papel                        60.0     60.0       18      17       0      600  11.8         7.6         -
+janela                        0.1      0.1        1       1       0        1   0.1         6.3         -
+janela-x11                    0.0      0.0        0       -       0        0   0.2         6.5         -
+parado                        0.0      0.0        0       -       0        0   0.0         0.1         -
+parado-painel                60.0     60.0       17      16       0      600  12.0         7.6         -
+RSS do qs: 345 MB antes, 346 MB depois
+
+=== bench-paineis.sh 10 10 — escala 1.25, final, rodada 3 (load 3,4) ===
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        56.2     39.3       19      17       0      375   9.9         7.9      41.2
+painel-superior:fechar       25.3     23.9       19      17       0      159   9.9         7.9      49.6
+central:abrir                50.0     49.1       17      16       0      334   4.4         3.9      42.2
+central:fechar               23.9     23.8       18      17       0      170   4.4         3.9      47.8
+osd:abrir                    50.9     49.4       18      17       0      679   3.1         3.6      39.8
+papel                        60.0     60.0       18      17       0      600  11.3        11.4         -
+janela                        0.0      0.0        0       -       0        0   0.1        10.5         -
+janela-x11                    0.0      0.0        0       -       0        0   0.1         9.7         -
+parado                        0.0      0.0        0       -       0        0   0.3         0.1         -
+parado-painel                60.0     60.0       17      16       0      600  11.5        11.8         -
+RSS do qs: 345 MB antes, 345 MB depois
+
+=== bench-paineis.sh 10 10 — escala 1.25, código da base (antes da tarefa), logo depois (A/B, load 2,7) ===
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.4     57.2       18      16       0      388   9.2        10.6      35.2
+painel-superior:fechar       24.8     23.5       20      17       0      156   9.2        10.6      44.1
+central:abrir                50.2     49.2       21      17       1      336   4.5         6.1      36.5
+central:fechar               23.7     22.2       20      18       0      169   4.5         6.1      41.5
+osd:abrir                    50.9     49.3       30      17       5      679   3.3         5.8      35.9
+papel                        57.9     57.9      102      18       9      579  12.5        19.6         -
+janela                        0.1      0.1        1       1       0        1   0.1        13.3         -
+janela-x11                    0.0      0.0        0       -       0        0   0.0        14.7         -
+parado                        0.0      0.0        0       -       0        0   0.2         0.0         -
+parado-painel                59.7     59.7       33      17       4      597  11.5        16.7         -
+RSS do qs: 333 MB antes, 343 MB depois
+
+=== Comparação com a base de 1,25 (2026-11-04, rodadas 1 e 2) ===
+painel-superior:abrir  FPS 58,9/58,6 → 58,4/58,3 (rodadas 1 e 2; a 3 caiu a 56,2 com o host em 3,4,
+                       e o A/B da base na mesma hora deu 58,4); qs % 9,8/14,1 → 10,0/9,7/9,9
+central:abrir          FPS 48,4/47,5 → 49,7/50,1/50,0; qs % 5,1/6,4 → 5,1/4,8/4,4
+osd:abrir              FPS 50,2/50,3 → 50,7/50,7/50,9; qs % 3,8/3,5 → 3,3/3,4/3,1
+papel                  qs % 12,0/11,1 → 12,7/11,8/11,3
+parado-painel          FPS 60/60 → 54,9 (rodada 1: um engasgo de 357 ms do host) / 60 / 60;
+                       qs % 11,0/11,5 → 19,1 (a mesma rodada) / 12,0 / 11,5
+Hyprland %: acompanha a carga do host (1,0 a 11,8 nas rodadas finais; 1,1 a 6,9 na base; 5,8 a
+19,6 no A/B da base feito no mesmo momento da rodada 3), não o código.
+Conclusão: dentro de ±1 ponto de CPU do qs e de FPS do shell em todos os casos, fora da
+rodada 1 do parado-painel (um engasgo isolado: as rodadas 2 e 3 e o A/B da base ficam iguais).
+O shader com o fwidth e o snap das vagas não pesam no qs.
+O bench-paineis.sh roda inteiro depois da Tarefa 6 (shell stop/start; "qs normal de volta" nas 4).
+
+=== Capturas (HEADLESS-T) ===
+Em 2026-11-06-escala-pixel/: as finais com o contorno ligado (configurações, painel superior,
+central, em 1_25 e 1_5) e os recortes lado a lado (base | final, 4x sem interpolação):
+recorte-forma-* (a borda da moldura), recorte-cartao-* (a borda esquerda das Configurações),
+recorte-texto-* (o cabeçalho das Configurações), em liso (sem contorno) e contorno.
+Base para os recortes: o código de antes da tarefa capturado no mesmo momento, com o mesmo
+roteiro (a base de 2026-11-04 só tinha o contorno desligado).
+
+Perfis (tons de cinza, a partir da borda):
+forma, pé do painel superior (x = 960):
+  1,25 liso      base 36 40 60      final 36 37 61       (sem pixel intermediário)
+  1,25 contorno  base 51 90 65      final 36 92 61       (1 px físico nítido; antes 1,25 px espalhado)
+  1,5  liso      base 41 56 60      final 36 36 60
+  1,5  contorno  base 62 88 66      final 92 92 60       (2 px físicos: hairline(1,5) = 2/1,5)
+cartão, beira esquerda das Configurações (y = 600):
+  1,25 contorno  base 80 69 46      final 92 48 46       (a janela ia a 347,5 px físicos; agora 348)
+  1,5  contorno  base 92 82 48      final 92 82 48       (já no pixel; o 82 é a suavização do Rectangle do Qt
+                                                          na beira de dentro, igual antes e depois)
+texto: o gradiente médio do recorte é o mesmo antes e depois (7,28 → 7,29 em 1,25; 7,76 → 7,77 em
+1,5): o texto do Qt já se alinhava ao pixel por conta própria; o que se via de meio pixel era a
+beira e a borda da janela.

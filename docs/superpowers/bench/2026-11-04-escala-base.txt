@@ -1,0 +1,147 @@
+Medição de base da escala (Tarefa 1 da base robusta) — 2026-11-04
+
+MEDIDO NA SAÍDA HEADLESS HEADLESS-T (dev/test.sh headless on), 1920x1080@60, não na janela
+aninhada. Motivo: a sessão do host ficou bloqueada e a janela de teste parou de receber
+quadros (o Hyprland aninhado não desenha, o painel não abre e a troca de escala não aplica);
+a saída headless desenha sempre, então base e medida final são comparáveis entre si, mas não
+com as tabelas de 2026-10-28 (janela). Container lucerna-polish, qs com blur "performance".
+dev/bench-paineis.sh 10 10 e dev/bench-blur.sh 20 com BENCH_SCALE=1 e BENCH_SCALE=1.25, duas
+rodadas de cada, intercaladas (1, 1,25, 1, 1,25). O host tem carga variável: o Hyprland %
+sobe na rodada 2 de ambas as escalas; compare dentro da mesma rodada.
+Nota: o `hl.monitor` do Hyprland só aplica a escala se vier com `mode` e `position`; o
+BENCH_SCALE repete os atuais do monitor ativo.
+
+=== bench-paineis.sh 10 10 — escala 1, rodada 1 ===
+escala: 1
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.9     56.0       39      16       2      368   9.2         1.8      58.5
+painel-superior:fechar       24.3     23.9       16      16       0      152   9.2         1.8      21.3
+central:abrir                48.6     45.8       17      16       0      304   5.2         1.1      45.8
+central:fechar               22.1     20.9       16      16       0      138   5.2         1.1      20.2
+osd:abrir                    51.4     50.9       17      16       0      640   3.4         0.8      47.2
+papel                        60.0     60.0       17      16       0      600  11.3         2.7         -
+janela                        0.0      0.0        0       -       0        0   0.6         2.3         -
+janela-x11                    0.0      0.0        0       -       0        0   0.4         2.5         -
+parado                        0.1      0.1        0       0       0        1   0.6         0.0         -
+parado-painel                60.0     60.0       17      16       0      600  10.8         2.7         -
+RSS do qs: 332 MB antes, 350 MB depois
+qs normal de volta
+
+=== bench-paineis.sh 10 10 — escala 1.25, rodada 1 ===
+escala: 1.25
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.9     57.5       20      16       0      369   9.8         1.9      59.5
+painel-superior:fechar       24.4     23.7       17      16       0      153   9.8         1.9      59.8
+central:abrir                48.4     46.5       19      16       0      302   5.1         1.1      59.9
+central:fechar               21.6     20.5       15       2       0      135   5.1         1.1      60.1
+osd:abrir                    50.2     49.4       17      16       0      627   3.8         0.9      56.4
+papel                        60.0     60.0       17      16       0      600  12.0         3.0         -
+janela                        0.0      0.0        0       -       0        0   0.6         2.3         -
+janela-x11                    0.1      0.1        2       2       0        1   1.0         3.4         -
+parado                        0.0      0.0        0       -       0        0   0.7         0.0         -
+parado-painel                60.0     60.0       17      16       0      600  11.0         2.7         -
+RSS do qs: 336 MB antes, 345 MB depois
+qs normal de volta
+
+=== bench-paineis.sh 10 10 — escala 1, rodada 2 ===
+escala: 1
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        59.3     59.1       17      16       0      370   9.0         4.0      52.9
+painel-superior:fechar       23.9     22.4       17      16       0      149   9.0         4.0      20.4
+central:abrir                48.4     46.5       16      16       0      302   4.6         2.1      42.3
+central:fechar               21.5     20.8        1       1       0      134   4.6         2.1      19.0
+osd:abrir                    51.0     49.5       21      16       1      636   3.4         1.9      47.2
+papel                        60.0     60.0       17      16       0      600  11.1         6.2         -
+janela                        0.1      0.1        1       1       0        1   0.7         6.2         -
+janela-x11                    0.0      0.0        0       -       0        0   1.2        10.6         -
+parado                        0.1      0.1        0       0       0        1   0.7         0.0         -
+parado-painel                60.0     60.0       19      16       0      600  11.6         6.6         -
+RSS do qs: 333 MB antes, 339 MB depois
+qs normal de volta
+
+=== bench-paineis.sh 10 10 — escala 1.25, rodada 2 ===
+escala: 1.25
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.6     57.3       19      16       0      370  14.1         6.9      55.9
+painel-superior:fechar       24.3     23.4       19      17       0      154  14.1         6.9      58.9
+central:abrir                47.5     45.7       18      16       0      300   6.4         3.4      55.1
+central:fechar               21.1     18.6       17      16       0      133   6.4         3.4      56.2
+osd:abrir                    50.3     49.1       17      16       0      629   3.5         2.0      54.2
+papel                        60.0     60.0       18      16       0      600  11.1         6.2         -
+janela                        0.0      0.0        0       -       0        0   0.6         5.8         -
+janela-x11                    0.3      0.3        1       1       0        3   0.7         6.0         -
+parado                        0.0      0.0        0       -       0        0   0.6         0.0         -
+parado-painel                60.0     60.0       17      16       0      600  11.5         6.6         -
+RSS do qs: 333 MB antes, 341 MB depois
+qs normal de volta
+
+=== bench-blur.sh 20 — escala 1, rodada 1 ===
+escala: 1
+nível       Hyprland %       qs %    GPU %
+full                3.1       10.0        -
+performance         2.6        9.3        -
+off                 2.7       10.7        -
+nível de volta: performance
+
+=== bench-blur.sh 20 — escala 1.25, rodada 1 ===
+escala: 1.25
+nível       Hyprland %       qs %    GPU %
+full               10.0       15.3        -
+performance         6.5       10.2        -
+off                 6.0       11.3        -
+nível de volta: performance
+
+=== bench-blur.sh 20 — escala 1, rodada 2 ===
+escala: 1
+nível       Hyprland %       qs %    GPU %
+full                6.6       10.3        -
+performance         6.7       10.3        -
+off                 6.0       11.4        -
+nível de volta: performance
+
+=== bench-blur.sh 20 — escala 1.25, rodada 2 ===
+escala: 1.25
+nível       Hyprland %       qs %    GPU %
+full               11.4       10.5        -
+performance        11.0        9.9        -
+off                 9.8       11.3        -
+nível de volta: performance
+
+=== Descartado: medição na janela aninhada (host bloqueado) ===
+Antes do bloqueio saíram 2 rodadas de paineis em 1 e 2 em 1,25 na janela, no mesmo padrão
+(Hyprland % de 2,2 a 5,6 em 1 e de 2,2 a 4,5 no painel superior em 1,25). Não entram na
+comparação porque o blur em 1,25 não pôde ser medido nela.
+
+=== wp_fractional_scale_v1 (WAYLAND_DEBUG=1, container, HEADLESS-T em 1,25) ===
+qs (janela mínima em `qs -p`):  grep -c wp_fractional_scale = 5
+  bind do wp_fractional_scale_manager_v1, get_fractional_scale(wl_surface) e
+  preferred_scale(150) recebido: o qs USA o protocolo.
+kitty (Wayland):                grep -c wp_fractional_scale = 7
+  bind, get_fractional_scale e preferred_scale(150): o kitty USA o protocolo.
+(Em escala 1 chegava preferred_scale(120); 150 e 120 são 1,25 e 1,0 em 1/120.)
+
+=== Capturas de base (HEADLESS-T) ===
+docs/superpowers/bench/2026-11-04-escala-base/: barra, painel-superior, central, configuracoes e
+bloqueio, em 1_25 e 1_5; recorte-borda-* e recorte-texto-* (crop + scale=iw*4:ih*4:flags=neighbor,
+das Configurações) em 1_25 e 1_5. Referência das Tarefas 12 e 13.
+Achado visível: na tela de bloqueio em 1,5 sobra uma faixa sem desenho na base da tela
+(bloqueio-1_5.png, abaixo de ~880 px de 1080), e o campo de senha sai com tamanhos diferentes.
+Em 1,25 e 1,5 as Configurações mostram a lista lateral cortada no fim ("Notificações" pela metade).
+
+=== Nota sobre o janela-x11 ===
+O bench confere, antes de medir, que o kitty abriu em X11 (`hyprctl -j clients`: "xwayland": true
+para a classe); senão pula o caso com aviso. Conferido na saída headless em 1,25 (sem aviso).
+Hyprland %, janela (Wayland) contra janela-x11, nas 4 rodadas: 2,3/2,5 (escala 1, r1),
+6,2/10,6 (1, r2), 2,3/3,4 (1,25, r1) e 5,8/6,0 (1,25, r2): o X11 fica um pouco acima do Wayland
+em todas, dentro do ruído; o 1,25 não acrescenta custo claro ao X11 (a diferença é a mesma em 1).
+
+=== Conclusão ===
+Em 1,25 o Hyprland gasta de 1,5x a 3x mais que em 1 no bench-blur, com qualquer nível de blur (não é o desfoque), e pouco mais no bench-paineis (diferença menor e instável).
+O qs, o FPS do shell (58 a 60) e o p95 (16 ms) ficam iguais: o custo extra está no Hyprland (escala fracionária), pequeno em absoluto (até ~11 % de um núcleo).
+O app X11 custa um pouco mais que o Wayland em todas as rodadas, dentro do ruído, e o 1,25 não o agrava.
+orienta o padrão: o custo do Hyprland em 1,25 passa de 1,5x o de 1 (bench-blur); na Tarefa 14, preferir a escala pelos apps (compositor em 1) como opção
+para máquinas fracas e manter 1,25 como padrão só onde ~11 % de um núcleo for aceitável.

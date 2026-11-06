@@ -1,0 +1,304 @@
+Medição final da escala (Tarefa 15 da base robusta) — 2026-11-06
+
+Medida como a base (2026-11-04-escala-base.txt): saída headless HEADLESS-T do container
+lucerna-polish (dev/test.sh headless on, depois de um dev/test.sh up limpo), 1920x1080@60,
+blur "performance", dev/bench-paineis.sh 10 10 e dev/bench-blur.sh 20. Código: feat/base-robusta
+em 8179392. Três casos, duas rodadas, nesta ordem em cada rodada: paineis 1, paineis 1,25,
+blur 1, blur 1,25 (escala do monitor pelo BENCH_SCALE), e o modo "Escala pelos apps"
+(IPC `monitors setScaleMode apps`, appsScale 1,25, o monitor em 1) com paineis e blur.
+Host com load 0,8 a 1,7 (mais calmo que na base).
+Base do modo apps: a base do monitor em 1,25 (o mesmo tamanho do shell) e a do monitor em 1
+(o mesmo custo do compositor), as duas da Tarefa 1.
+
+=== Base × final (r1 / r2) ===
+FPS shell e FPS mín: painel-superior:abrir. qs %: parado-painel. Hyprland %: bench-blur, nível
+performance (e full entre parênteses).
+
+caso                FPS shell        FPS mín          qs % (parado-painel)  Hyprland % blur perf (full)
+1     base          58,9 / 59,3      56,0 / 59,1      10,8 / 11,6           2,6 / 6,7   (3,1 / 6,6)
+1     final         58,7 / 59,0      55,9 / 58,6      10,7 /  9,8           2,4 / 2,6   (2,8 / 2,9)
+1,25  base          58,9 / 58,6      57,5 / 57,3      11,0 / 11,5           6,5 / 11,0  (10,0 / 11,4)
+1,25  final         59,1 / 59,0      59,0 / 58,7      10,4 / 10,1           2,5 / 2,7   (2,8 / 3,0)
+apps  r1            58,9             58,0             10,1                  2,5         (2,7)
+apps  r2            58,6             57,0             13,8 [PICO]           2,7         (6,4 [PICO], qs 23,6)
+apps  r3 repetição  57,6             47,5 [PICO]      11,7                  2,6         (21,7 [PICO], qs 88,8)
+apps  r4            58,9             58,6             10,3                  2,5         (3,0)
+(base do modo apps: a do monitor em 1,25, o mesmo tamanho do shell, e a do monitor em 1, o
+mesmo custo do compositor; [PICO] = fora da base das duas)
+
+Os demais casos do bench-paineis (central, osd, papel) ficam iguais à base em todos os casos
+(central:abrir 48,2–48,8, osd:abrir 50,3–50,9, papel 60, p95 16 ms). Os parado* ficam com 0 a 1
+quadro em todas as rodadas.
+
+=== Critério ===
+- 1,25 contra 1 (±1 ponto): FPS shell 59,1/59,0 × 58,7/59,0, FPS mín 59,0/58,7 × 55,9/58,6,
+  qs % 10,4/10,1 × 10,7/9,8: dentro. Nada pior que a base de 1,25. OK.
+- 1 contra a base de 1: igual ou melhor. OK.
+- Custo do Hyprland em 1,25: na final some (bench-blur 2,5–3,0 % em 1,25 × 2,3–2,9 % em 1,
+  contra 6,0–11,4 % em 1,25 na base). Nas rodadas da Tarefa 12 (escala-pixel) ainda havia o
+  `FPS tela` ~57–60 nos fechamentos em 1,25 (a tela redesenhando sem parar); na final o
+  `FPS tela` dos fechamentos em 1,25 é 19,8–20,7, como em 1.
+- Modo apps (base: monitor em 1,25 e monitor em 1): r1 e r4 dentro; r2 e r3 com picos (abaixo),
+  não repetidos em 5 medições extras, inclusive na mesma ordem.
+
+=== Modo apps: picos fora da base ===
+blur full, qs % / Hyprland %:  r1 9,4/2,7   r2 23,6/6,4   r3 (repetição) 88,8/21,7   r4 9,8/3,0
+  e mais quatro só de blur (dois seguidos, dois logo depois de um dev/test.sh restart):
+  9,5/2,8  9,6/2,8  9,9/3,0  9,9/2,9.
+bench-paineis: r2 parado-painel qs 13,8 (base 10,8–11,6); r3 painel-superior:abrir FPS mín 47,5
+  com 7 quadros longos (pior 45 ms) e papel qs 13,0.
+Nos quatro casos de monitor (1 e 1,25, r1 e r2) nada parecido. Os picos aparecem só no modo
+apps, em 2 de 4 rodadas completas (o blur logo depois do bench-paineis, o 1º nível medido, full),
+e não se repetem em 4 medições isoladas. Não achei a causa: o log do qs dessa instância não
+mostra nada diferente; o qs do bench sai em ~57 ms no pkill (não são dois shells ao mesmo
+tempo pelo restore do bench).
+
+=== Conclusão ===
+Em 1,25 pela escala do monitor, o shell fica na faixa da escala 1 (FPS, FPS mín e qs % dentro
+de ±1 ponto) e nada piora contra a base; os parado* ficam com 0 a 1 quadro. O custo extra do
+Hyprland em 1,25 da base (1,5x a 3x no bench-blur) não aparece mais na mesma saída headless
+(2,5–3,0 % em 1,25 × 2,3–2,9 % em 1); falta confirmar numa GPU e num monitor reais (Pendências,
+marco 7). O modo "Escala pelos apps" fica dentro do critério, com dois picos não repetidos
+tratados como ruído do host (ruling R18); investigar na máquina real (Pendências).
+
+=== Capturas (HEADLESS-T, 1280x720 reduzidas) ===
+docs/superpowers/bench/2026-11-04-escala-final/:
+  modo-de-seguranca.png         4 quedas seguidas (SEGV, pausas 1/2/4 s): a pílula e o aviso do modo
+  emergencia.png                mais 2 quedas no modo de segurança: "O Lucerna não conseguiu iniciar"
+  bloqueio-depois-da-queda.png  `session lock` e um SEGV: o shell volta 1 s depois já bloqueado
+  escala-monitor-1_25.png       Monitores em "Escala do monitor", o monitor em 1,25
+  escala-apps-1_25.png          Monitores em "Escala pelos apps" 1,25, o monitor em 1
+Depois: "Tentar de novo" pelo Enter → supervised running; o bloqueio desfeito com shell stop +
+lucerna-session unlock + shell start (a marca esvaziada).
+
+=== paineis-1-r1 ===
+blur: performance
+papel de parede: auto (estático fora do caso papel)
+saída: HEADLESS-T 1920x1080@60
+ciclos: 10
+escala: 1
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.7     55.9       43      16       2      368   8.6         1.6      58.4
+painel-superior:fechar       24.5     23.9       16      16       0      153   8.6         1.6      20.7
+central:abrir                48.4     46.2       16      16       0      303   4.3         0.9      46.4
+central:fechar               21.4     20.7       15       1       0      134   4.3         0.9      20.2
+osd:abrir                    50.5     48.9       17      16       0      632   3.0         0.7      47.9
+papel                        60.0     60.0       16      16       0      600  10.2         2.4         -
+janela                        0.0      0.0        0       -       0        0   0.6         2.2         -
+janela-x11                    0.0      0.0        0       -       0        0   0.7         2.4         -
+parado                        0.0      0.0        0       -       0        0   0.6         0.0         -
+parado-painel                60.0     60.0       16      16       0      600  10.7         2.5         -
+RSS do qs: 338 MB antes, 356 MB depois
+qs normal de volta
+
+=== paineis-1.25-r1 ===
+blur: performance
+papel de parede: auto (estático fora do caso papel)
+saída: HEADLESS-T 1920x1080@60
+ciclos: 10
+escala: 1.25
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        59.1     59.0       16      16       0      370   8.4         1.6      58.9
+painel-superior:fechar       24.6     23.9       16      16       0      154   8.4         1.6      19.9
+central:abrir                48.5     46.4       16      16       0      303   4.1         0.9      45.7
+central:fechar               21.6     20.8       16       1       0      135   4.1         0.9      20.3
+osd:abrir                    50.9     49.5       17      16       0      636   2.9         0.7      48.0
+papel                        60.0     60.0       17      16       0      600  10.1         2.5         -
+janela                        0.1      0.1        1       1       0        1   0.6         2.4         -
+janela-x11                    0.0      0.0        0       -       0        0   0.6         2.4         -
+parado                        0.1      0.1        0       0       0        1   0.4         0.0         -
+parado-painel                60.0     60.0       16      16       0      600  10.4         2.5         -
+RSS do qs: 347 MB antes, 364 MB depois
+qs normal de volta
+
+=== blur-1-r1 ===
+escala: 1
+nível       Hyprland %       qs %    GPU %
+full                2.8        9.3        -
+performance         2.4        8.6        -
+off                 2.3        9.9        -
+nível de volta: performance
+
+=== blur-1.25-r1 ===
+escala: 1.25
+nível       Hyprland %       qs %    GPU %
+full                2.8        9.3        -
+performance         2.5        9.1        -
+off                 2.4       10.2        -
+nível de volta: performance
+
+=== paineis-apps-r1 ===
+blur: performance
+papel de parede: auto (estático fora do caso papel)
+saída: HEADLESS-T 1920x1080@60
+ciclos: 10
+escala: 1
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.9     58.0       16      16       0      370   8.4         1.6      58.6
+painel-superior:fechar       24.4     23.8       17      16       0      153   8.4         1.6      20.2
+central:abrir                48.4     47.7       16      16       0      303   4.2         0.9      46.1
+central:fechar               21.6     20.8       16       2       0      135   4.2         0.9      20.1
+osd:abrir                    50.6     49.2       17      16       0      633   2.9         0.7      47.7
+papel                        60.0     60.0       17      16       0      600   9.7         2.4         -
+janela                        0.0      0.0        0       -       0        0   0.6         2.4         -
+janela-x11                    0.0      0.0        0       -       0        0   0.6         2.4         -
+parado                        0.0      0.0        0       -       0        0   0.5         0.0         -
+parado-painel                60.0     60.0       16      16       0      600  10.1         2.5         -
+RSS do qs: 375 MB antes, 390 MB depois
+qs normal de volta
+
+=== blur-apps-r1 ===
+escala: 1
+nível       Hyprland %       qs %    GPU %
+full                2.7        9.4        -
+performance         2.5        9.1        -
+off                 2.4       10.1        -
+nível de volta: performance
+
+=== paineis-1-r2 ===
+blur: performance
+papel de parede: auto (estático fora do caso papel)
+saída: HEADLESS-T 1920x1080@60
+ciclos: 10
+escala: 1
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        59.0     58.6       17      16       0      370   8.3         1.6      58.1
+painel-superior:fechar       24.1     22.3       16      16       0      151   8.3         1.6      20.5
+central:abrir                48.8     47.9       16      16       0      305   4.1         0.9      45.9
+central:fechar               21.6     20.8        1       1       0      135   4.1         0.9      19.8
+osd:abrir                    50.6     49.3       16      16       0      634   2.9         0.7      47.8
+papel                        60.0     60.0       16      16       0      600  10.1         2.5         -
+janela                        0.0      0.0        0       -       0        0   0.6         2.3         -
+janela-x11                    0.0      0.0        0       -       0        0   0.7         2.5         -
+parado                        0.0      0.0        0       -       0        0   0.4         0.0         -
+parado-painel                60.0     60.0       16      16       0      600   9.8         2.4         -
+RSS do qs: 336 MB antes, 350 MB depois
+qs normal de volta
+
+=== paineis-1.25-r2 ===
+blur: performance
+papel de parede: auto (estático fora do caso papel)
+saída: HEADLESS-T 1920x1080@60
+ciclos: 10
+escala: 1.25
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        59.0     58.7       16      16       0      370   8.4         1.6      58.7
+painel-superior:fechar       24.5     22.4       16      16       0      153   8.4         1.6      20.7
+central:abrir                48.4     46.4       16      16       0      303   4.0         0.9      45.5
+central:fechar               21.4     20.8        1       1       0      134   4.0         0.9      19.8
+osd:abrir                    50.5     49.0       16      16       0      632   2.9         0.7      47.8
+papel                        60.0     60.0       17      16       0      600   9.9         2.4         -
+janela                        0.0      0.0        0       -       0        0   0.6         2.4         -
+janela-x11                    0.1      0.1        2       2       0        1   0.8         2.8         -
+parado                        0.0      0.0        0       -       0        0   0.4         0.0         -
+parado-painel                60.0     60.0       16      16       0      600  10.1         2.4         -
+RSS do qs: 344 MB antes, 364 MB depois
+qs normal de volta
+
+=== blur-1-r2 ===
+escala: 1
+nível       Hyprland %       qs %    GPU %
+full                2.9        9.7        -
+performance         2.6        9.3        -
+off                 2.4       10.1        -
+nível de volta: performance
+
+=== blur-1.25-r2 ===
+escala: 1.25
+nível       Hyprland %       qs %    GPU %
+full                3.0       10.0        -
+performance         2.7        9.8        -
+off                 2.9       11.9        -
+nível de volta: performance
+
+=== paineis-apps-r2 ===
+blur: performance
+papel de parede: auto (estático fora do caso papel)
+saída: HEADLESS-T 1920x1080@60
+ciclos: 10
+escala: 1
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.6     57.0       17      16       0      369   9.2         1.7      55.6
+painel-superior:fechar       24.2     22.4       16      16       0      152   9.2         1.7      20.1
+central:abrir                48.5     47.8       16      16       0      304   4.4         0.9      44.7
+central:fechar               21.7     20.7       16      16       0      136   4.4         0.9      18.8
+osd:abrir                    50.6     49.4       19      16       0      633   3.1         0.8      46.9
+papel                        60.0     60.0       17      16       0      600  10.9         2.6         -
+janela                        0.0      0.0        0       -       0        0   0.7         2.7         -
+janela-x11                    0.0      0.0        0       -       0        0   0.8         2.4         -
+parado                        0.0      0.0        0       -       0        0   0.5         0.0         -
+parado-painel                60.0     60.0       18      16       0      600  13.8         3.4         -
+RSS do qs: 375 MB antes, 384 MB depois
+qs normal de volta
+
+=== blur-apps-r2 ===
+escala: 1
+nível       Hyprland %       qs %    GPU %
+full                6.4       23.6        -
+performance         2.7        9.9        -
+off                 2.8       12.0        -
+nível de volta: performance
+
+=== paineis-apps-r3 ===
+blur: performance
+papel de parede: auto (estático fora do caso papel)
+saída: HEADLESS-T 1920x1080@60
+ciclos: 10
+escala: 1
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        57.6     47.5       45      16       7      363  10.1         2.0      51.5
+painel-superior:fechar       28.1     23.7       16      16       0      177  10.1         2.0      17.9
+central:abrir                48.2     47.5       17      16       0      303   4.8         1.0      38.3
+central:fechar               21.3     20.6        3       1       0      134   4.8         1.0      16.4
+osd:abrir                    50.3     47.8       17      16       0      631   3.4         0.8      44.8
+papel                        59.9     59.9       24      16       1      599  13.0         3.1         -
+janela                        0.1      0.1        1       1       0        1   0.7         2.7         -
+janela-x11                    0.0      0.0        0       -       0        0   0.7         2.8         -
+parado                        0.0      0.0        0       -       0        0   0.7         0.0         -
+parado-painel                60.0     60.0       17      16       0      600  11.7         3.0         -
+RSS do qs: 376 MB antes, 393 MB depois
+qs normal de volta
+
+=== blur-apps-r3 ===
+escala: 1
+nível       Hyprland %       qs %    GPU %
+full               21.7       88.8        -
+performance         2.6        9.5        -
+off                 2.6       11.0        -
+nível de volta: performance
+
+=== paineis-apps-r4 ===
+blur: performance
+papel de parede: auto (estático fora do caso papel)
+saída: HEADLESS-T 1920x1080@60
+ciclos: 10
+escala: 1
+segundos: 10
+caso                    FPS shell  FPS mín  pior ms  p95 ms  longos  quadros  qs %  Hyprland %  FPS tela
+painel-superior:abrir        58.9     58.6       16      16       0      370   8.3         1.6      58.5
+painel-superior:fechar       23.9     22.3       16      16       0      150   8.3         1.6      20.9
+central:abrir                48.3     46.3       16      16       0      303   4.1         0.9      46.4
+central:fechar               21.7     20.7       15       1       0      136   4.1         0.9      20.3
+osd:abrir                    50.7     49.2       17      16       0      635   2.9         0.7      47.6
+papel                        60.1     60.1       17      16       0      601  10.2         2.4         -
+janela                        0.0      0.0        0       -       0        0   0.6         2.2         -
+janela-x11                    0.0      0.0        0       -       0        0   0.7         2.5         -
+parado                        0.1      0.1        1       1       0        1   0.5         0.0         -
+parado-painel                60.0     60.0       16      16       0      600  10.3         2.5         -
+RSS do qs: 375 MB antes, 383 MB depois
+qs normal de volta
+
+=== blur-apps-r4 ===
+escala: 1
+nível       Hyprland %       qs %    GPU %
+full                3.0        9.8        -
+performance         2.5        9.5        -
+off                 2.6       10.6        -
+nível de volta: performance

@@ -22,7 +22,7 @@ Row {
 
         anchors.verticalCenter: parent.verticalCenter
         icon: root.icon
-        size: 18
+        size: ThemeManager.px(18)
         color: ThemeManager.colors.accent
     }
 
@@ -37,7 +37,7 @@ Row {
 
         anchors.verticalCenter: parent.verticalCenter
         visible: root.dots > 1
-        spacing: 4
+        spacing: ThemeManager.px(4)
 
         Repeater {
             model: root.dots
@@ -47,9 +47,9 @@ Row {
 
                 required property int index
 
-                width: 6
-                height: 6
-                radius: 3
+                width: ThemeManager.px(6)
+                height: ThemeManager.px(6)
+                radius: width / 2
                 color: dotItem.index === root.dot ? ThemeManager.colors.accent : ThemeManager.colors.track
             }
         }

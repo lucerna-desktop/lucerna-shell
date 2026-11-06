@@ -17,10 +17,10 @@ Item {
 
     function point(i: int, v: real): point {
         const n = Math.max(1, values.length - 1);
-        return Qt.point(i / n * width, height - 2 - (v / ceiling) * (height - 4));
+        return Qt.point(i / n * width, height - ThemeManager.px(2) - (v / ceiling) * (height - ThemeManager.px(4)));
     }
 
-    readonly property var points: normalized.length > 0 ? normalized.map(p => Qt.point(p.x * width, height - 2 - p.y * (height - 4))) : values.map((v, i) => point(i, v))
+    readonly property var points: normalized.length > 0 ? normalized.map(p => Qt.point(p.x * width, height - ThemeManager.px(2) - p.y * (height - ThemeManager.px(4)))) : values.map((v, i) => point(i, v))
 
     Shape {
         anchors.fill: parent
@@ -44,7 +44,7 @@ Item {
 
         ShapePath {
             strokeColor: root.color
-            strokeWidth: 2
+            strokeWidth: ThemeManager.px(2)
             fillColor: "transparent"
             joinStyle: ShapePath.RoundJoin
             capStyle: ShapePath.RoundCap

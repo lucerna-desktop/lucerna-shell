@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Quickshell.Widgets
 import qs.core.config
 import qs.core.format
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.dashboard.state
@@ -16,14 +17,14 @@ Item {
 
     readonly property bool onScreen: DashboardState.isShowing("overview")
     // Os cards de cima das colunas esquerda (usuário) e direita (sistema) têm a mesma altura.
-    readonly property int topCardHeight: 126
+    readonly property int topCardHeight: ThemeManager.px(126)
     // Margem interna dos cards, a mesma das outras abas.
-    readonly property int cardMargin: ThemeManager.spacing.normal + 2
+    readonly property int cardMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
     // O clima só entra com dados (ou o aviso do modo offline); senão o relógio fica sozinho.
     readonly property bool weatherOn: OverviewState.shows("weather") && (OverviewState.hasWeather || Config.offline)
 
     // A barra de ações rápidas: a altura dela e o espaço normal até os cards.
-    readonly property int barHeight: 32
+    readonly property int barHeight: ThemeManager.px(32)
     // Margem vertical do calendário, menor que a dos outros cards: os cards de
     // cima cabem na altura comum junto da barra.
     readonly property int calendarMargin: ThemeManager.spacing.small
@@ -46,7 +47,7 @@ Item {
 
         // Coluna 1: usuário + relógio (e clima)
         ColumnLayout {
-            Layout.preferredWidth: 270
+            Layout.preferredWidth: ThemeManager.px(270)
             Layout.fillWidth: !calendarCard.visible && !column3.visible
             Layout.fillHeight: true
             Layout.alignment: Qt.AlignTop
@@ -64,8 +65,8 @@ Item {
                     spacing: ThemeManager.spacing.normal
 
                     Item {
-                        width: 64
-                        height: 64
+                        width: ThemeManager.px(64)
+                        height: ThemeManager.px(64)
                         anchors.verticalCenter: parent.verticalCenter
 
                         Blob {
@@ -83,15 +84,15 @@ Item {
                             visible: face.status !== Image.Ready
                             icon: Icons.person
                             filled: true
-                            size: 30
+                            size: ThemeManager.px(30)
                             color: ThemeManager.colors.accent
                         }
 
                         ClippingRectangle {
                             anchors.centerIn: parent
-                            width: 52
-                            height: 52
-                            radius: 26
+                            width: ThemeManager.px(52)
+                            height: ThemeManager.px(52)
+                            radius: width / 2
                             color: "transparent"
                             visible: face.status === Image.Ready
 
@@ -100,7 +101,7 @@ Item {
 
                                 anchors.fill: parent
                                 source: OverviewState.face
-                                sourceSize: Qt.size(104, 104)
+                                sourceSize: Qt.size(ThemeManager.px(104), ThemeManager.px(104))
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                                 cache: false
@@ -110,7 +111,7 @@ Item {
 
                     Column {
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 2
+                        spacing: ThemeManager.px(2)
 
                         Txt {
                             text: OverviewState.user
@@ -125,13 +126,13 @@ Item {
                         }
 
                         Row {
-                            spacing: 4
+                            spacing: ThemeManager.px(4)
                             visible: OverviewState.uptime !== ""
 
                             Icon {
                                 anchors.verticalCenter: parent.verticalCenter
                                 icon: Icons.uptime
-                                size: 14
+                                size: ThemeManager.px(14)
                                 color: ThemeManager.colors.textFaint
                             }
 
@@ -149,17 +150,17 @@ Item {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.rightMargin: ThemeManager.spacing.small
-                    spacing: 2
+                    spacing: ThemeManager.px(2)
 
                     IconButton {
                         icon: Icons.settings
-                        iconSize: 18
+                        iconSize: ThemeManager.px(18)
                         onClicked: OverviewState.openSettings()
                     }
 
                     IconButton {
                         icon: Icons.power
-                        iconSize: 18
+                        iconSize: ThemeManager.px(18)
                         foreground: ThemeManager.colors.danger
                         onClicked: OverviewState.openPower()
                     }
@@ -183,7 +184,7 @@ Item {
 
                     anchors.centerIn: parent
                     width: Math.min(implicitWidth, parent.width - 2 * root.cardMargin)
-                    spacing: ThemeManager.spacing.normal + 2
+                    spacing: ThemeManager.spacing.normal + ThemeManager.px(2)
 
                     Column {
                         id: clockColumn
@@ -239,7 +240,7 @@ Item {
 
                                 font.family: ThemeManager.font.sans
                                 font.variableAxes: ThemeManager.fontAxes(Font.Light)
-                                font.pixelSize: ThemeManager.font.huge - 6
+                                font.pixelSize: ThemeManager.font.huge - ThemeManager.px(6)
                                 font.weight: Font.Light
                                 font.features: { "tnum": 1 }
                             }
@@ -278,7 +279,7 @@ Item {
                         Layout.preferredWidth: Math.max(weatherRow.width, conditionText.implicitWidth, placeText.implicitWidth)
                         Layout.maximumWidth: Layout.preferredWidth
                         Layout.fillWidth: true
-                        spacing: 2
+                        spacing: ThemeManager.px(2)
 
                         Row {
                             id: weatherRow
@@ -290,7 +291,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 icon: OverviewState.weatherIcon
                                 filled: true
-                                size: 30
+                                size: ThemeManager.px(30)
                                 color: ThemeManager.colors.accent
                             }
 
@@ -298,7 +299,7 @@ Item {
                                 visible: OverviewState.hasWeather
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: OverviewState.weatherTemp
-                                font.pixelSize: ThemeManager.font.huge - 14
+                                font.pixelSize: ThemeManager.font.huge - ThemeManager.px(14)
                                 font.weight: Font.DemiBold
                             }
                         }
@@ -334,7 +335,7 @@ Item {
         Surface {
             id: calendarCard
 
-            Layout.preferredWidth: 300
+            Layout.preferredWidth: ThemeManager.px(300)
             Layout.preferredHeight: calendar.implicitHeight + 2 * root.calendarMargin
             Layout.fillHeight: true
             Layout.fillWidth: !column3.visible
@@ -376,7 +377,7 @@ Item {
                     Icon {
                         anchors.verticalCenter: parent.verticalCenter
                         icon: Icons.performance
-                        size: 18
+                        size: ThemeManager.px(18)
                         color: ThemeManager.colors.textFaint
                     }
 
@@ -392,8 +393,8 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.margins: ThemeManager.spacing.normal + 2
-                    spacing: ThemeManager.spacing.normal + 4
+                    anchors.margins: ThemeManager.spacing.normal + ThemeManager.px(2)
+                    spacing: ThemeManager.spacing.normal + ThemeManager.px(4)
 
                     Repeater {
                         model: [
@@ -419,13 +420,13 @@ Item {
                             Icon {
                                 anchors.verticalCenter: parent.verticalCenter
                                 icon: parent.modelData.icon
-                                size: 18
+                                size: ThemeManager.px(18)
                                 color: ThemeManager.colors.accent
                             }
 
                             Txt {
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 64
+                                width: ThemeManager.px(64)
                                 text: parent.modelData.label
                                 muted: true
                                 font.pixelSize: ThemeManager.font.small + 1
@@ -433,13 +434,13 @@ Item {
 
                             LinearGauge {
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width - 18 - 64 - 44 - parent.spacing * 3
+                                width: parent.width - ThemeManager.px(18) - ThemeManager.px(64) - ThemeManager.px(44) - parent.spacing * 3
                                 value: parent.modelData.value
                             }
 
                             Txt {
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 44
+                                width: ThemeManager.px(44)
                                 horizontalAlignment: Text.AlignRight
                                 text: Format.percent(number.shown)
                                 mono: true
@@ -453,7 +454,7 @@ Item {
             // O visualizador (88) e as margens; a mesma altura tocando ou não.
             Surface {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 88 + 2 * root.cardMargin
+                Layout.preferredHeight: ThemeManager.px(88) + 2 * root.cardMargin
                 Layout.fillHeight: true
                 visible: OverviewState.shows("media")
 
@@ -535,10 +536,10 @@ Item {
         property bool checkable: false
         property bool usable: true
 
-        iconSize: 18
+        iconSize: ThemeManager.px(18)
         iconWeight: 500
-        height: 26
-        width: 30
+        height: ThemeManager.px(26)
+        width: ThemeManager.px(30)
         radius: ThemeManager.radius.small
         hoverVeil: false
         opacity: usable ? 1 : 0.4
@@ -568,7 +569,7 @@ Item {
         radius: ThemeManager.radius.small
         color: ThemeManager.colors.raised
         border.color: ThemeManager.colors.border
-        border.width: 1
+        border.width: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
 
         onTargetChanged: {
             tipDelay.done = false;

@@ -28,7 +28,7 @@ Column {
 
                 Item {
                     width: parent.width
-                    height: 40
+                    height: ThemeManager.px(40)
 
                     Select {
                         width: parent.width - actions.width - ThemeManager.spacing.small
@@ -42,13 +42,13 @@ Column {
                         id: actions
 
                         anchors.right: parent.right
-                        height: 40
-                        spacing: 2
+                        height: ThemeManager.px(40)
+                        spacing: ThemeManager.px(2)
 
                         IconButton {
                             anchors.verticalCenter: parent.verticalCenter
                             icon: "keyboard_arrow_up"
-                            iconSize: 20
+                            iconSize: ThemeManager.px(20)
                             enabled: layoutRow.index > 0
                             onClicked: KeyboardState.moveLayout(layoutRow.index, -1)
                         }
@@ -56,7 +56,7 @@ Column {
                         IconButton {
                             anchors.verticalCenter: parent.verticalCenter
                             icon: Icons.trash
-                            iconSize: 18
+                            iconSize: ThemeManager.px(18)
                             enabled: KeyboardState.layouts.length > 1
                             onClicked: KeyboardState.removeLayout(layoutRow.index)
                         }
@@ -146,23 +146,23 @@ Column {
         // Campo para testar a digitação e a repetição.
         Item {
             width: parent.width
-            height: 40 + ThemeManager.spacing.large * 2
+            height: ThemeManager.px(40) + ThemeManager.spacing.large * 2
 
             Rectangle {
                 x: ThemeManager.spacing.large
                 y: ThemeManager.spacing.large
                 width: parent.width - x * 2
-                height: 40
-                radius: 20
+                height: ThemeManager.px(40)
+                radius: height / 2
                 color: ThemeManager.alpha(ThemeManager.colors.text, 0.06)
-                border.width: tryIt.activeFocus ? 2 : 0
+                border.width: tryIt.activeFocus ? ThemeManager.px(2) : 0
                 border.color: ThemeManager.colors.accent
 
                 TextInput {
                     id: tryIt
 
                     anchors.fill: parent
-                    anchors.leftMargin: ThemeManager.spacing.normal + 2
+                    anchors.leftMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
                     anchors.rightMargin: ThemeManager.spacing.normal
                     verticalAlignment: TextInput.AlignVCenter
                     color: ThemeManager.colors.text
@@ -246,7 +246,7 @@ Column {
 
                 IconButton {
                     icon: Icons.trash
-                    iconSize: 18
+                    iconSize: ThemeManager.px(18)
                     onClicked: KeyboardState.toggleOption(optionRow.modelData.name, false)
                 }
             }
@@ -299,7 +299,7 @@ Column {
 
                 IconButton {
                     icon: Icons.trash
-                    iconSize: 18
+                    iconSize: ThemeManager.px(18)
                     onClicked: KeyboardState.removeRemap(remapRow.modelData.from)
                 }
             }

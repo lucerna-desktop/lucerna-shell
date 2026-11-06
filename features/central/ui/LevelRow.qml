@@ -24,15 +24,15 @@ Item {
     signal iconClicked
 
     width: parent?.width ?? 0
-    height: label ? 52 : 44
+    height: label ? ThemeManager.px(52) : ThemeManager.px(44)
 
     Clickable {
         id: tile
 
         x: ThemeManager.spacing.tiny
         anchors.verticalCenter: parent.verticalCenter
-        width: 36
-        height: 36
+        width: ThemeManager.px(36)
+        height: ThemeManager.px(36)
         radius: ThemeManager.radius.small
         enabled: root.iconClickable
         opacity: 1
@@ -41,10 +41,10 @@ Item {
         Image {
             anchors.centerIn: parent
             visible: root.image !== ""
-            width: 24
-            height: 24
+            width: ThemeManager.px(24)
+            height: ThemeManager.px(24)
             source: root.image
-            sourceSize: Qt.size(48, 48)
+            sourceSize: Qt.size(ThemeManager.px(48), ThemeManager.px(48))
             asynchronous: true
             opacity: root.muted ? 0.35 : 1
         }
@@ -53,7 +53,7 @@ Item {
             anchors.centerIn: parent
             visible: root.image === ""
             icon: root.icon
-            size: 20
+            size: ThemeManager.px(20)
             filled: tile.hovered
             color: root.muted ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
         }
@@ -64,7 +64,7 @@ Item {
             anchors.bottom: parent.bottom
             visible: root.image !== "" && root.muted
             icon: Icons.volumeOff
-            size: 14
+            size: ThemeManager.px(14)
             color: ThemeManager.colors.text
         }
     }
@@ -87,7 +87,7 @@ Item {
         anchors.right: percent.left
         anchors.rightMargin: ThemeManager.spacing.small
         anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: root.label ? 8 : 0
+        anchors.verticalCenterOffset: root.label ? ThemeManager.px(8) : 0
         from: root.from
         value: root.value
         opacity: root.muted ? 0.5 : 1
@@ -100,7 +100,7 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: ThemeManager.spacing.small
         anchors.verticalCenter: slider.verticalCenter
-        width: 40
+        width: ThemeManager.px(40)
         horizontalAlignment: Text.AlignRight
         text: Format.percent(root.value)
         mono: true

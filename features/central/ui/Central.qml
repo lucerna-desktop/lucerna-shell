@@ -42,7 +42,7 @@ Item {
     readonly property real margin: Frame.thickness
     readonly property real gap: ThemeManager.spacing.normal
     // Altura mínima das notificações.
-    readonly property real inboxMin: 160
+    readonly property real inboxMin: ThemeManager.px(160)
     // Quanto do lugar das Ações (a altura e o vão) as Notificações deixam em
     // cima: 1 com as Ações abertas, 0 sem elas. Muda só com as Notificações
     // abertas: na saída delas, ficam onde estavam.

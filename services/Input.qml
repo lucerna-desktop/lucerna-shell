@@ -73,24 +73,36 @@ Singleton {
         Quickshell.execDetached(["hyprctl", "eval", lua]);
     }
 
+    // O Lua das opções, de um dispositivo e dos layouts: o mesmo no eval e no
+    // arquivo do shell (HyprFile), que o Hyprland carrega na sessão Lucerna.
+    function optionsLua(flat: var): string {
+        return Object.keys(flat).length ? `hl.config(${luaValue(nest(flat))})` : "";
+    }
+
+    function deviceLua(name: string, fields: var): string {
+        return `hl.device(${luaValue(Object.assign({ name }, fields))})`;
+    }
+
     function setOptions(flat: var): void {
-        if (!Object.keys(flat).length)
+        const lua = optionsLua(flat);
+        if (!lua)
             return;
-        evalLua(`hl.config(${luaValue(nest(flat))})`);
+        evalLua(lua);
         settle.restart();
     }
 
     function setDevice(name: string, fields: var): void {
-        evalLua(`hl.device(${luaValue(Object.assign({ name }, fields))})`);
+        evalLua(deviceLua(name, fields));
     }
 
     // Recarrega o hyprland.lua: é como uma opção volta ao valor do arquivo.
-    // Quem aplica ajustes por cima (as features) reaplica ao ouvir o reload.
+    // Quem aplica ajustes por cima (as features) reaplica ao ouvir o reload;
+    // na sessão Lucerna, o reload espera o arquivo do shell (HyprFile).
     function reload(): void {
-        Quickshell.execDetached(["hyprctl", "reload"]);
+        HyprFile.reload();
     }
 
-    // Binds do Lucerna: [{ key: "SUPER + mouse:275", lua: "hl.dsp....", repeating, locked }].
+    // Binds do Lucerna: [{ key: "SUPER + mouse:275", lua: "hl.dsp....", repeating, locked, release, mouse }].
     // Trocar a lista tira os anteriores e o que o hyprland.lua tiver nas mesmas
     // teclas (senão a ação rodaria duas vezes); suspender tira todos por um
     // tempo (para capturar uma tecla ou botão que já está mapeado).
@@ -108,13 +120,24 @@ Singleton {
                 opts.push("repeating = true");
             if (b.locked)
                 opts.push("locked = true");
+            if (b.release)
+                opts.push("release = true");
+            if (b.mouse)
+                opts.push("mouse = true");
             return `hl.bind(${luaString(b.key)}, ${b.lua}${opts.length ? `, { ${opts.join(", ")} }` : ""})`;
         }).join("\n");
     }
 
-    function setBinds(list: var): void {
-        const keys = binds.concat(list).filter((b, i, all) => all.findIndex(o => o.key.toLowerCase() === b.key.toLowerCase()) === i);
-        const lua = [unbindLua(keys), suspended ? "" : bindLua(list)].filter(l => l).join("\n");
+    // O Lua de trocar os binds: tira os anteriores, os da lista nova e os de
+    // `alsoUnbind` ([{ key }]: as teclas da base que um atalho do shell
+    // substitui), cada tecla uma vez, e põe os novos (suspenso, só tira).
+    function bindsLua(previous: var, list: var, alsoUnbind: var, isSuspended: bool): string {
+        const keys = previous.concat(list, alsoUnbind ?? []).filter((b, i, all) => all.findIndex(o => o.key.toLowerCase() === b.key.toLowerCase()) === i);
+        return [unbindLua(keys), isSuspended ? "" : bindLua(list)].filter(l => l).join("\n");
+    }
+
+    function setBinds(list: var, alsoUnbind: var): void {
+        const lua = bindsLua(binds, list, alsoUnbind, suspended);
         binds = list;
         if (lua)
             evalLua(lua);
@@ -181,7 +204,10 @@ Singleton {
         compile(layout, remaps);
     }
 
+    // Sem nada mudado nas configurações, o teclado é o do hyprland.lua: a
+    // seção "keyboard" do arquivo fica vazia.
     function inspectKeyboard(layout: var): void {
+        HyprFile.setSection("keyboard", "");
         inspecting = true;
         compile(layout, []);
     }
@@ -293,12 +319,24 @@ Singleton {
     // O Hyprland aplica uma opção de cada vez e recusa combinações inválidas
     // no meio do caminho (dois layouts com uma variante, uma variante para
     // dois layouts). Em etapas, cada passo é válido.
-    function applyLayouts(l: var): void {
-        evalLua([
+    function layoutLua(l: var): string {
+        return [
             { kb_file: "", kb_variant: "", kb_options: "" },
             { kb_layout: l.layouts },
             { kb_variant: l.variants, kb_options: l.options }
-        ].map(step => `hl.config(${luaValue({ input: step })})`).join("\n"));
+        ].map(step => `hl.config(${luaValue({ input: step })})`).join("\n");
+    }
+
+    // O keymap trocado (com os remapeamentos) já traz layouts e opções.
+    function keymapFileLua(path: string): string {
+        return `hl.config(${luaValue({ input: { kb_file: path } })})`;
+    }
+
+    // A seção "keyboard" do arquivo acompanha o que foi aplicado.
+    function applyLayouts(l: var): void {
+        const lua = layoutLua(l);
+        evalLua(lua);
+        HyprFile.setSection("keyboard", lua);
         settle.restart();
     }
 
@@ -330,8 +368,9 @@ Singleton {
                 return;
             }
             root.keymapError = "";
-            // O kb_file já traz layouts e opções.
-            root.evalLua(`hl.config(${root.luaValue({ input: { kb_file: root.keymapPath } })})`);
+            const lua = root.keymapFileLua(root.keymapPath);
+            root.evalLua(lua);
+            HyprFile.setSection("keyboard", lua);
             settle.restart();
         }
     }

@@ -71,6 +71,40 @@ Singleton {
         };
     }
 
+    // A chave do arranjo salvo (Config.monitorSetups): o modo "Escala pelos
+    // apps" (os monitores em 1) guarda o seu à parte, e o da escala do
+    // monitor fica intacto para a volta.
+    function setupKey(setup: string, apps: bool): string {
+        return apps ? `apps: ${setup}` : setup;
+    }
+
+    // O arranjo com todos os monitores na escala `s`. Os tamanhos lógicos
+    // mudam: quem encostava na borda direita (ou de baixo) de outro continua
+    // encostado, quem se alinhava a outro continua alinhado; o resto anda na
+    // proporção do próprio tamanho.
+    function atScale(specs: var, s: real): var {
+        const out = specs.map(m => Object.assign({}, m, { scale: s }));
+        const placed = specs.map((m, i) => i).filter(i => specs[i].enabled && !specs[i].mirror);
+        const before = specs.map(m => logicalSize(m));
+        const after = out.map(m => logicalSize(m));
+        for (const [pos, size] of [["x", "width"], ["y", "height"]]) {
+            const done = [];
+            for (const i of placed.slice().sort((a, b) => specs[a][pos] - specs[b][pos])) {
+                const old = specs[i][pos];
+                const aligned = done.find(j => specs[j][pos] === old);
+                const touching = done.find(j => Math.abs(specs[j][pos] + before[j][size] - old) <= 1);
+                if (aligned !== undefined)
+                    out[i][pos] = out[aligned][pos];
+                else if (touching !== undefined)
+                    out[i][pos] = out[touching][pos] + after[touching][size];
+                else
+                    out[i][pos] = Math.round(old * after[i][size] / before[i][size]);
+                done.push(i);
+            }
+        }
+        return out;
+    }
+
     function refresh(): void {
         reader.running = true;
     }
@@ -103,6 +137,38 @@ Singleton {
         if (!specs.length)
             return;
         Quickshell.execDetached(["hyprctl", "eval", lua(specs)]);
+        settle.restart();
+    }
+
+    // O que fazer com a tampa: { disable, enable, lock }. `monitors` traz
+    // { name, enabled } (os normalizados ou as specs de um arranjo). Interno é
+    // o painel do notebook (eDP, LVDS, DSI); sem ele (desktop), nada.
+    // - Fechada com outro monitor ativo: desliga o interno; bloqueia só com a
+    //   opção (lockOnDocked). O logind não suspende com monitor externo.
+    // - Fechada sem outro: nada (o logind decide; ao dormir, a Session bloqueia).
+    // - Aberta, ou sem nenhum monitor ativo sobrando com o interno desligado
+    //   (o externo saiu com a tampa fechada): religa o interno.
+    function lidPlan(lidClosed: bool, monitors: var, lockOnDocked: bool): var {
+        const isInternal = m => /^(eDP|LVDS|DSI)-/.test(m.name);
+        const internal = monitors.filter(isInternal);
+        const othersOn = monitors.some(m => !isInternal(m) && m.enabled);
+        const plan = { disable: [], enable: [], lock: false };
+        if (!internal.length)
+            return plan;
+        if (lidClosed && othersOn) {
+            plan.disable = internal.filter(m => m.enabled).map(m => m.name);
+            plan.lock = lockOnDocked;
+        } else if (!lidClosed || !internal.some(m => m.enabled)) {
+            plan.enable = internal.filter(m => !m.enabled).map(m => m.name);
+        }
+        return plan;
+    }
+
+    // Liga ou desliga um monitor só pelo "disabled" (o Hyprland mescla as
+    // regras: o resto do monitor fica como estava). Quem liga reaplica o
+    // arranjo salvo depois (DisplaysState.restore).
+    function setEnabled(name: string, on: bool): void {
+        Quickshell.execDetached(["hyprctl", "eval", `hl.monitor({ output = ${JSON.stringify(name)}, disabled = ${!on} })`]);
         settle.restart();
     }
 

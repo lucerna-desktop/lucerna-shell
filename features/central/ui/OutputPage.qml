@@ -21,7 +21,7 @@ Column {
 
     Column {
         width: root.width
-        spacing: 2
+        spacing: ThemeManager.px(2)
 
         Repeater {
             model: SoundState.outputs

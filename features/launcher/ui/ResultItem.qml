@@ -11,7 +11,7 @@ Clickable {
     // Posição na lista, para o atraso da entrada em cascata.
     property int order: 0
 
-    height: 48
+    height: ThemeManager.px(48)
     radius: ThemeManager.radius.normal
     color: "transparent"
 
@@ -41,7 +41,7 @@ Clickable {
         anchors.leftMargin: ThemeManager.spacing.small
         anchors.verticalCenter: parent.verticalCenter
         item: row.result
-        size: 32
+        size: ThemeManager.px(32)
         highlighted: row.selected
     }
 
@@ -76,7 +76,7 @@ Clickable {
         anchors.rightMargin: ThemeManager.spacing.normal
         anchors.verticalCenter: parent.verticalCenter
         icon: Icons.arrowRight
-        size: 14
+        size: ThemeManager.px(14)
         color: ThemeManager.colors.accent
         opacity: row.selected ? 1 : 0
 

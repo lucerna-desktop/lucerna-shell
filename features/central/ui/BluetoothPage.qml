@@ -43,7 +43,7 @@ Column {
 
         width: root.width
         visible: BluetoothState.enabled
-        spacing: 2
+        spacing: ThemeManager.px(2)
 
         Txt {
             visible: BluetoothState.paired.length > 0
@@ -72,7 +72,7 @@ Column {
                 IconButton {
                     visible: row.hovered
                     icon: Icons.trash
-                    iconSize: 18
+                    iconSize: ThemeManager.px(18)
                     foreground: ThemeManager.colors.textMuted
                     onClicked: BluetoothState.forget(row.modelData)
                 }

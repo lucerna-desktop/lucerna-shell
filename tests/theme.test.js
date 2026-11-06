@@ -12,6 +12,42 @@ function run(t) {
         t.eq([T.font.sans, T.font.normal, T.radius.large, T.spacing.large, T.barHeight], ["Rubik", 13, 22, 20, 44]);
     });
 
+    t.test("theme: a escala interna multiplica as medidas", () => {
+        try {
+            t.eq([T.scale, T.px(34), T.spacing.normal, T.font.normal], [1, 34, 12, 13], "escala 1: os valores do tema");
+            C.shellScale = 1.25;
+            t.eq(T.scale, 1.25);
+            t.eq([T.spacing.normal, T.font.normal, T.px(34)], [15, 16, 43]);
+            t.eq([T.radius.large, T.barHeight, T.px(0), T.px(1)], [28, 55, 0, 1], "os outros tokens também; 0 e 1 ficam");
+            C.scaleMode = "apps";
+            t.eq(T.scale, 1.25 * 1.25, "no modo pelos apps, a escala dos apps entra junto");
+        } finally {
+            C.shellScale = 1;
+            C.scaleMode = "monitor";
+        }
+        t.eq([T.scale, T.spacing.normal, T.font.normal], [1, 12, 13], "restaurado");
+    });
+
+    t.test("theme: a escala interna fica entre 0,5 e 3", () => {
+        t.eq([T.clampScale(1.25), T.clampScale(0), T.clampScale(-2), T.clampScale(7), T.clampScale(NaN)], [1.25, 0.5, 0.5, 3, 1]);
+        const apps = C.appsScale;
+        try {
+            C.shellScale = 0;
+            t.eq([T.scale, T.px(34)], [0.5, 17], "um shellScale 0 não zera as medidas");
+            C.shellScale = -1;
+            t.eq(T.scale, 0.5, "nem um negativo");
+            C.shellScale = 2;
+            C.scaleMode = "apps";
+            C.appsScale = 2;
+            t.eq(T.scale, 3, "nem passa de 3");
+        } finally {
+            C.shellScale = 1;
+            C.scaleMode = "monitor";
+            C.appsScale = apps;
+        }
+        t.eq(T.scale, 1, "restaurado");
+    });
+
     t.test("theme: o eixo de peso da fonte variável", () => {
         t.eq([T.fontAxes(Font.Normal), T.fontAxes(Font.DemiBold), T.fontAxes(300)], [{ wght: 400 }, { wght: 600 }, { wght: 300 }]);
     });

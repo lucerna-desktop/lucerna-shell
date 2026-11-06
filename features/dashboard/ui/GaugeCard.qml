@@ -16,16 +16,16 @@ Surface {
     property string label: ""
     // O mesmo tamanho na memória e no disco: o título, o anel e o rótulo
     // alinhados entre os dois cards.
-    property real gaugeSize: 109
-    property real thickness: 9
-    property real numberSize: ThemeManager.font.large + 6
+    property real gaugeSize: ThemeManager.px(109)
+    property real thickness: ThemeManager.px(9)
+    property real numberSize: ThemeManager.font.large + ThemeManager.px(6)
     property bool clickable: false
     property int dots: 0
     property int dot: 0
 
     signal swapped
 
-    readonly property int margin: ThemeManager.spacing.normal + 2
+    readonly property int margin: ThemeManager.spacing.normal + ThemeManager.px(2)
 
     implicitHeight: margin * 2 + titleRow.height + ThemeManager.spacing.tiny + body.height
 
@@ -69,7 +69,7 @@ Surface {
 
             anchors.horizontalCenter: parent.horizontalCenter
             y: titleRow.y + titleRow.height + ThemeManager.spacing.tiny + Math.max(0, (parent.height - root.margin - titleRow.y - titleRow.height - ThemeManager.spacing.tiny - height) / 2)
-            spacing: 2
+            spacing: ThemeManager.px(2)
 
             CircularGauge {
                 anchors.horizontalCenter: parent.horizontalCenter

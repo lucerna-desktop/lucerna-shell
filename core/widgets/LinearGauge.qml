@@ -14,8 +14,8 @@ Item {
 
     Behavior on animatedValue { Anim { type: Anim.StandardLarge } }
 
-    implicitHeight: 6
-    implicitWidth: 160
+    implicitHeight: ThemeManager.px(6)
+    implicitWidth: ThemeManager.px(160)
 
     Rectangle {
         id: fill

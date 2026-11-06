@@ -133,6 +133,15 @@ function run(t) {
         t.eq(box(F.attach(r, "")), [100, 50, 200, 80], "sem borda, igual");
     });
 
+    t.test("frame: as beiras do pedaço no pixel físico", () => {
+        const box = q => [q.x, q.y, q.width, q.height].map(v => Math.round(v * 1000) / 1000);
+        // Em 1,25: 10 → 10,4 e 10 + 7 = 17 → 16,8 (12,5 e 21,25 físicos viram 13 e 21).
+        t.eq(box(F.snapRect(Qt.rect(10, 10, 7, 7), 1.25, 0)), [10.4, 10.4, 6.4, 6.4]);
+        // A janela começa em 1 (coluna estreita): conta a partir dela.
+        t.eq(box(F.snapRect(Qt.rect(11, 0, 7, 8), 1.25, 1)), [11.4, 0, 6.4, 8]);
+        t.eq(box(F.snapRect(Qt.rect(3, 4, 5, 6), 1, 0)), [3, 4, 5, 6], "em 1, igual");
+    });
+
     t.test("frame: a área que o shader cobre", () => {
         const size = Qt.size(1920, 1080);
         const box = q => [q.x, q.y, q.width, q.height];

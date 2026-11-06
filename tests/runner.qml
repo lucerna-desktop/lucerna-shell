@@ -17,6 +17,7 @@ import qs.core.input
 import qs.core.launcher
 import qs.core.nightlight
 import qs.core.panels
+import qs.core.pixel
 import qs.core.shapes
 import qs.core.theme
 import qs.core.time
@@ -35,6 +36,7 @@ import qs.features.wallpaper.state
 import qs.services
 import qs.services.lucerna
 import "appinfo.test.js" as AppInfoTest
+import "appsscale.test.js" as AppsScaleTest
 import "audio.test.js" as AudioTest
 import "audiostreams.test.js" as AudioStreamsTest
 import "bar.test.js" as BarTest
@@ -52,9 +54,12 @@ import "idle.test.js" as IdleTest
 import "gamemode.test.js" as GameModeTest
 import "gamemodestate.test.js" as GameModeStateTest
 import "frame.test.js" as FrameTest
+import "hyprfile.test.js" as HyprFileTest
 import "input.test.js" as InputTest
 import "inputactions.test.js" as InputActionsTest
 import "lucernaclient.test.js" as LucernaClientTest
+import "logind.test.js" as LogindTest
+import "lucernasession.test.js" as LucernaSessionTest
 import "servelauncher.test.js" as ServeLauncherTest
 import "lyrics.test.js" as LyricsTest
 import "media.test.js" as MediaTest
@@ -65,6 +70,7 @@ import "notifications.test.js" as NotificationsTest
 import "osd.test.js" as OsdTest
 import "overview.test.js" as OverviewTest
 import "panels.test.js" as PanelsTest
+import "pixel.test.js" as PixelTest
 import "performance.test.js" as PerformanceTest
 import "searchengines.test.js" as SearchEnginesTest
 import "session.test.js" as SessionTest
@@ -102,6 +108,7 @@ ShellRoot {
         ["nightschedule", NightScheduleTest],
         ["theme", ThemeTest],
         ["panels", PanelsTest],
+        ["pixel", PixelTest],
         ["frame", FrameTest],
         ["bar", BarTest],
         ["central", CentralTest],
@@ -113,6 +120,8 @@ ShellRoot {
         ["capture", CaptureTest],
         ["brightness", BrightnessTest],
         ["monitors", MonitorsTest],
+        ["hyprfile", HyprFileTest],
+        ["appsscale", AppsScaleTest],
         ["input", InputTest],
         ["systemstats", SystemStatsTest],
         ["videowallpapers", VideoWallpapersTest],
@@ -128,6 +137,8 @@ ShellRoot {
         ["appinfo", AppInfoTest],
         ["media", MediaTest],
         ["session", SessionTest],
+        ["logind", LogindTest],
+        ["lucernasession", LucernaSessionTest],
         ["weather", WeatherTest],
         ["weatherstate", WeatherStateTest],
         ["credits", CreditsTest],
@@ -248,9 +259,11 @@ ShellRoot {
             get BlobShapes() { return BlobShapes; },
             get InputActions() { return InputActions; },
             get ShellShortcuts() { return ShellShortcuts; },
+            get ShortcutsState() { return ShortcutsState; },
             get SearchEngines() { return SearchEngines; },
             get NightSchedule() { return NightSchedule; },
             get Panels() { return Panels; },
+            get Pixel() { return Pixel; },
             get ServeLauncher() { return ServeLauncher; },
             get Frame() { return Frame; },
             get BarState() { return BarState; },
@@ -275,6 +288,8 @@ ShellRoot {
             get Brightness() { return Brightness; },
             get Capture() { return Capture; },
             get Clipboard() { return Clipboard; },
+            get HyprFile() { return HyprFile; },
+            get AppsScale() { return AppsScale; },
             get Input() { return Input; },
             get Lyrics() { return Lyrics; },
             get Media() { return Media; },
@@ -282,6 +297,8 @@ ShellRoot {
             get Network() { return Network; },
             get Notifications() { return Notifications; },
             get Session() { return Session; },
+            get Logind() { return Logind; },
+            get LucernaSession() { return LucernaSession; },
             get Spectrum() { return Spectrum; },
             get SystemStats() { return SystemStats; },
             get VideoWallpapers() { return VideoWallpapers; },

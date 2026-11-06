@@ -1,4 +1,5 @@
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 
 // Campo de busca: lupa, texto e um botão de limpar. Controlado: emite
@@ -18,20 +19,20 @@ Rectangle {
         input.forceActiveFocus();
     }
 
-    implicitHeight: 48
+    implicitHeight: ThemeManager.px(48)
     radius: ThemeManager.radius.normal
     color: ThemeManager.colors.raised
-    border.width: input.activeFocus ? 1 : 0
+    border.width: input.activeFocus ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
     border.color: ThemeManager.alpha(ThemeManager.colors.accent, 0.5)
 
     Icon {
         id: searchIcon
 
         anchors.left: parent.left
-        anchors.leftMargin: ThemeManager.spacing.normal + 2
+        anchors.leftMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
         anchors.verticalCenter: parent.verticalCenter
         icon: Icons.magnify
-        size: 22
+        size: ThemeManager.px(22)
         color: ThemeManager.colors.accent
     }
 
@@ -74,7 +75,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         visible: input.text !== ""
         icon: "cancel"
-        iconSize: 18
+        iconSize: ThemeManager.px(18)
         onClicked: {
             root.edited("");
             input.forceActiveFocus();

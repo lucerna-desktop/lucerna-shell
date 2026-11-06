@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.launcher.state
@@ -34,10 +35,11 @@ Item {
         SearchField {
             id: search
 
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: Math.max(40, parent.height * 0.08)
-            width: Math.min(640, parent.width - 80)
-            height: 52
+            // No pixel físico (escala fracionária; ver Pixel).
+            x: Pixel.snap((parent.width - width) / 2, Window.window?.devicePixelRatio ?? 1)
+            y: Pixel.snap(Math.max(ThemeManager.px(40), parent.height * 0.08), Window.window?.devicePixelRatio ?? 1)
+            width: Math.min(ThemeManager.px(640), parent.width - ThemeManager.px(80))
+            height: ThemeManager.px(52)
             placeholder: "Buscar apps e ações  ·  / arquivos  ·  ? web"
             onKey: event => {
                 if (LauncherState.handleShortcut(event)) {
@@ -85,8 +87,8 @@ Item {
                     readonly property bool current: LauncherState.appCategory === modelData.id
 
                     width: chipText.implicitWidth + ThemeManager.spacing.large * 2
-                    height: 34
-                    radius: 17
+                    height: ThemeManager.px(34)
+                    radius: height / 2
                     color: current ? ThemeManager.colors.accent : ThemeManager.alpha(ThemeManager.colors.text, 0.08)
                     onClicked: {
                         LauncherState.appCategory = chip.modelData.id;
@@ -110,8 +112,8 @@ Item {
         GridView {
             id: grid
 
-            readonly property real cell: 150
-            readonly property int columns: Math.max(3, Math.min(8, Math.floor(Math.min(parent.width - 160, 1300) / cell)))
+            readonly property real cell: ThemeManager.px(150)
+            readonly property int columns: Math.max(3, Math.min(8, Math.floor(Math.min(parent.width - ThemeManager.px(160), ThemeManager.px(1300)) / cell)))
 
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: chips.bottom
@@ -139,7 +141,7 @@ Item {
 
                 Clickable {
                     anchors.fill: parent
-                    anchors.margins: 6
+                    anchors.margins: ThemeManager.px(6)
                     radius: ThemeManager.radius.large
                     color: cell.current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.16) : "transparent"
                     pressScale: 0.94
@@ -158,9 +160,9 @@ Item {
                         id: tileIcon
 
                         anchors.horizontalCenter: parent.horizontalCenter
-                        y: 18
+                        y: ThemeManager.px(18)
                         item: cell.modelData
-                        size: 64
+                        size: ThemeManager.px(64)
                         highlighted: cell.current
                         scale: cell.current ? 1.08 : 1
 
@@ -172,8 +174,8 @@ Item {
                         anchors.topMargin: ThemeManager.spacing.normal
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        anchors.leftMargin: 6
-                        anchors.rightMargin: 6
+                        anchors.leftMargin: ThemeManager.px(6)
+                        anchors.rightMargin: ThemeManager.px(6)
                         horizontalAlignment: Text.AlignHCenter
                         text: cell.modelData.name
                         wrapMode: Text.Wrap
@@ -199,7 +201,7 @@ Item {
 
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: ThemeManager.spacing.large + 8
+            anchors.bottomMargin: ThemeManager.spacing.large + ThemeManager.px(8)
             text: "Enter abre  ·  Tab troca a categoria  ·  Ctrl+F favorito  ·  Ctrl+H ocultar  ·  clique direito: opções  ·  Esc fecha"
             faint: true
             font.pixelSize: ThemeManager.font.small

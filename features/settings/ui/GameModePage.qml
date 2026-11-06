@@ -63,9 +63,9 @@ Column {
 
                         required property string modelData
 
-                        width: chipRow.implicitWidth + ThemeManager.spacing.normal + 4
-                        height: 30
-                        radius: 15
+                        width: chipRow.implicitWidth + ThemeManager.spacing.normal + ThemeManager.px(4)
+                        height: ThemeManager.px(30)
+                        radius: height / 2
                         color: ThemeManager.alpha(ThemeManager.colors.text, 0.06)
 
                         Row {
@@ -73,7 +73,7 @@ Column {
 
                             anchors.verticalCenter: parent.verticalCenter
                             x: ThemeManager.spacing.normal
-                            spacing: 2
+                            spacing: ThemeManager.px(2)
 
                             Txt {
                                 anchors.verticalCenter: parent.verticalCenter
@@ -85,9 +85,9 @@ Column {
                             IconButton {
                                 anchors.verticalCenter: parent.verticalCenter
                                 icon: Icons.close
-                                iconSize: 13
-                                implicitWidth: 22
-                                implicitHeight: 22
+                                iconSize: ThemeManager.px(13)
+                                implicitWidth: ThemeManager.px(22)
+                                implicitHeight: ThemeManager.px(22)
                                 foreground: ThemeManager.colors.textMuted
                                 onClicked: GameModeState.removeClass(classRow.list, chip.modelData)
                             }
@@ -114,10 +114,10 @@ Column {
 
                 Rectangle {
                     width: (parent.width - add.width - ThemeManager.spacing.small * 2) / 2
-                    height: 40
-                    radius: 20
+                    height: ThemeManager.px(40)
+                    radius: height / 2
                     color: ThemeManager.alpha(ThemeManager.colors.text, 0.06)
-                    border.width: typed.activeFocus ? 2 : 0
+                    border.width: typed.activeFocus ? ThemeManager.px(2) : 0
                     border.color: ThemeManager.colors.accent
 
                     TextInput {
@@ -129,7 +129,7 @@ Column {
                         }
 
                         anchors.fill: parent
-                        anchors.leftMargin: ThemeManager.spacing.normal + 2
+                        anchors.leftMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
                         anchors.rightMargin: ThemeManager.spacing.normal
                         verticalAlignment: TextInput.AlignVCenter
                         color: ThemeManager.colors.text

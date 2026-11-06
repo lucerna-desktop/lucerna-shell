@@ -10,7 +10,7 @@ Clickable {
     property bool showDate: BarState.showDate
 
     width: clock.width + ThemeManager.spacing.normal * 2
-    height: ThemeManager.barHeight - 8
+    height: ThemeManager.barHeight - ThemeManager.px(8)
     radius: height / 2
     active: BarState.dashboardOpen
     activeColor: ThemeManager.alpha(ThemeManager.colors.accent, 0.16)

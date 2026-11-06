@@ -164,7 +164,39 @@ git clone https://github.com/lucerna-desktop/lucerna-shell
 ln -s "$PWD/lucerna-shell" ~/.config/quickshell/lucerna
 ```
 
-No `hyprland.lua`:
+Há dois jeitos de usar: a **sessão Lucerna**, escolhida na tela de login, e o shell por cima do seu Hyprland de sempre (fora da sessão Lucerna).
+
+### Sessão Lucerna
+
+A sessão sobe o Hyprland com uma base própria, cuida do shell e se recupera sozinha de uma queda. O pacote (marco 6) instala:
+
+| No repositório | Instalado em |
+| --- | --- |
+| `session/bin/lucerna-session` | `/usr/bin/lucerna-session` |
+| `session/lib/*.sh` | `/usr/lib/lucerna/session/` |
+| `session/hypr/` | `/usr/share/lucerna/hypr/` |
+| `session/emergency/` | `/usr/share/lucerna/emergency/` |
+| `session/systemd/*` | `/usr/lib/systemd/user/` |
+| `session/wayland-sessions/lucerna.desktop` | `/usr/share/wayland-sessions/` |
+
+O `lucerna-session` também roda direto do repositório: ele acha a pasta `session/` pelo próprio caminho.
+
+- **Login:** a entrada "Lucerna" aparece no gerenciador de login (o `lucerna.desktop`). Ela detecta a GPU (inclusive a híbrida e a NVIDIA), o teclado e o init, e sobe o Hyprland com a base (`/usr/share/lucerna/hypr/hyprland.lua`). A base põe os padrões e carrega por cima o arquivo do shell (`~/.config/lucerna/hypr/settings.lua`) e o seu `~/.config/hypr/hyprland.lua`, que vale por último. O shell nunca escreve no seu `hyprland.lua`.
+- **Não ponha o `qs -c lucerna` no `hyprland.lua` na sessão Lucerna.** Quem sobe o shell é a sessão. Tire o `hl.exec_cmd("qs -c lucerna")` e binds como `pkill -x qs; qs -c lucerna`: dentro da sessão, um `qs` subido por fora sai logo, com uma linha no log, para não haver dois shells. Para reiniciar o shell, use `lucerna-session shell restart`.
+- **Supervisor e modo de segurança:** o `lucerna-session supervise` (pelo `lucerna-shell.service` com systemd, ou direto sem ele) sobe o `qs` e o reinicia depois de uma queda, com pausas de 1, 2 e 4 s. Na 4ª queda em 30 s, o shell volta no **modo de segurança**: sem as suas personalizações e sem gravar nada, com um aviso. Se ele cair também ali, abre a **tela de emergência**, que roda sem o shell e tem "Tentar de novo", um terminal, o registro, desligar, reiniciar e sair. Os registros ficam em `~/.local/state/lucerna/` (`session.log` e `shell/qs-*.log`).
+- **Bloqueio:** se o shell cair com a tela bloqueada, ele volta bloqueado, e a área de trabalho não aparece no meio.
+- **Atalhos da sessão, que valem mesmo com o shell morto:**
+  - `Ctrl+Alt+Delete`: o menu de energia do shell. Com o shell morto ou travado, a tela de emergência, com "Reiniciar o shell" (o primeiro, no Enter), o terminal, o registro, desligar, reiniciar e sair.
+  - `Ctrl+Alt+Shift+Esc`: sai da sessão.
+  - `Super+Enter`: um terminal.
+- **Pelo TTY** (Ctrl+Alt+F2 e entrar com o seu usuário):
+  - `lucerna-session shell restart`: para o shell e sobe de novo. Se ele estava bloqueado, volta bloqueado e pede a senha. É também a saída para um shell vivo, mas travado na tela de bloqueio.
+  - `lucerna-session unlock`: libera a tela de bloqueio caída do Hyprland (o shell morreu com a tela bloqueada e não voltou), depois de você ter entrado com a senha no TTY. Com o shell de pé, a tela dele continua e pede a senha.
+  - `lucerna-session --help` lista os outros comandos (`shell stop|start|status`, `open terminal`, `logout`…).
+
+### Fora da sessão Lucerna
+
+No seu Hyprland de sempre, o shell sobe pelo `hyprland.lua`:
 
 ```lua
 hl.on("hyprland.start", function()
@@ -176,26 +208,42 @@ end)
 pcall(dofile, os.getenv("HOME") .. "/.config/hypr/lucerna-monitors.lua")
 ```
 
-Os atalhos do shell vêm prontos e se editam em Configurações → Atalhos:
+Na sessão Lucerna, nada disso entra: o shell e o arranjo dos monitores vêm da sessão.
 
-| Atalho | Ação |
-| --- | --- |
-| `Super+Espaço` | Launcher |
-| `Super+Tab` | Visão geral dos workspaces |
-| `Super+V` | Histórico da área de transferência |
-| `Print` / `Shift+Print` / `Ctrl+Print` | Captura (painel) / tela inteira / janela ativa |
-| `Super+Print` | Gravar a tela ou parar |
-| `Super+D` | Painel superior |
-| `Super+S` | Configurações |
-| `Super+A` / `Super+N` / `Super+C` | Ações / notificações / as duas (se as duas estão abertas, fecha as duas) |
-| `Super+T` | Seletor de temas |
-| `Super+Esc` | Menu de energia |
-| `Super+L` | Bloquear a tela |
-| Teclas de volume, mudo, microfone, mídia e brilho | O mesmo, com o OSD |
+### Atalhos
+
+Os atalhos do shell vêm prontos e se editam em Configurações → Atalhos. Os de janelas, áreas de trabalho, terminal e o Super sozinho são padrões só na sessão Lucerna. Fora dela, essas teclas ficam com o seu `hyprland.lua`, e as Configurações voltam ao `Super+S`. Um atalho que você mudou na página vale nas duas.
+
+| Atalho | Ação | Na sessão Lucerna | Fora dela |
+| --- | --- | --- | --- |
+| `Super` sozinho (ao soltar) | Launcher | sim | não |
+| `Super+Espaço` | Launcher | sim | sim |
+| `Super+Tab` | Visão geral dos workspaces | sim | sim |
+| `Super+V` | Histórico da área de transferência | sim | sim |
+| `Print` / `Shift+Print` / `Ctrl+Print` | Captura (painel) / tela inteira / janela ativa | sim | sim |
+| `Super+Print` | Gravar a tela ou parar | sim | sim |
+| `Super+D` | Painel superior | sim | sim |
+| `Super+,` | Configurações | sim | não (é `Super+S`) |
+| `Super+S` | Configurações | não | sim |
+| `Super+A` / `Super+N` / `Super+C` | Ações / notificações / as duas (se as duas estão abertas, fecha as duas) | sim | sim |
+| `Super+T` | Seletor de temas | sim | sim |
+| `Super+Esc` | Menu de energia | sim | sim |
+| `Super+L` | Bloquear a tela | sim | sim |
+| Teclas de volume, mudo, microfone, mídia e brilho | O mesmo, com o OSD | sim | sim |
+| `Super+Enter` | Terminal (o do Configurações → Atalhos → Apps padrão) | sim | não |
+| `Super+Q` / `Super+F` | Fechar a janela / tela cheia | sim | não |
+| `Super+1`…`9` / `Super+Shift+1`…`9` | Ir para a área de trabalho / mandar a janela para ela | sim | não |
+| `Super+setas` / `Super+Shift+setas` | Foco / mover a janela | sim | não |
+| `Super` + botão esquerdo / direito | Arrastar / redimensionar a janela | sim | não |
 
 Mudou: `Super+N` (a ação `notifications`) agora abre só as notificações; a central inteira (ações e notificações) fica em `Super+C`.
 
-O shell fica com essas teclas: se o `hyprland.lua` também tiver alguma delas, a dele sai (até o próximo reload). Então tire do `hyprland.lua` os atalhos antigos do Lucerna, se houver. Os do Hyprland (janelas, workspaces) continuam lá; o [`dev/hyprland.lua`](dev/hyprland.lua) tem um exemplo. As regras de desfoque dos painéis são aplicadas pelo próprio shell, sem mexer no `hyprland.lua`.
+O shell fica com essas teclas: se o `hyprland.lua` também tiver alguma delas, a dele sai (até o próximo reload). Então tire do `hyprland.lua` os atalhos antigos do Lucerna, se houver. Fora da sessão Lucerna, os do Hyprland (janelas, workspaces) continuam lá; o [`dev/hyprland.lua`](dev/hyprland.lua) tem um exemplo. As regras de desfoque dos painéis são aplicadas pelo próprio shell, sem mexer no `hyprland.lua`.
+
+### Escala
+
+- **Tamanho do shell** (Configurações → Aparência): aumenta só o shell (barra, painéis, textos), sem mudar a escala do monitor. A escala é interna, pelas medidas do tema, então o texto e as bordas ficam nítidos.
+- **Escala pelos apps** (Configurações → Monitores): em vez de o Hyprland escalar cada monitor (a "Escala do monitor", o padrão), os monitores ficam em 1 e cada toolkit aumenta os apps (Qt, GTK, Electron/Chromium, X11 e o cursor) por um fator só. É mais leve para a GPU em escalas fracionárias como 1,25, mas não fica igual em todos os apps. O modo mexe nos arquivos dos toolkits (o `gtk-xft-dpi` dos `~/.config/gtk-{3,4}.0/settings.ini`, uma linha marcada nos `~/.config/{electron,chromium,chrome}-flags.conf`, e o `~/.config/lucerna/session.env` e o `~/.config/lucerna/Xresources`, que são dele), com uma cópia `.lucerna-bak` dos seus arquivos antes da primeira mudança, e devolve tudo ao voltar para a escala do monitor. O ambiente completo vale depois de sair e entrar na sessão.
 
 ## Comandos IPC
 

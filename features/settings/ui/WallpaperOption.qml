@@ -17,21 +17,21 @@ Clickable {
     property string detail
     property bool selected: false
 
-    implicitHeight: width * 9 / 16 + 44
-    radius: ThemeManager.radius.normal + 2
+    implicitHeight: width * 9 / 16 + ThemeManager.px(44)
+    radius: ThemeManager.radius.normal + ThemeManager.px(2)
     pressScale: 0.96
     color: selected ? ThemeManager.alpha(ThemeManager.colors.accent, 0.14) : ThemeManager.alpha(ThemeManager.colors.text, 0.04)
-    border.width: selected ? 2 : 0
+    border.width: selected ? ThemeManager.px(2) : 0
     border.color: ThemeManager.colors.accent
 
     Rectangle {
         id: frame
 
-        x: 6
-        y: 6
-        width: parent.width - 12
+        x: ThemeManager.px(6)
+        y: ThemeManager.px(6)
+        width: parent.width - ThemeManager.px(12)
         height: width * 9 / 16
-        radius: ThemeManager.radius.small + 2
+        radius: ThemeManager.radius.small + ThemeManager.px(2)
         color: root.colors.base ?? ThemeManager.colors.base
         clip: true
 
@@ -39,7 +39,7 @@ Clickable {
             anchors.fill: parent
             source: root.image ? `file://${root.image}` : ""
             fillMode: Image.PreserveAspectCrop
-            sourceSize: Qt.size(320, 180)
+            sourceSize: Qt.size(ThemeManager.px(320), ThemeManager.px(180))
             asynchronous: true
         }
 
@@ -80,10 +80,10 @@ Clickable {
             visible: root.shader !== ""
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: 6
-            width: badge.implicitWidth + 12
-            height: 20
-            radius: 10
+            anchors.margins: ThemeManager.px(6)
+            width: badge.implicitWidth + ThemeManager.px(12)
+            height: ThemeManager.px(20)
+            radius: height / 2
             color: ThemeManager.alpha("#000000", 0.45)
 
             Txt {
@@ -101,8 +101,8 @@ Clickable {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: frame.bottom
-        anchors.margins: 8
-        anchors.topMargin: 6
+        anchors.margins: ThemeManager.px(8)
+        anchors.topMargin: ThemeManager.px(6)
         spacing: 0
 
         Txt {

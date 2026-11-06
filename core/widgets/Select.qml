@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 
 // Escolha numa lista longa (resoluções, taxas, layouts): um campo que mostra a
@@ -22,10 +23,10 @@ Item {
     signal selected(var value)
 
     readonly property int currentIndex: options.findIndex(o => o.value === value)
-    readonly property real rowHeight: 36
+    readonly property real rowHeight: ThemeManager.px(36)
     readonly property string query: search.text.trim().toLowerCase()
     readonly property var shown: query ? options.filter(o => `${o.label} ${o.detail ?? ""} ${o.value}`.toLowerCase().includes(query)) : options
-    readonly property real searchHeight: searchable ? 40 + ThemeManager.spacing.small : 0
+    readonly property real searchHeight: searchable ? ThemeManager.px(40) + ThemeManager.spacing.small : 0
     readonly property real listHeight: Math.max(1, Math.min(shown.length, visibleRows)) * rowHeight
 
     implicitHeight: field.height + (expanded ? searchHeight + listHeight + ThemeManager.spacing.small : 0)
@@ -43,10 +44,10 @@ Item {
         id: field
 
         width: parent.width
-        height: 40
+        height: ThemeManager.px(40)
         radius: height / 2
         color: ThemeManager.alpha(ThemeManager.colors.text, 0.05)
-        border.width: root.expanded ? 2 : ThemeManager.outlines ? 1 : 0
+        border.width: root.expanded ? ThemeManager.px(2) : ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
         border.color: root.expanded ? ThemeManager.colors.accent : ThemeManager.colors.border
         onClicked: root.expanded = !root.expanded
 
@@ -67,7 +68,7 @@ Item {
             anchors.rightMargin: ThemeManager.spacing.normal
             anchors.verticalCenter: parent.verticalCenter
             icon: Icons.expand
-            size: 20
+            size: ThemeManager.px(20)
             color: ThemeManager.colors.textMuted
             rotation: root.expanded ? 180 : 0
 
@@ -79,20 +80,20 @@ Item {
         y: field.height + ThemeManager.spacing.small
         visible: root.searchable
         width: parent.width
-        height: 40
-        radius: 20
+        height: ThemeManager.px(40)
+        radius: height / 2
         color: ThemeManager.alpha(ThemeManager.colors.text, 0.06)
-        border.width: search.activeFocus ? 2 : 0
+        border.width: search.activeFocus ? ThemeManager.px(2) : 0
         border.color: ThemeManager.colors.accent
 
         Icon {
             id: searchIcon
 
             anchors.left: parent.left
-            anchors.leftMargin: ThemeManager.spacing.normal + 2
+            anchors.leftMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
             anchors.verticalCenter: parent.verticalCenter
             icon: Icons.magnify
-            size: 18
+            size: ThemeManager.px(18)
             color: ThemeManager.colors.textMuted
         }
 
@@ -172,7 +173,7 @@ Item {
                         anchors.left: parent.left
                         anchors.leftMargin: ThemeManager.spacing.large
                         anchors.right: parent.right
-                        anchors.rightMargin: ThemeManager.spacing.large + 20
+                        anchors.rightMargin: ThemeManager.spacing.large + ThemeManager.px(20)
                         anchors.verticalCenter: parent.verticalCenter
                         elide: Text.ElideRight
                         text: option.modelData.detail ? `${option.modelData.label}  ·  ${option.modelData.detail}` : option.modelData.label
@@ -186,7 +187,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: option.current
                         icon: Icons.check
-                        size: 18
+                        size: ThemeManager.px(18)
                         color: ThemeManager.colors.accent
                     }
                 }

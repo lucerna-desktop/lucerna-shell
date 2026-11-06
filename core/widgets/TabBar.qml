@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 
 // Abas com ícone e rótulo. O indicador desliza e estica até a aba atual, e o
@@ -13,11 +14,11 @@ Item {
     property int currentIndex: 0
     // Largura do rótulo da aba atual, para o indicador: a aba atual escreve aqui
     // (o Binding do delegate). O repeater.itemAt devolve Item, que não tem labelWidth.
-    property real currentLabelWidth: 40
+    property real currentLabelWidth: ThemeManager.px(40)
 
     signal activated(int index)
 
-    implicitHeight: 52
+    implicitHeight: ThemeManager.px(52)
 
     Row {
         id: row
@@ -54,7 +55,7 @@ Item {
 
                 Column {
                     anchors.centerIn: parent
-                    spacing: 2
+                    spacing: ThemeManager.px(2)
 
                     Icon {
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -84,13 +85,13 @@ Item {
     Rectangle {
         // A aba atual, para a posição (x, logo abaixo); a largura vem do root.
         readonly property Item target: repeater.count > 0 ? repeater.itemAt(root.currentIndex) : null
-        readonly property real targetWidth: Math.max(28, root.currentLabelWidth + 12)
+        readonly property real targetWidth: Math.max(ThemeManager.px(28), root.currentLabelWidth + ThemeManager.px(12))
 
         anchors.bottom: parent.bottom
         x: target ? target.x + (target.width - width) / 2 : 0
         width: targetWidth
-        height: 3
-        radius: 1.5
+        height: ThemeManager.px(3)
+        radius: height / 2
         color: ThemeManager.colors.accent
 
         Behavior on x { Anim { type: Anim.Spatial } }
@@ -100,7 +101,7 @@ Item {
     Rectangle {
         anchors.bottom: parent.bottom
         width: parent.width
-        height: 1
+        height: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
         color: ThemeManager.colors.border
         z: -1
     }

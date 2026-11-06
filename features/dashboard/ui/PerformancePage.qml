@@ -119,7 +119,7 @@ Item {
             // Um disco físico por vez (o da raiz primeiro); o clique passa
             // para o próximo.
             GaugeCard {
-                Layout.preferredWidth: 230
+                Layout.preferredWidth: ThemeManager.px(230)
                 Layout.fillHeight: true
                 icon: Icons.storage
                 title: `Disco - ${PerformanceState.disk?.name ?? "nenhum encontrado"}`
@@ -135,16 +135,16 @@ Item {
             Surface {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.preferredHeight: 179
+                Layout.preferredHeight: ThemeManager.px(179)
                 clip: true
 
                 // O título no padrão dos outros cards (o do GaugeCard e do StatCard).
                 CardTitle {
                     id: netHeader
 
-                    x: ThemeManager.spacing.normal + 2
-                    y: ThemeManager.spacing.normal + 2
-                    width: parent.width - 2 * (ThemeManager.spacing.normal + 2)
+                    x: ThemeManager.spacing.normal + ThemeManager.px(2)
+                    y: ThemeManager.spacing.normal + ThemeManager.px(2)
+                    width: parent.width - 2 * (ThemeManager.spacing.normal + ThemeManager.px(2))
                     icon: Icons.network
                     text: "Rede"
                 }
@@ -176,8 +176,8 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
-                    anchors.margins: ThemeManager.spacing.normal + 2
-                    spacing: 4
+                    anchors.margins: ThemeManager.spacing.normal + ThemeManager.px(2)
+                    spacing: ThemeManager.px(4)
 
                     Repeater {
                         model: [
@@ -194,12 +194,12 @@ Item {
                             Icon {
                                 anchors.verticalCenter: parent.verticalCenter
                                 icon: parent.modelData.icon
-                                size: 16
+                                size: ThemeManager.px(16)
                                 color: parent.modelData.accent ? ThemeManager.colors.accent : ThemeManager.colors.textMuted
                             }
 
                             Txt {
-                                width: parent.width - 16 - rateText.width - parent.spacing * 2
+                                width: parent.width - ThemeManager.px(16) - rateText.width - parent.spacing * 2
                                 text: parent.modelData.label
                                 muted: true
                                 font.pixelSize: ThemeManager.font.small + 1
@@ -228,7 +228,7 @@ Item {
             }
 
             GaugeCard {
-                Layout.preferredWidth: 230
+                Layout.preferredWidth: ThemeManager.px(230)
                 Layout.fillHeight: true
                 icon: Icons.memory
                 title: "Memória"

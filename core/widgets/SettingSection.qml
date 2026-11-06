@@ -18,7 +18,7 @@ Column {
         font.pixelSize: ThemeManager.font.small
         font.weight: Font.DemiBold
         font.letterSpacing: 1
-        leftPadding: 4
+        leftPadding: ThemeManager.px(4)
     }
 
     Surface {

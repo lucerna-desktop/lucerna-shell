@@ -46,7 +46,7 @@ Column {
             Flow {
                 id: options
 
-                readonly property int columns: Math.max(2, Math.floor((width + spacing) / (170 + spacing)))
+                readonly property int columns: Math.max(2, Math.floor((width + spacing) / (ThemeManager.px(170) + spacing)))
                 readonly property real cardWidth: (width - (columns - 1) * spacing) / columns
 
                 x: ThemeManager.spacing.large
@@ -89,26 +89,26 @@ Column {
                     Icon {
                         visible: !WallpaperSettings.usesImage && !WallpaperSettings.converting
                         x: (parent.width - width) / 2
-                        y: (parent.width * 9 / 16 + 12 - height) / 2
+                        y: (parent.width * 9 / 16 + ThemeManager.px(12) - height) / 2
                         icon: "add_photo_alternate"
-                        size: 30
+                        size: ThemeManager.px(30)
                         color: ThemeManager.colors.accent
                     }
 
                     // Progresso da conversão
                     Rectangle {
                         visible: WallpaperSettings.converting
-                        x: 18
+                        x: ThemeManager.px(18)
                         y: parent.width * 9 / 16 / 2
-                        width: parent.width - 36
-                        height: 6
-                        radius: 3
+                        width: parent.width - ThemeManager.px(36)
+                        height: ThemeManager.px(6)
+                        radius: height / 2
                         color: ThemeManager.colors.track
 
                         Rectangle {
                             width: parent.width * WallpaperSettings.convertProgress
                             height: parent.height
-                            radius: 3
+                            radius: height / 2
                             color: ThemeManager.colors.accent
 
                             Behavior on width { Anim { type: Anim.Effects } }
@@ -119,10 +119,10 @@ Column {
                         visible: WallpaperSettings.usesVideo && !WallpaperSettings.converting
                         anchors.right: parent.right
                         anchors.top: parent.top
-                        anchors.margins: 12
-                        width: videoBadge.implicitWidth + 12
-                        height: 20
-                        radius: 10
+                        anchors.margins: ThemeManager.px(12)
+                        width: videoBadge.implicitWidth + ThemeManager.px(12)
+                        height: ThemeManager.px(20)
+                        radius: height / 2
                         color: ThemeManager.alpha("#000000", 0.45)
 
                         Txt {

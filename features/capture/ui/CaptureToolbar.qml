@@ -1,5 +1,6 @@
 import QtQuick
 import qs.core.config
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.capture.state
@@ -12,7 +13,7 @@ Surface {
     signal capture
 
     level: 0
-    radius: ThemeManager.radius.large + 4
+    radius: ThemeManager.radius.large + ThemeManager.px(4)
     width: content.implicitWidth + ThemeManager.spacing.large * 2
     height: content.implicitHeight + ThemeManager.spacing.large * 2
 
@@ -29,7 +30,7 @@ Surface {
             spacing: ThemeManager.spacing.normal
 
             SegmentedControl {
-                width: 220
+                width: ThemeManager.px(220)
                 anchors.verticalCenter: parent.verticalCenter
                 options: CaptureState.modes.filter(m => m.value === "shot" || CaptureState.canRecord)
                 value: CaptureState.mode
@@ -38,8 +39,8 @@ Surface {
 
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 1
-                height: 28
+                width: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
+                height: ThemeManager.px(28)
                 color: ThemeManager.colors.border
             }
 
@@ -53,23 +54,23 @@ Surface {
                     readonly property bool current: CaptureState.target === modelData.value
 
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 84
-                    height: 60
+                    width: ThemeManager.px(84)
+                    height: ThemeManager.px(60)
                     radius: ThemeManager.radius.normal
                     color: current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.18) : "transparent"
-                    border.width: current ? 1 : 0
+                    border.width: current ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
                     border.color: ThemeManager.alpha(ThemeManager.colors.accent, 0.6)
                     onClicked: CaptureState.setTarget(modelData.value)
 
                     Column {
                         anchors.centerIn: parent
-                        spacing: 2
+                        spacing: ThemeManager.px(2)
 
                         Icon {
                             anchors.horizontalCenter: parent.horizontalCenter
                             icon: option.modelData.icon
                             filled: option.current
-                            size: 24
+                            size: ThemeManager.px(24)
                             color: option.current ? ThemeManager.colors.accent : ThemeManager.colors.textMuted
                         }
 
@@ -85,17 +86,17 @@ Surface {
 
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 1
-                height: 28
+                width: Pixel.hairline(Window.window?.devicePixelRatio ?? 1)
+                height: ThemeManager.px(28)
                 color: ThemeManager.colors.border
             }
 
             // Capturar
             Clickable {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 60
-                height: 60
-                radius: 30
+                width: ThemeManager.px(60)
+                height: ThemeManager.px(60)
+                radius: width / 2
                 color: root.recordMode ? ThemeManager.colors.danger : ThemeManager.colors.accent
                 pressScale: 0.92
                 onClicked: root.capture()
@@ -104,7 +105,7 @@ Surface {
                     anchors.centerIn: parent
                     icon: root.recordMode ? "radio_button_checked" : "photo_camera"
                     filled: true
-                    size: 28
+                    size: ThemeManager.px(28)
                     color: ThemeManager.colors.accentText
                 }
             }
@@ -112,7 +113,7 @@ Surface {
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
                 icon: Icons.close
-                iconSize: 20
+                iconSize: ThemeManager.px(20)
                 onClicked: CaptureState.close()
             }
         }
@@ -124,12 +125,12 @@ Surface {
             Icon {
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "timer"
-                size: 18
+                size: ThemeManager.px(18)
                 color: ThemeManager.colors.textMuted
             }
 
             SegmentedControl {
-                width: 300
+                width: ThemeManager.px(300)
                 anchors.verticalCenter: parent.verticalCenter
                 options: CaptureState.delays
                 value: Config.captureDelay
@@ -139,9 +140,9 @@ Surface {
             Clickable {
                 visible: !root.recordMode
                 anchors.verticalCenter: parent.verticalCenter
-                width: cursorRow.implicitWidth + 20
-                height: 36
-                radius: 18
+                width: cursorRow.implicitWidth + ThemeManager.px(20)
+                height: ThemeManager.px(36)
+                radius: height / 2
                 color: Config.captureCursor ? ThemeManager.alpha(ThemeManager.colors.accent, 0.18) : "transparent"
                 onClicked: Config.captureCursor = !Config.captureCursor
 
@@ -149,13 +150,13 @@ Surface {
                     id: cursorRow
 
                     anchors.centerIn: parent
-                    spacing: 6
+                    spacing: ThemeManager.px(6)
 
                     Icon {
                         anchors.verticalCenter: parent.verticalCenter
                         icon: "arrow_selector_tool"
                         filled: Config.captureCursor
-                        size: 18
+                        size: ThemeManager.px(18)
                         color: Config.captureCursor ? ThemeManager.colors.accent : ThemeManager.colors.textMuted
                     }
 
@@ -169,7 +170,7 @@ Surface {
 
             SegmentedControl {
                 visible: root.recordMode
-                width: 360
+                width: ThemeManager.px(360)
                 anchors.verticalCenter: parent.verticalCenter
                 options: CaptureState.audios
                 value: Config.captureAudio

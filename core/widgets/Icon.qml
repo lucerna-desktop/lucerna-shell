@@ -7,7 +7,7 @@ Text {
     id: root
 
     property string icon
-    property int size: ThemeManager.font.large + 4
+    property int size: ThemeManager.font.large + ThemeManager.px(4)
     property bool filled: false
     property int weight: 400
     property real fill: filled ? 1 : 0

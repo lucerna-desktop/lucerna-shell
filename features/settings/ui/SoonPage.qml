@@ -10,7 +10,7 @@ Item {
 
     required property var topic
 
-    implicitHeight: 360
+    implicitHeight: ThemeManager.px(360)
 
     Column {
         anchors.centerIn: parent
@@ -18,8 +18,8 @@ Item {
 
         Item {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 96
-            height: 96
+            width: ThemeManager.px(96)
+            height: ThemeManager.px(96)
 
             Blob {
                 anchors.fill: parent
@@ -33,7 +33,7 @@ Item {
             Icon {
                 anchors.centerIn: parent
                 icon: root.topic.icon
-                size: 40
+                size: ThemeManager.px(40)
                 color: ThemeManager.colors.textFaint
             }
         }

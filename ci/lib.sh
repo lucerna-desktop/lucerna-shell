@@ -45,8 +45,8 @@
 #       código 0, a linha "RESULT passed=N failed=0" com N > 0 (fica em
 #       UNIT_RESULT) e uma linha "SUITE <nome> casos=N" (N > 0) para cada nome
 #       de UNIT_NAMES (chame a unit_suites antes). O XDG_RUNTIME_DIR,
-#       XDG_STATE_HOME e XDG_CACHE_HOME do qs são pastas próprias ao lado da
-#       <cópia>, e o qs roda sem WAYLAND_DISPLAY: nada da sessão de quem chama
+#       XDG_STATE_HOME, XDG_CACHE_HOME e XDG_CONFIG_HOME do qs são pastas
+#       próprias ao lado da <cópia>, e o qs roda sem WAYLAND_DISPLAY: nada da sessão de quem chama
 #       (a fumaça tem um shell rodando) é tocado.
 
 REPO_EXCLUDES=(.git ci-out .superpowers .cache __pycache__ .ruff_cache)
@@ -149,14 +149,18 @@ unit_run() {
     base="$cfg.qs"
     # Chamada com `|| fail`, o set -e não vale aqui dentro: cada passo que pode
     # falhar é conferido.
-    if ! install -d -m 700 "$base/run" || ! mkdir -p "$base/state" "$base/cache" \
+    if ! install -d -m 700 "$base/run" || ! mkdir -p "$base/state" "$base/cache" "$base/config" \
         || ! cp "$cfg/tests/runner.qml" "$cfg"/tests/*.test.js "$cfg/"; then
         UNIT_ERROR="não consegui preparar a cópia da unidade (as pastas do qs e o runner ao lado do shell.qml)"
         return 1
     fi
     rc=0
-    env -u LUCERNA_DEV -u WAYLAND_DISPLAY -u QT_QUICK_BACKEND \
-        XDG_RUNTIME_DIR="$base/run" XDG_STATE_HOME="$base/state" XDG_CACHE_HOME="$base/cache" \
+    # LUCERNA_LOGIND=off: o services/Logind fica desligado (nenhum gdbus nem
+    # systemd-inhibit roda; os testes usam só as funções puras e o estado). Sem
+    # ela, fora do modo de desenvolvimento, ele falaria com o logind do sistema.
+    env -u LUCERNA_DEV -u LUCERNA_LOGIND_BUS -u WAYLAND_DISPLAY -u QT_QUICK_BACKEND \
+        LUCERNA_LOGIND=off XDG_RUNTIME_DIR="$base/run" XDG_STATE_HOME="$base/state" XDG_CACHE_HOME="$base/cache" \
+        XDG_CONFIG_HOME="$base/config" \
         TZ=America/Sao_Paulo QT_QPA_PLATFORM=offscreen \
         timeout -k 10 60 qs -p "$cfg/runner.qml" > "$base/raw.log" 2>&1 || rc=$?
     if ! sed 's/\x1b\[[0-9;]*m//g' "$base/raw.log" > "$log"; then

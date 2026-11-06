@@ -143,9 +143,10 @@ Singleton {
     }
 
     // Recarrega o hyprland.lua (hyprctl reload); quem aplica algo por cima
-    // reaplica pelo configReloaded.
+    // reaplica pelo configReloaded. Na sessão Lucerna, espera o arquivo do
+    // shell (HyprFile) ser gravado.
     function reloadConfig(): void {
-        Quickshell.execDetached(["hyprctl", "reload"]);
+        HyprFile.reload();
     }
 
     // Executa Lua na config em uso, sem gravar no arquivo (hyprctl eval).

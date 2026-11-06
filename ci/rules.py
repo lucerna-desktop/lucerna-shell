@@ -64,7 +64,7 @@ def repo_files(root):
 # `missing-property`; as duas categorias, para o lint passar nos dois) e o
 # registro estão no spec do CI (docs/superpowers/specs/2026-09-26-ci-design.md).
 QMLLINT_ALLOWED = {
-    "features/settings/ui/MonitorConfirm.qml": ("margins.top: 90",),
+    "features/settings/ui/MonitorConfirm.qml": ("margins.top: ThemeManager.px(90)",),
 }
 QMLLINT_SUPPRESSION = re.compile(r"qmllint\s+(disable|enable)\b")
 QMLLINT_ALLOWED_COMMENT = "// qmllint disable unqualified missing-property"
@@ -137,11 +137,13 @@ def check_behaviors(root):
 
 
 IMPORT_QS = re.compile(r"^\s*import\s+qs\.([\w.]+)")
+IMPORT_PATH = re.compile(r'^\s*import\s+"')
 
 
 def check_layers(root):
     """features/*/ui não importa qs.services; uma feature não importa outra;
-    core/ não importa qs.features nem qs.services."""
+    core/ não importa qs.features nem qs.services; os .qml de session/ (a tela
+    de emergência) não importam nada do shell (nem qs.*, nem pasta)."""
     out = []
     for rel in repo_files(root):
         if rel.suffix != ".qml":
@@ -150,6 +152,15 @@ def check_layers(root):
         parts = rel.parts
         lines = (root / rel).read_text(encoding="utf-8").splitlines()
         for number, line in enumerate(lines, 1):
+            if parts[0] == "session" and (IMPORT_QS.match(line) or IMPORT_PATH.match(line)):
+                out.append(
+                    (
+                        where,
+                        number,
+                        "a tela de emergência roda sem o shell: importa só o Qt e o Quickshell, nada do shell",
+                    )
+                )
+                continue
             match = IMPORT_QS.match(line)
             if not match:
                 continue
@@ -175,6 +186,44 @@ def check_layers(root):
                             f'a ui da feature "{feature}" não pode importar qs.services: use o state da própria feature',
                         )
                     )
+    return out
+
+
+# Onde a regra `medidas` vale: os componentes e as telas das features. As
+# medidas do tema, do Frame e dos serviços ficam de fora (já são escaladas ou
+# vêm do Hyprland).
+MEASURE_SCOPE = ("core/widgets/*.qml", "features/*/ui/*.qml")
+MEASURE = re.compile(
+    r"^\s*(width|height|implicitWidth|implicitHeight|font\.pixelSize|radius|spacing|(anchors\.)?\w*[mM]argins?|size):"
+    r"\s*(\d+(\.\d+)?)\s*$"
+)
+FIXED_PX = re.compile(r"^px fixo:\s*\S")
+
+
+def check_measures(root):
+    """Nos componentes (MEASURE_SCOPE), uma medida não é um número solto (2 ou
+    mais): passa pela escala interna do shell, `ThemeManager.px(n)` ou um token
+    do tema, senão não cresce com o "Tamanho do shell". Uma medida que não deve
+    escalar (pixels de uma imagem) leva `// px fixo: <motivo>` na mesma linha."""
+    out = []
+    for rel in repo_files(root):
+        where = rel.as_posix()
+        if rel.suffix != ".qml" or not any(fnmatch.fnmatch(where, g) for g in MEASURE_SCOPE):
+            continue
+        for number, line in enumerate((root / rel).read_text(encoding="utf-8").splitlines(), 1):
+            code, _, comment = line.partition("//")
+            match = MEASURE.match(code)
+            if not match or float(match.group(3)) < 2 or FIXED_PX.match(comment.strip()):
+                continue
+            out.append(
+                (
+                    where,
+                    number,
+                    f"medida fixa ({match.group(1)}: {match.group(3)}): use ThemeManager.px({match.group(3)}) "
+                    "ou um token do tema, para crescer com o tamanho do shell; "
+                    "uma medida que não escala leva `// px fixo: <motivo>` na linha",
+                )
+            )
     return out
 
 
@@ -558,6 +607,7 @@ RULES = {
     "acentos": check_accents,
     "links": check_links,
     "animações": check_behaviors,
+    "medidas": check_measures,
     "shaders": check_shaders,
     "temas": check_themes,
 }

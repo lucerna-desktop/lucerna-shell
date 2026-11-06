@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.core.frame
 import qs.core.panels
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.dashboard.state
@@ -36,7 +37,7 @@ Item {
     anchors.fill: parent
     visible: open || progress > 0
 
-    readonly property real fullWidth: Math.min(920, width - ThemeManager.spacing.small * 2)
+    readonly property real fullWidth: Math.min(ThemeManager.px(920), width - ThemeManager.spacing.small * 2)
     // Da borda de cima (com a moldura) até o fim do conteúdo.
     readonly property real fullHeight: Frame.thickness + contentScope.height + ThemeManager.spacing.large * 2
     // A aba da barra dessa tela, de onde a peça parte; sem ela, sai direto da moldura.
@@ -85,7 +86,8 @@ Item {
         readonly property real grow: Frame.clamp(panel.progress)
 
         width: panel.startWidth + (panel.fullWidth - panel.startWidth) * grow
-        x: (panel.width - width) / 2
+        // Centrada no pixel físico (escala fracionária; ver Pixel).
+        x: Pixel.snap((panel.width - width) / 2, Window.window?.devicePixelRatio ?? 1)
         y: panel.fromPill ? panel.pill.y : 0
         height: Math.max(0, panel.startHeight + (panel.fullHeight - panel.startHeight) * panel.progress)
         clip: true

@@ -27,10 +27,11 @@ OverlayPanel {
         id: window
 
         level: 0
-        anchors.centerIn: parent
-        width: Math.min(980, parent.width - 80)
-        height: Math.min(640, parent.height - 120)
-        radius: ThemeManager.radius.large + 4
+        x: panel.snap((parent.width - width) / 2)
+        y: panel.snap((parent.height - height) / 2)
+        width: Math.min(ThemeManager.px(980), parent.width - ThemeManager.px(80))
+        height: Math.min(ThemeManager.px(640), parent.height - ThemeManager.px(120))
+        radius: ThemeManager.radius.large + ThemeManager.px(4)
         scale: 0.94 + 0.06 * panel.progress
 
         RowLayout {
@@ -41,7 +42,7 @@ OverlayPanel {
             FocusScope {
                 id: topicPane
 
-                Layout.preferredWidth: 280
+                Layout.preferredWidth: ThemeManager.px(280)
                 Layout.fillHeight: true
                 focus: true
 
@@ -62,13 +63,13 @@ OverlayPanel {
                     id: heading
 
                     x: ThemeManager.spacing.large
-                    y: ThemeManager.spacing.large + 4
+                    y: ThemeManager.spacing.large + ThemeManager.px(4)
                     spacing: ThemeManager.spacing.normal
 
                     Image {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 27
-                        height: 35
+                        width: ThemeManager.px(27)
+                        height: ThemeManager.px(35)
                         source: ThemeManager.logo
                         sourceSize: Qt.size(width * 2, height * 2)
                         fillMode: Image.PreserveAspectFit
@@ -79,7 +80,7 @@ OverlayPanel {
                     Txt {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Configurações"
-                        font.pixelSize: ThemeManager.font.large + 2
+                        font.pixelSize: ThemeManager.font.large + ThemeManager.px(2)
                         font.weight: Font.DemiBold
                     }
                 }
@@ -133,9 +134,9 @@ OverlayPanel {
                             readonly property Item target: topicRows.count > 0 ? topicRows.itemAt(SettingsState.currentIndex) : null
 
                             width: parent.width
-                            height: target?.height ?? 44
+                            height: target?.height ?? ThemeManager.px(44)
                             y: target?.y ?? 0
-                            radius: ThemeManager.radius.normal + 2
+                            radius: ThemeManager.radius.normal + ThemeManager.px(2)
                             color: ThemeManager.alpha(ThemeManager.colors.accent, 0.12)
 
                             Behavior on y { Anim { type: Anim.FastSpatial } }
@@ -143,9 +144,9 @@ OverlayPanel {
                             Rectangle {
                                 anchors.left: parent.left
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 3
+                                width: ThemeManager.px(3)
                                 height: parent.height * 0.5
-                                radius: 1.5
+                                radius: width / 2
                                 color: ThemeManager.colors.accent
                             }
                         }
@@ -154,7 +155,7 @@ OverlayPanel {
                             id: topics
 
                             width: parent.width
-                            spacing: 2
+                            spacing: ThemeManager.px(2)
 
                             Repeater {
                                 id: topicRows
@@ -169,8 +170,8 @@ OverlayPanel {
                                     readonly property bool current: index === SettingsState.currentIndex
 
                                     width: topics.width
-                                    height: 44
-                                    radius: ThemeManager.radius.normal + 2
+                                    height: ThemeManager.px(44)
+                                    radius: ThemeManager.radius.normal + ThemeManager.px(2)
                                     onClicked: SettingsState.setTopic(index)
 
                                     // Ícone num ladrilho: acende (preenche e ganha a cor de acento) quando é o atual.
@@ -179,9 +180,9 @@ OverlayPanel {
 
                                         x: ThemeManager.spacing.normal
                                         anchors.verticalCenter: parent.verticalCenter
-                                        width: 34
-                                        height: 34
-                                        radius: row.current ? 17 : 10
+                                        width: ThemeManager.px(34)
+                                        height: ThemeManager.px(34)
+                                        radius: row.current ? ThemeManager.px(17) : ThemeManager.px(10)
                                         color: row.current ? ThemeManager.colors.accent : ThemeManager.alpha(ThemeManager.colors.text, 0.06)
 
                                         Behavior on radius { Anim { type: Anim.FastSpatial } }
@@ -191,7 +192,7 @@ OverlayPanel {
                                             anchors.centerIn: parent
                                             icon: row.modelData.icon
                                             filled: row.current || row.hovered
-                                            size: 19
+                                            size: ThemeManager.px(19)
                                             color: row.current ? ThemeManager.colors.accentText : row.modelData.soon ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
                                             scale: row.current ? 1.08 : 1
 
@@ -267,14 +268,14 @@ OverlayPanel {
                     Column {
                         id: pageHeader
 
-                        x: ThemeManager.spacing.large + 8
-                        y: ThemeManager.spacing.large + 6
+                        x: ThemeManager.spacing.large + ThemeManager.px(8)
+                        y: ThemeManager.spacing.large + ThemeManager.px(6)
                         width: scroller.width - x * 2
-                        spacing: 4
+                        spacing: ThemeManager.px(4)
 
                         Txt {
                             text: SettingsState.current.label
-                            font.pixelSize: ThemeManager.font.huge - 18
+                            font.pixelSize: ThemeManager.font.huge - ThemeManager.px(18)
                             font.weight: Font.DemiBold
                         }
 
@@ -328,7 +329,7 @@ OverlayPanel {
                             id: enter
 
                             Anim { target: page; property: "opacity"; from: 0; to: 1; type: Anim.Effects }
-                            Anim { target: pageOffset; property: "y"; from: 22; to: 0; type: Anim.Spatial }
+                            Anim { target: pageOffset; property: "y"; from: ThemeManager.px(22); to: 0; type: Anim.Spatial }
                         }
                     }
                 }
@@ -337,11 +338,11 @@ OverlayPanel {
                 Rectangle {
                     visible: scroller.contentHeight > scroller.height
                     anchors.right: parent.right
-                    anchors.rightMargin: 4
+                    anchors.rightMargin: ThemeManager.px(4)
                     y: scroller.visibleArea.yPosition * scroller.height
-                    width: 4
+                    width: ThemeManager.px(4)
                     height: scroller.visibleArea.heightRatio * scroller.height
-                    radius: 2
+                    radius: width / 2
                     color: ThemeManager.colors.textFaint
                     opacity: scroller.moving ? 0.8 : 0.3
 
