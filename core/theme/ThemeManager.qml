@@ -34,6 +34,11 @@ Singleton {
         property color onAccentContainer
         property color accentIcon
         property color accentFill
+        property color mutedFill
+        property color fillIcon
+        property color trackIcon
+        property color mutedFillIcon
+        property color mutedTrackIcon
     }
 
     component FontTokens: QtObject {
@@ -174,12 +179,24 @@ Singleton {
         onAccentContainer: root.derived.onAccentContainer
         accentIcon: root.derived.accentIcon
         accentFill: root.derived.accentFill
+        // A barra de porcentagem (levelColorsOf): o preenchimento do mudo e o
+        // ícone sobre o preenchimento e sobre o trilho, normal e no mudo.
+        mutedFill: root.derived.mutedFill
+        fillIcon: root.derived.fillIcon
+        trackIcon: root.derived.trackIcon
+        mutedFillIcon: root.derived.mutedFillIcon
+        mutedTrackIcon: root.derived.mutedTrackIcon
 
         Behavior on track { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on accentContainer { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on onAccentContainer { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on accentIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on accentFill { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on mutedFill { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on fillIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on trackIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on mutedFillIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on mutedTrackIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
 
         Behavior on base { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on surface { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
@@ -411,23 +428,42 @@ Singleton {
         return onContainerOf(container(c), colors.text, colors.base);
     }
 
+    // A cor c levada rumo a cada extremo de `aways` (o preto ou o branco), de
+    // 5 em 5% e intercalando os extremos a cada passo, até ficar a 3:1 de bg:
+    // a primeira mistura que passa (a própria c, se já passa). Nenhuma: null.
+    // A base do iconOn, do fillOf e do nearestOn.
+    function towardContrast(c: color, bg: color, aways: var): var {
+        for (let i = 0; i <= 20; i++) {
+            for (const away of aways) {
+                const f = i === 0 ? c : mix(c, away, i / 20);
+                if (contrast(f, bg) >= 3)
+                    return f;
+            }
+        }
+        return null;
+    }
+
     // Um ícone (ou uma marca sem texto) na cor c sobre o fundo bg, a 3:1 dele:
     // a cor pura, se passa; senão, clareada (tema escuro) ou escurecida (claro)
     // de 5 em 5% até passar. Se nem o branco (ou o preto) passa, o outro lado,
     // que chega lá: o melhor entre preto e branco dá pelo menos ~4,6:1.
     function iconOn(c: color, bg: color, dark: bool): color {
-        if (contrast(c, bg) >= 3)
-            return c;
         const black = Qt.rgba(0, 0, 0, 1);
         const white = Qt.rgba(1, 1, 1, 1);
-        for (const away of dark ? [white, black] : [black, white]) {
-            for (let i = 1; i <= 20; i++) {
-                const f = mix(c, away, i / 20);
-                if (contrast(f, bg) >= 3)
-                    return f;
-            }
-        }
-        return c;
+        const [first, second] = dark ? [white, black] : [black, white];
+        return towardContrast(c, bg, [first]) ?? towardContrast(c, bg, [second]) ?? c;
+    }
+
+    // Um ícone na cor c sobre bg, a 3:1 dele, com o mínimo de mistura: a cada
+    // passo de 5% tenta os dois extremos (primeiro o que contrasta mais com
+    // bg). Para fundos de luminância média (o preenchimento cinza do mudo),
+    // onde o iconOn clarearia o vermelho até quase o branco: aqui ele só
+    // escurece o bastante e continua vermelho.
+    function nearestOn(c: color, bg: color): color {
+        const black = Qt.rgba(0, 0, 0, 1);
+        const white = Qt.rgba(1, 1, 1, 1);
+        const aways = contrast(black, bg) >= contrast(white, bg) ? [black, white] : [white, black];
+        return towardContrast(c, bg, aways) ?? aways[0];
     }
 
     // O trilho de uma barra dentro de um contêiner: o fundo levado 25% rumo
@@ -455,10 +491,27 @@ Singleton {
         const black = Qt.rgba(0, 0, 0, 1);
         const white = Qt.rgba(1, 1, 1, 1);
         const away = contrast(black, track) > contrast(white, track) ? black : white;
-        let f = accent;
-        for (let i = 1; i <= 20 && contrast(f, track) < 3; i++)
-            f = mix(accent, away, i / 20);
-        return f;
+        return towardContrast(accent, track, [away]) ?? away;
+    }
+
+    // As cores da barra de porcentagem (LevelSlider) além do trilho e do
+    // preenchimento: o preenchimento do mudo (o textFaint a 3:1 do trilho, um
+    // cinza) e o ícone dentro da barra, que fica sobre o preenchimento ou
+    // sobre o trilho conforme o valor; cada fundo tem o seu, a 3:1 dele. Com
+    // valor normal, o ícone sobre o preenchimento é o base ou o texto (o que
+    // contrastar mais) e, sobre o trilho, o texto. No mudo, o perigo: sobre o
+    // trilho pelo iconOn; sobre o cinza, pelo nearestOn (o iconOn o levaria
+    // quase ao branco em vários temas escuros).
+    function levelColorsOf(c: var, track: color, fill: color, dark: bool): var {
+        const mutedFill = c.mutedFill ?? fillOf(c.textFaint, c.surface, track);
+        const ink = contrast(c.base, fill) >= contrast(c.text, fill) ? c.base : c.text;
+        return {
+            mutedFill: mutedFill,
+            fillIcon: c.fillIcon ?? iconOn(ink, fill, dark),
+            trackIcon: c.trackIcon ?? iconOn(c.text, track, dark),
+            mutedFillIcon: c.mutedFillIcon ?? nearestOn(c.danger, mutedFill),
+            mutedTrackIcon: c.mutedTrackIcon ?? iconOn(c.danger, track, dark)
+        };
     }
 
     // As cores derivadas de um tema (o data dele): o trilho e os tokens do
@@ -471,13 +524,16 @@ Singleton {
         const get = name => own[name] ?? "#ff00ff";
         const track = own.track ?? get(dark ? "raised" : "border");
         const accentContainer = own.accentContainer ?? containerOf(get("accent"), get("base"), get("text"), dark);
-        return {
+        const accentFill = own.accentFill ?? fillOf(get("accent"), get("surface"), track);
+        const named = ["base", "surface", "text", "textFaint", "danger"].reduce((o, k) => Object.assign(o, { [k]: get(k) }), {});
+        const level = levelColorsOf(Object.assign({}, own, named), track, accentFill, dark);
+        return Object.assign({
             track: track,
             accentContainer: accentContainer,
             onAccentContainer: own.onAccentContainer ?? onContainerOf(accentContainer, get("text"), get("base")),
             accentIcon: own.accentIcon ?? iconOn(get("accent"), accentContainer, dark),
-            accentFill: own.accentFill ?? fillOf(get("accent"), get("surface"), track)
-        };
+            accentFill: accentFill
+        }, level);
     }
 
     function parse(text: string): var {

@@ -76,18 +76,18 @@ function run(t) {
     // As cores que importam aqui, copiadas dos 12 themes/*.json (o runner não
     // lê arquivos). Se um tema mudar de cor, atualizar a linha dele.
     const themes = {
-        "catppuccin-latte": { dark: false, accent: "#1e66f5", base: "#eff1f5", surface: "#e6e9ef", raised: "#dce0e8", text: "#4c4f69", danger: "#d20f39", success: "#40a02b", warning: "#df8e1d", track: "#ccd0da" },
-        "catppuccin-mocha": { dark: true, accent: "#89b4fa", base: "#1e1e2e", surface: "#313244", raised: "#45475a", text: "#cdd6f4", danger: "#f38ba8", success: "#a6e3a1", warning: "#f9e2af", track: "#45475a" },
-        "decay-green": { dark: true, accent: "#78dba9", base: "#0c1210", surface: "#131b18", raised: "#1a2521", text: "#c6dccf", danger: "#e05f65", success: "#78dba9", warning: "#f1cf8a", track: "#22322b" },
-        "dracula": { dark: true, accent: "#bd93f9", base: "#282a36", surface: "#343746", raised: "#44475a", text: "#f8f8f2", danger: "#ff5555", success: "#50fa7b", warning: "#f1fa8c", track: "#44475a" },
-        "everforest": { dark: true, accent: "#a7c080", base: "#2d353b", surface: "#343f44", raised: "#3d484d", text: "#d3c6aa", danger: "#e67e80", success: "#83c092", warning: "#dbbc7f", track: "#475258" },
-        "gruvbox-dark": { dark: true, accent: "#fe8019", base: "#282828", surface: "#3c3836", raised: "#504945", text: "#ebdbb2", danger: "#fb4934", success: "#b8bb26", warning: "#fabd2f", track: "#504945" },
-        "kanagawa": { dark: true, accent: "#7e9cd8", base: "#1f1f28", surface: "#2a2a37", raised: "#363646", text: "#dcd7ba", danger: "#e46876", success: "#98bb6c", warning: "#e6c384", track: "#363646" },
-        "matte-black": { dark: true, accent: "#d0d0d0", base: "#0f0f0f", surface: "#1a1a1a", raised: "#242424", text: "#e6e6e6", danger: "#cf6a6a", success: "#9db38e", warning: "#d6b56d", track: "#2e2e2e" },
-        "nord": { dark: true, accent: "#88c0d0", base: "#2e3440", surface: "#3b4252", raised: "#434c5e", text: "#eceff4", danger: "#bf616a", success: "#a3be8c", warning: "#ebcb8b", track: "#4c566a" },
-        "rose-pine-dawn": { dark: false, accent: "#907aa9", base: "#faf4ed", surface: "#fffaf3", raised: "#f2e9e1", text: "#575279", danger: "#b4637a", success: "#286983", warning: "#ea9d34", track: "#dfdad9" },
-        "rose-pine": { dark: true, accent: "#c4a7e7", base: "#191724", surface: "#1f1d2e", raised: "#26233a", text: "#e0def4", danger: "#eb6f92", success: "#9ccfd8", warning: "#f6c177", track: "#403d52" },
-        "tokyo-night": { dark: true, accent: "#7aa2f7", base: "#1a1b26", surface: "#24283b", raised: "#2f3549", text: "#c0caf5", danger: "#f7768e", success: "#9ece6a", warning: "#e0af68", track: "#3b4261" }
+        "catppuccin-latte": { dark: false, accent: "#1e66f5", base: "#eff1f5", surface: "#e6e9ef", raised: "#dce0e8", text: "#4c4f69", textFaint: "#8c8fa1", danger: "#d20f39", success: "#40a02b", warning: "#df8e1d", track: "#ccd0da" },
+        "catppuccin-mocha": { dark: true, accent: "#89b4fa", base: "#1e1e2e", surface: "#313244", raised: "#45475a", text: "#cdd6f4", textFaint: "#7f849c", danger: "#f38ba8", success: "#a6e3a1", warning: "#f9e2af", track: "#45475a" },
+        "decay-green": { dark: true, accent: "#78dba9", base: "#0c1210", surface: "#131b18", raised: "#1a2521", text: "#c6dccf", textFaint: "#5c7a69", danger: "#e05f65", success: "#78dba9", warning: "#f1cf8a", track: "#22322b" },
+        "dracula": { dark: true, accent: "#bd93f9", base: "#282a36", surface: "#343746", raised: "#44475a", text: "#f8f8f2", textFaint: "#6272a4", danger: "#ff5555", success: "#50fa7b", warning: "#f1fa8c", track: "#44475a" },
+        "everforest": { dark: true, accent: "#a7c080", base: "#2d353b", surface: "#343f44", raised: "#3d484d", text: "#d3c6aa", textFaint: "#7a8478", danger: "#e67e80", success: "#83c092", warning: "#dbbc7f", track: "#475258" },
+        "gruvbox-dark": { dark: true, accent: "#fe8019", base: "#282828", surface: "#3c3836", raised: "#504945", text: "#ebdbb2", textFaint: "#928374", danger: "#fb4934", success: "#b8bb26", warning: "#fabd2f", track: "#504945" },
+        "kanagawa": { dark: true, accent: "#7e9cd8", base: "#1f1f28", surface: "#2a2a37", raised: "#363646", text: "#dcd7ba", textFaint: "#727169", danger: "#e46876", success: "#98bb6c", warning: "#e6c384", track: "#363646" },
+        "matte-black": { dark: true, accent: "#d0d0d0", base: "#0f0f0f", surface: "#1a1a1a", raised: "#242424", text: "#e6e6e6", textFaint: "#6e6e6e", danger: "#cf6a6a", success: "#9db38e", warning: "#d6b56d", track: "#2e2e2e" },
+        "nord": { dark: true, accent: "#88c0d0", base: "#2e3440", surface: "#3b4252", raised: "#434c5e", text: "#eceff4", textFaint: "#7b88a1", danger: "#bf616a", success: "#a3be8c", warning: "#ebcb8b", track: "#4c566a" },
+        "rose-pine-dawn": { dark: false, accent: "#907aa9", base: "#faf4ed", surface: "#fffaf3", raised: "#f2e9e1", text: "#575279", textFaint: "#9893a5", danger: "#b4637a", success: "#286983", warning: "#ea9d34", track: "#dfdad9" },
+        "rose-pine": { dark: true, accent: "#c4a7e7", base: "#191724", surface: "#1f1d2e", raised: "#26233a", text: "#e0def4", textFaint: "#6e6a86", danger: "#eb6f92", success: "#9ccfd8", warning: "#f6c177", track: "#403d52" },
+        "tokyo-night": { dark: true, accent: "#7aa2f7", base: "#1a1b26", surface: "#24283b", raised: "#2f3549", text: "#c0caf5", textFaint: "#565f89", danger: "#f7768e", success: "#9ece6a", warning: "#e0af68", track: "#3b4261" }
     };
 
     t.test("theme: mistura de duas cores", () => {
@@ -188,6 +188,43 @@ function run(t) {
         t.eq(String(T.fillOf("#89b4fa", "#313244", "#45475a")), String(T.mix("#89b4fa", "#313244", 0.15)), "o destaque levemente misturado ao surface");
     });
 
+    t.test("theme: a barra de porcentagem em todos os temas", () => {
+        const c3 = (a, b) => T.contrast(String(a), String(b));
+        for (const [id, x] of Object.entries(themes)) {
+            const d = T.derivedColors({ dark: x.dark, colors: x });
+            const where = (what, a, b) => `${id} ${what}: ${a} / ${b} ${c3(a, b).toFixed(2)}`;
+            // Tudo em 8 bits, como a tela desenha.
+            t.check(c3(d.accentFill, d.track) >= 3, where("preenchimento", d.accentFill, d.track));
+            t.check(c3(d.mutedFill, d.track) >= 3, where("preenchimento do mudo", d.mutedFill, d.track));
+            t.check(c3(d.fillIcon, d.accentFill) >= 3, where("ícone sobre o preenchimento", d.fillIcon, d.accentFill));
+            t.check(c3(d.trackIcon, d.track) >= 3, where("ícone sobre o trilho", d.trackIcon, d.track));
+            t.check(c3(d.mutedFillIcon, d.mutedFill) >= 3, where("mudo sobre o cinza", d.mutedFillIcon, d.mutedFill));
+            t.check(c3(d.mutedTrackIcon, d.track) >= 3, where("mudo sobre o trilho", d.mutedTrackIcon, d.track));
+            // O ícone do mudo continua vermelho: o canal vermelho manda.
+            for (const icon of [d.mutedFillIcon, d.mutedTrackIcon]) {
+                const [r, g, b] = [1, 3, 5].map(i => parseInt(String(icon).slice(i, i + 2), 16));
+                t.check(r > g && r > b, `${id}: mudo ainda vermelho ${icon}`);
+            }
+            // O cinza do mudo é um cinza: sem o tom do destaque.
+            t.eq(String(d.mutedFill), String(T.fillOf(x.textFaint, x.surface, d.track)), `${id}: o textFaint a 3:1 do trilho`);
+        }
+    });
+
+    t.test("theme: o ícone com o mínimo de mistura", () => {
+        t.eq(String(T.nearestOn("#f38ba8", "#45475a")), "#f38ba8", "a cor pura, quando passa");
+        // O perigo do tokyo-night sobre o cinza do mudo dele: escurece; o
+        // iconOn, no escuro, o clarearia até quase o branco.
+        const gray = "#898fac";
+        const near = T.nearestOn("#f7768e", gray);
+        t.check(T.luminance(near) < T.luminance("#f7768e") && T.contrast(near, gray) >= 3, `escurece: ${near}`);
+        t.check(T.luminance(T.iconOn("#f7768e", gray, true)) > T.luminance("#f7768e"), "o iconOn clareia");
+        // Sobre um fundo escuro, clareia.
+        const light = T.nearestOn("#404040", "#202020");
+        t.check(T.luminance(light) > T.luminance("#404040") && T.contrast(light, "#202020") >= 3, `clareia: ${light}`);
+        t.eq(T.towardContrast("#777777", "#777777", []), null, "sem extremo para onde ir: null");
+        t.eq(String(T.nearestOn("#777777", "#777777")), String(T.towardContrast("#777777", "#777777", [Qt.rgba(0, 0, 0, 1)])), "o cinza médio vai ao extremo que contrasta mais");
+    });
+
     t.test("theme: tokens do contêiner do tema padrão", () => {
         const x = themes["catppuccin-mocha"];
         const c = T.containerOf(x.accent, x.base, x.text, true);
@@ -198,6 +235,9 @@ function run(t) {
         t.eq(String(T.onContainer(T.colors.danger)), String(T.onContainerOf(T.container(T.colors.danger), x.text, x.base)));
         t.eq(String(T.colors.accentIcon), String(T.iconOn(x.accent, c, true)));
         t.eq(String(T.containerIcon(T.colors.danger)), String(T.iconOn(x.danger, T.container(T.colors.danger), true)), "o ícone do estado com o tema ativo");
+        const level = T.levelColorsOf(x, x.track, T.colors.accentFill, true);
+        t.eq([T.colors.mutedFill, T.colors.fillIcon, T.colors.trackIcon, T.colors.mutedFillIcon, T.colors.mutedTrackIcon].map(String),
+            [level.mutedFill, level.fillIcon, level.trackIcon, level.mutedFillIcon, level.mutedTrackIcon].map(String), "as cores da barra");
     });
 
     t.test("theme: sobrescrita pelo JSON", () => {
@@ -209,6 +249,10 @@ function run(t) {
         const all = T.derivedColors({ dark: true, colors: Object.assign({}, x, { accentContainer: "#3a3f5a", onAccentContainer: "#ffffff", accentFill: "#ff0000" }) });
         t.eq([String(all.onAccentContainer), String(all.accentFill)], ["#ffffff", "#ff0000"], "os três podem vir do JSON");
         t.eq(String(T.derivedColors({ dark: true, colors: Object.assign({}, x, { accentIcon: "#00ff00" }) }).accentIcon), "#00ff00", "e o ícone também");
+        const bar = T.derivedColors({ dark: true, colors: Object.assign({}, x, { mutedFill: "#808080", fillIcon: "#010101", trackIcon: "#020202", mutedFillIcon: "#030303", mutedTrackIcon: "#040404" }) });
+        t.eq([bar.mutedFill, bar.fillIcon, bar.trackIcon, bar.mutedFillIcon, bar.mutedTrackIcon].map(String), ["#808080", "#010101", "#020202", "#030303", "#040404"], "e as cores da barra");
+        const gray = T.derivedColors({ dark: true, colors: Object.assign({}, x, { mutedFill: "#808080" }) });
+        t.eq(String(gray.mutedFillIcon), String(T.nearestOn(x.danger, "#808080")), "o ícone do mudo calculado sobre o cinza do JSON");
         const light = T.derivedColors({ dark: false, colors: { raised: "#eeeeee", border: "#bbbbbb" } });
         t.eq(String(light.track), "#bbbbbb", "sem track: border no claro");
         t.eq(String(T.derivedColors({ colors: { raised: "#eeeeee", border: "#bbbbbb" } }).track), "#eeeeee", "e raised no escuro");
