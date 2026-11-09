@@ -59,13 +59,13 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: Icons.settings
                     size: ThemeManager.px(20)
-                    color: ThemeManager.colors.accentText
+                    color: ThemeManager.colors.accent
                 }
 
                 Txt {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Abrir configurações"
-                    color: ThemeManager.colors.accentText
+                    color: ThemeManager.colors.onAccentContainer
                     font.weight: Font.DemiBold
                 }
             }

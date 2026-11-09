@@ -122,7 +122,8 @@ Surface {
                 width: parent.width
                 height: ThemeManager.px(44)
                 radius: ThemeManager.radius.normal
-                color: ThemeManager.colors.accent
+                // O tom de contêiner, com o texto dele e o ícone no destaque.
+                color: ThemeManager.colors.accentContainer
                 pressScale: 0.97
                 opacity: root.item?.kind === "web" && !LauncherState.searchText ? 0.45 : 1
                 onClicked: LauncherState.activate(root.item)
@@ -130,7 +131,7 @@ Surface {
                 Txt {
                     anchors.centerIn: parent
                     text: root.item?.kind === "web" ? "Pesquisar" : "Abrir"
-                    color: ThemeManager.colors.accentText
+                    color: ThemeManager.colors.onAccentContainer
                     font.weight: Font.DemiBold
                 }
 
@@ -140,7 +141,7 @@ Surface {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: "keyboard_return"
                     size: ThemeManager.px(18)
-                    color: ThemeManager.colors.accentText
+                    color: ThemeManager.colors.accent
                 }
             }
 
