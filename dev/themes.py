@@ -374,7 +374,7 @@ def theme_json(tid, t):
         "colors": c,
         "font": {
             "sans": "Rubik",
-            "mono": "CaskaydiaCove Nerd Font",
+            "mono": "JetBrainsMonoNL Nerd Font Mono",
             "icon": "Material Symbols Rounded",
             "size": {"small": 11, "normal": 13, "large": 16, "huge": 44},
         },
