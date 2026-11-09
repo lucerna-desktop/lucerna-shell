@@ -144,6 +144,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 - **Quickshell 0.3.1+**
 - **lucernad** (o daemon do Lucerna): CPU, memória, rede, discos, temperatura e GPU da aba Desempenho e do card de recursos, o espectro do som do player em volta da capa (pelo PipeWire), o histórico da área de transferência (pelo protocolo de controle de dados do Wayland), o brilho das telas (a integrada pelo logind e os monitores externos por DDC/CI, que precisam da regra udev e do módulo `i2c-dev` do README do lucernad), o gráfico de consumo da bateria e os perfis de energia (pelo UPower e pelo power-profiles-daemon, no D-Bus); sem ele, aparecem como indisponíveis, o anel fica parado, o histórico fica desligado e o slider de brilho some. Instalação no [README do lucernad](https://github.com/lucerna-desktop/lucernad#instalação).
 - **Fonte de ícones**: `ttf-material-symbols-variable` (repositório oficial do Arch)
+- **Fonte mono**: `ttf-jetbrains-mono-nerd` (repositório oficial do Arch), a JetBrainsMonoNL Nerd Font Mono dos temas embutidos
 - Opcionais, cada um liga uma parte:
   - PipeWire: volume e mídia
   - UPower: bateria e perfis de energia
