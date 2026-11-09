@@ -42,7 +42,9 @@ Clickable {
         width: ThemeManager.px(38)
         height: ThemeManager.px(38)
         radius: width / 2
-        color: root.checked ? ThemeManager.alpha(ThemeManager.colors.onAccentContainer, 0.1) : ThemeManager.alpha(ThemeManager.colors.text, 0.07)
+        // Ligado, um toque do base (como o véu do hover): só afasta o fundo do
+        // ícone, que fica a 3:1 do contêiner.
+        color: root.checked ? ThemeManager.alpha(ThemeManager.colors.base, 0.1) : ThemeManager.alpha(ThemeManager.colors.text, 0.07)
 
         Behavior on color { ColorAnim {} }
 

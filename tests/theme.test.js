@@ -125,6 +125,9 @@ function run(t) {
             const d = T.derivedColors({ dark: x.dark, colors: x });
             const where = `${id}: ${d.accentIcon} / ${d.accentContainer}`;
             t.check(T.contrast(String(d.accentIcon), String(d.accentContainer)) >= 3, `${where}: ícone ${T.contrast(String(d.accentIcon), String(d.accentContainer)).toFixed(2)}`);
+            // O ícone do Tile ligado, no círculo (o base a 10% sobre o contêiner).
+            const circle = T.mix(d.accentContainer, x.base, 0.1);
+            t.check(T.contrast(String(d.accentIcon), String(circle)) >= 3, `${where}: ícone no círculo do Tile ${T.contrast(String(d.accentIcon), String(circle)).toFixed(2)}`);
             for (const name of ["accent", "danger", "success", "warning"]) {
                 const c = T.containerOf(x[name], x.base, x.text, x.dark);
                 const on = T.onContainerOf(c, x.text, x.base);
