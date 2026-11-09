@@ -5,7 +5,8 @@ import qs.core.widgets
 
 // Tile do painel de ações: o ícone num círculo, o título e a linha de estado;
 // com `page`, a setinha à direita, separada por um traço fino. Ligado
-// (`checked`), cheio na cor de destaque; desligado, o fundo neutro elevado.
+// (`checked`), no tom de contêiner do destaque, com o texto dele e o ícone na
+// cor de destaque; desligado, o fundo neutro elevado.
 // `alert` pinta o ícone na cor de erro (a bateria baixa). Emite `clicked` no
 // corpo e `pageClicked` na setinha; sem `clickable`, só informa.
 Clickable {
@@ -21,7 +22,7 @@ Clickable {
 
     signal pageClicked
 
-    readonly property color foreground: checked ? ThemeManager.colors.accentText : ThemeManager.colors.text
+    readonly property color foreground: checked ? ThemeManager.colors.onAccentContainer : ThemeManager.colors.text
 
     active: checked
     // Sobre a setinha, só o véu dela.
@@ -31,7 +32,7 @@ Clickable {
     height: ThemeManager.px(60)
     radius: ThemeManager.radius.normal
     pressScale: 0.97
-    color: checked ? ThemeManager.colors.accent : ThemeManager.glass(ThemeManager.colors.raised, 1)
+    color: checked ? ThemeManager.colors.accentContainer : ThemeManager.glass(ThemeManager.colors.raised, 1)
 
     Rectangle {
         id: circle
@@ -41,7 +42,7 @@ Clickable {
         width: ThemeManager.px(38)
         height: ThemeManager.px(38)
         radius: width / 2
-        color: root.checked ? ThemeManager.alpha(ThemeManager.colors.accentText, 0.14) : ThemeManager.alpha(ThemeManager.colors.text, 0.07)
+        color: root.checked ? ThemeManager.alpha(ThemeManager.colors.onAccentContainer, 0.1) : ThemeManager.alpha(ThemeManager.colors.text, 0.07)
 
         Behavior on color { ColorAnim {} }
 
@@ -50,7 +51,7 @@ Clickable {
             icon: root.icon
             size: ThemeManager.px(20)
             filled: root.checked
-            color: root.alert ? ThemeManager.colors.danger : root.checked ? ThemeManager.colors.accentText : ThemeManager.colors.textMuted
+            color: root.alert ? ThemeManager.colors.danger : root.checked ? ThemeManager.colors.accent : ThemeManager.colors.textMuted
 
             Behavior on color { ColorAnim {} }
         }
@@ -74,7 +75,9 @@ Clickable {
         Txt {
             width: parent.width
             text: root.status
-            color: root.checked ? ThemeManager.alpha(ThemeManager.colors.accentText, 0.75) : ThemeManager.colors.textMuted
+            // Sobre o contêiner, o texto cheio: com opacidade, cairia abaixo
+            // de 4,5:1 (o contêiner já fica no limite).
+            color: root.checked ? ThemeManager.colors.onAccentContainer : ThemeManager.colors.textMuted
             font.pixelSize: ThemeManager.font.small
         }
     }
@@ -108,7 +111,7 @@ Clickable {
             anchors.centerIn: parent
             icon: Icons.chevronRight
             size: ThemeManager.px(20)
-            color: root.checked ? ThemeManager.colors.accentText : ThemeManager.colors.textMuted
+            color: root.checked ? ThemeManager.colors.onAccentContainer : ThemeManager.colors.textMuted
         }
     }
 }
