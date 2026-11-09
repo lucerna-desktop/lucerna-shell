@@ -124,6 +124,7 @@ Surface {
                 radius: ThemeManager.radius.normal
                 // O tom de contêiner, com o texto dele e o ícone no destaque.
                 color: ThemeManager.colors.accentContainer
+                layerColor: ThemeManager.colors.base
                 pressScale: 0.97
                 opacity: root.item?.kind === "web" && !LauncherState.searchText ? 0.45 : 1
                 onClicked: LauncherState.activate(root.item)
@@ -141,7 +142,7 @@ Surface {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: "keyboard_return"
                     size: ThemeManager.px(18)
-                    color: ThemeManager.colors.accent
+                    color: ThemeManager.colors.accentIcon
                 }
             }
 

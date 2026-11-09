@@ -250,7 +250,7 @@ Item {
                         icon: MediaState.playing ? Icons.pause : Icons.play
                         filled: true
                         size: ThemeManager.px(32)
-                        color: ThemeManager.colors.accent
+                        color: ThemeManager.colors.accentIcon
                     }
                 }
 

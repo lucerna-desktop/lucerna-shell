@@ -120,6 +120,45 @@ function run(t) {
         }
     });
 
+    t.test("theme: ícone, hover e barra de nível sobre o contêiner", () => {
+        for (const [id, x] of Object.entries(themes)) {
+            const d = T.derivedColors({ dark: x.dark, colors: x });
+            const where = `${id}: ${d.accentIcon} / ${d.accentContainer}`;
+            t.check(T.contrast(String(d.accentIcon), String(d.accentContainer)) >= 3, `${where}: ícone ${T.contrast(String(d.accentIcon), String(d.accentContainer)).toFixed(2)}`);
+            for (const name of ["accent", "danger", "success", "warning"]) {
+                const c = T.containerOf(x[name], x.base, x.text, x.dark);
+                const on = T.onContainerOf(c, x.text, x.base);
+                const icon = T.iconOn(x[name], c, x.dark);
+                const at = `${id} ${name}`;
+                t.check(T.contrast(String(icon), String(c)) >= 3, `${at}: ícone ${icon} ${T.contrast(String(icon), String(c)).toFixed(2)}`);
+                // O véu do Clickable ativo é o base a 8% (hover), 12%
+                // (pressão) e 16% (onda): o texto continua a 4,5:1.
+                for (const veil of [0.08, 0.12, 0.16]) {
+                    const lit = T.mix(c, x.base, veil);
+                    t.check(T.contrast(String(on), String(lit)) >= 4.5, `${at}: texto com o véu ${veil} ${T.contrast(String(on), String(lit)).toFixed(2)}`);
+                }
+                // O cartão da bateria: trilho no contêiner, preenchimento a
+                // 3:1 do trilho; o raio (no preenchimento) a 3:1 do contêiner.
+                const track = T.trackOn(c, on);
+                const fill = T.iconOn(x[name], track, x.dark);
+                t.check(T.contrast(String(fill), String(track)) >= 3, `${at}: barra ${fill} / ${track} ${T.contrast(String(fill), String(track)).toFixed(2)}`);
+                t.check(T.contrast(String(fill), String(c)) >= 3, `${at}: raio ${T.contrast(String(fill), String(c)).toFixed(2)}`);
+                t.check(T.contrast(String(on), String(c)) >= 4.5, `${at}: texto no card`);
+            }
+        }
+    });
+
+    t.test("theme: o ícone sobre um fundo", () => {
+        t.eq(String(T.iconOn("#89b4fa", "#1e1e2e", true)), "#89b4fa", "a cor pura, quando passa");
+        const lighter = T.iconOn("#45475a", "#313244", true);
+        t.check(T.luminance(lighter) > T.luminance("#45475a") && T.contrast(lighter, "#313244") >= 3, `no escuro, clareia: ${lighter}`);
+        const darker = T.iconOn("#dddddd", "#eeeeee", false);
+        t.check(T.luminance(darker) < T.luminance("#dddddd") && T.contrast(darker, "#eeeeee") >= 3, `no claro, escurece: ${darker}`);
+        const other = T.iconOn("#d0d0d0", "#e0e0e0", true);
+        t.check(T.luminance(other) < T.luminance("#d0d0d0") && T.contrast(other, "#e0e0e0") >= 3, `sem o branco passar, o outro lado: ${other}`);
+        t.eq(String(T.trackOn("#000000", "#ffffff")), String(T.mix("#000000", "#ffffff", 0.25)));
+    });
+
     t.test("theme: o texto sobre o contêiner", () => {
         const text = "#cdd6f4";
         const base = "#1e1e2e";
@@ -154,6 +193,8 @@ function run(t) {
         t.eq(String(T.colors.accentFill), String(T.fillOf(x.accent, x.surface, x.track)));
         t.eq(String(T.container(T.colors.danger)), String(T.containerOf(x.danger, x.base, x.text, true)), "atalho com o tema ativo");
         t.eq(String(T.onContainer(T.colors.danger)), String(T.onContainerOf(T.container(T.colors.danger), x.text, x.base)));
+        t.eq(String(T.colors.accentIcon), String(T.iconOn(x.accent, c, true)));
+        t.eq(String(T.containerIcon(T.colors.danger)), String(T.iconOn(x.danger, T.container(T.colors.danger), true)), "o ícone do estado com o tema ativo");
     });
 
     t.test("theme: sobrescrita pelo JSON", () => {
@@ -164,6 +205,7 @@ function run(t) {
         t.eq(String(own.track), x.track);
         const all = T.derivedColors({ dark: true, colors: Object.assign({}, x, { accentContainer: "#3a3f5a", onAccentContainer: "#ffffff", accentFill: "#ff0000" }) });
         t.eq([String(all.onAccentContainer), String(all.accentFill)], ["#ffffff", "#ff0000"], "os três podem vir do JSON");
+        t.eq(String(T.derivedColors({ dark: true, colors: Object.assign({}, x, { accentIcon: "#00ff00" }) }).accentIcon), "#00ff00", "e o ícone também");
         const light = T.derivedColors({ dark: false, colors: { raised: "#eeeeee", border: "#bbbbbb" } });
         t.eq(String(light.track), "#bbbbbb", "sem track: border no claro");
         t.eq(String(T.derivedColors({ colors: { raised: "#eeeeee", border: "#bbbbbb" } }).track), "#eeeeee", "e raised no escuro");

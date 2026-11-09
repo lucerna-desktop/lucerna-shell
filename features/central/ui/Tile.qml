@@ -51,7 +51,7 @@ Clickable {
             icon: root.icon
             size: ThemeManager.px(20)
             filled: root.checked
-            color: root.alert ? ThemeManager.colors.danger : root.checked ? ThemeManager.colors.accent : ThemeManager.colors.textMuted
+            color: root.alert ? ThemeManager.colors.danger : root.checked ? ThemeManager.colors.accentIcon : ThemeManager.colors.textMuted
 
             Behavior on color { ColorAnim {} }
         }

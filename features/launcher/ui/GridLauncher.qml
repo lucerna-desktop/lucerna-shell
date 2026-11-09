@@ -90,6 +90,7 @@ Item {
                     height: ThemeManager.px(34)
                     radius: height / 2
                     color: current ? ThemeManager.colors.accentContainer : ThemeManager.alpha(ThemeManager.colors.text, 0.08)
+                    layerColor: current ? ThemeManager.colors.base : ThemeManager.colors.text
                     onClicked: {
                         LauncherState.appCategory = chip.modelData.id;
                         search.focusInput();

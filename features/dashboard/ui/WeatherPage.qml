@@ -59,7 +59,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: Icons.settings
                     size: ThemeManager.px(20)
-                    color: ThemeManager.colors.accent
+                    color: ThemeManager.colors.accentIcon
                 }
 
                 Txt {

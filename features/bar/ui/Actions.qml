@@ -19,8 +19,9 @@ Row {
         height: ThemeManager.px(28)
         radius: height / 2
         // No tom de contêiner do erro, com o texto dele; o ponto e o ícone
-        // na cor de erro cheia.
+        // na cor de erro (a 3:1 do contêiner).
         color: ThemeManager.container(ThemeManager.colors.danger)
+        layerColor: ThemeManager.colors.base
         onClicked: BarState.stopRecording()
 
         Row {
@@ -36,7 +37,7 @@ Row {
                 width: ThemeManager.px(8)
                 height: ThemeManager.px(8)
                 radius: width / 2
-                color: ThemeManager.colors.danger
+                color: ThemeManager.containerIcon(ThemeManager.colors.danger)
 
                 // Só pulsa à mostra: com a barra escondida, a animação
                 // redesenharia a janela da forma a cada quadro.
@@ -63,7 +64,7 @@ Row {
                 icon: "stop"
                 filled: true
                 size: ThemeManager.px(16)
-                color: ThemeManager.colors.danger
+                color: ThemeManager.containerIcon(ThemeManager.colors.danger)
             }
         }
     }

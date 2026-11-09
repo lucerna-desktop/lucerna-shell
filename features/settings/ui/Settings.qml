@@ -194,7 +194,7 @@ OverlayPanel {
                                             icon: row.modelData.icon
                                             filled: row.current || row.hovered
                                             size: ThemeManager.px(19)
-                                            color: row.current ? ThemeManager.colors.accent : row.modelData.soon ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
+                                            color: row.current ? ThemeManager.colors.accentIcon : row.modelData.soon ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
                                             scale: row.current ? 1.08 : 1
 
                                             Behavior on color { ColorAnim {} }

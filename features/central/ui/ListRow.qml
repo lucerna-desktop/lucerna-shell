@@ -39,7 +39,7 @@ Clickable {
             icon: root.icon
             size: ThemeManager.px(20)
             filled: root.lit || root.hovered
-            color: root.lit ? ThemeManager.colors.accent : ThemeManager.colors.textMuted
+            color: root.lit ? ThemeManager.colors.accentIcon : ThemeManager.colors.textMuted
 
             // Gira enquanto conecta/pareia.
             RotationAnimation on rotation {

@@ -9,9 +9,10 @@ Clickable {
     property alias iconSize: glyph.size
     property alias iconWeight: glyph.weight
     property alias label: caption.text
-    // Ativo, o ícone na cor de destaque e o rótulo no texto do contêiner.
+    // Ativo, o ícone na cor de destaque (a 3:1 do contêiner) e o rótulo no
+    // texto do contêiner.
     property color foreground: active ? ThemeManager.colors.onAccentContainer : ThemeManager.colors.text
-    property color iconColor: active ? ThemeManager.colors.accent : foreground
+    property color iconColor: active ? ThemeManager.colors.accentIcon : foreground
 
     implicitHeight: Math.max(glyph.implicitHeight, caption.implicitHeight) + ThemeManager.spacing.small
     implicitWidth: caption.text ? row.implicitWidth + ThemeManager.spacing.normal : implicitHeight

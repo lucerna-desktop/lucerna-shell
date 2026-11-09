@@ -32,6 +32,7 @@ Singleton {
         property color track
         property color accentContainer
         property color onAccentContainer
+        property color accentIcon
         property color accentFill
     }
 
@@ -171,11 +172,13 @@ Singleton {
         track: root.derived.track
         accentContainer: root.derived.accentContainer
         onAccentContainer: root.derived.onAccentContainer
+        accentIcon: root.derived.accentIcon
         accentFill: root.derived.accentFill
 
         Behavior on track { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on accentContainer { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on onAccentContainer { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on accentIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on accentFill { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
 
         Behavior on base { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
@@ -408,6 +411,37 @@ Singleton {
         return onContainerOf(container(c), colors.text, colors.base);
     }
 
+    // Um ícone (ou uma marca sem texto) na cor c sobre o fundo bg, a 3:1 dele:
+    // a cor pura, se passa; senão, clareada (tema escuro) ou escurecida (claro)
+    // de 5 em 5% até passar. Se nem o branco (ou o preto) passa, o outro lado,
+    // que chega lá: o melhor entre preto e branco dá pelo menos ~4,6:1.
+    function iconOn(c: color, bg: color, dark: bool): color {
+        if (contrast(c, bg) >= 3)
+            return c;
+        const black = Qt.rgba(0, 0, 0, 1);
+        const white = Qt.rgba(1, 1, 1, 1);
+        for (const away of dark ? [white, black] : [black, white]) {
+            for (let i = 1; i <= 20; i++) {
+                const f = mix(c, away, i / 20);
+                if (contrast(f, bg) >= 3)
+                    return f;
+            }
+        }
+        return c;
+    }
+
+    // O trilho de uma barra dentro de um contêiner: o fundo levado 25% rumo
+    // ao texto dele (o cartão da bateria).
+    function trackOn(bg: color, ink: color): color {
+        return mix(bg, ink, 0.25);
+    }
+
+    // O ícone de uma cor de estado sobre o contêiner dela, com o tema ativo:
+    // ThemeManager.containerIcon(colors.danger).
+    function containerIcon(c: color): color {
+        return iconOn(c, container(c), dark);
+    }
+
     // O preenchimento de uma barra: a cor levemente misturada ao surface (15%),
     // a 3:1 do trilho para a barra se ler. Se a mistura não passa, a cor pura;
     // se nem ela passa, a cor afastada do trilho rumo ao preto ou ao branco (o
@@ -428,7 +462,7 @@ Singleton {
     }
 
     // As cores derivadas de um tema (o data dele): o trilho e os tokens do
-    // contêiner e do preenchimento. Cada um pode vir do JSON (colors.track,
+    // contêiner (fundo, texto e ícone) e do preenchimento. Cada um pode vir do JSON (colors.track,
     // colors.accentContainer...); sem ele, calculado. O trilho calculado é o
     // raised no escuro e o border no claro (onde o raised some sobre o cartão).
     function derivedColors(d: var): var {
@@ -441,6 +475,7 @@ Singleton {
             track: track,
             accentContainer: accentContainer,
             onAccentContainer: own.onAccentContainer ?? onContainerOf(accentContainer, get("text"), get("base")),
+            accentIcon: own.accentIcon ?? iconOn(get("accent"), accentContainer, dark),
             accentFill: own.accentFill ?? fillOf(get("accent"), get("surface"), track)
         };
     }
