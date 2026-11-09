@@ -4,6 +4,11 @@ import qs.core.theme
 
 // Uma linha de opção: ícone, título, descrição e o controle à direita.
 // `wide` põe o controle embaixo do texto, ocupando a largura (para sliders).
+// `dimmed` marca a opção que não vale agora: o título passa ao textMuted e o
+// ícone ao textFaint, sem opacidade sobre o texto (que ficaria abaixo de
+// 4,5:1). O controle, sem um desativado próprio (Switch, SegmentedControl),
+// ainda leva a opacidade; com `dimsControl: false`, ele mostra o próprio
+// estado (a LevelSlider com `enabled: false`, cujo nome e valor são texto).
 Item {
     id: root
 
@@ -12,15 +17,12 @@ Item {
     property string description
     property bool wide: false
     property bool dimmed: false
+    property bool dimsControl: true
     property bool separator: true
     default property alias control: slot.data
 
     width: parent?.width ?? 0
     implicitHeight: (wide ? labels.height + slot.childrenRect.height + ThemeManager.spacing.normal : Math.max(labels.height, slot.childrenRect.height)) + ThemeManager.spacing.large * 1.4
-    opacity: dimmed ? 0.45 : 1
-
-    Behavior on opacity { Anim { type: Anim.Effects } }
-
 
     Rectangle {
         visible: root.separator && root.y > 0
@@ -42,7 +44,7 @@ Item {
         y: labels.y + 1
         icon: root.icon
         size: ThemeManager.px(22)
-        color: ThemeManager.colors.textMuted
+        color: root.dimmed ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
     }
 
     Column {
@@ -59,6 +61,7 @@ Item {
         Txt {
             width: parent.width
             text: root.title
+            muted: root.dimmed
             font.weight: Font.Medium
         }
 
@@ -85,5 +88,8 @@ Item {
         y: labels.y + labels.height + ThemeManager.spacing.normal
         width: root.wide ? undefined : childrenRect.width
         height: childrenRect.height
+        opacity: root.dimmed && root.dimsControl ? 0.45 : 1
+
+        Behavior on opacity { Anim { type: Anim.Effects } }
     }
 }

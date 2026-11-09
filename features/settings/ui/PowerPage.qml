@@ -165,6 +165,7 @@ Column {
             wide: true
             title: "Nível"
             dimmed: !SettingsState.saverBelowEnabled
+            dimsControl: false
 
             LevelSlider {
                 width: parent.width

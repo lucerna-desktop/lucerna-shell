@@ -80,6 +80,7 @@ Item {
         value: root.value
         label: root.label
         muted: root.muted
+        wheelEnabled: true
         onMoved: v => root.moved(v)
     }
 }

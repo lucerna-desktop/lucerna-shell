@@ -24,9 +24,13 @@ Singleton {
         return Math.min(to, Math.round((clamped - from) / step) * step + from);
     }
 
-    // O valor sob o ponto x de uma barra de largura `width`, já no passo.
-    function valueAt(x: real, width: real, from: real, to: real, step: real): real {
-        const f = width > 0 ? Math.max(0, Math.min(1, x / width)) : 0;
+    // O valor sob o ponto x de uma barra em pílula de largura `width` e
+    // altura `h`, já no passo. A ponta da parte cheia (fillWidth) anda de
+    // h/2 a width − h/2 do círculo mínimo até o fim: o ponteiro mapeia nesse
+    // trecho, e a ponta acompanha o dedo em toda a faixa.
+    function valueAt(x: real, width: real, h: real, from: real, to: real, step: real): real {
+        const span = width - h;
+        const f = span > 0 ? Math.max(0, Math.min(1, (x - h / 2) / span)) : 0;
         return snap(from + f * (to - from), from, to, step);
     }
 
@@ -37,11 +41,10 @@ Singleton {
     }
 
     // A largura da parte cheia de uma barra em pílula de largura `width` e
-    // altura `h`, com a fração f: f × width, mas nunca menos que h (o círculo
-    // da ponta, que cobre o ícone dentro da barra). Sem valor, 0.
+    // altura `h`, com a fração f: o círculo da ponta (h, que cobre o ícone
+    // dentro da barra) mais f do resto. Cada valor tem a sua largura, sem
+    // zona morta perto do zero.
     function fillWidth(f: real, width: real, h: real): real {
-        if (f <= 0)
-            return 0;
-        return Math.max(h, Math.min(1, f) * width);
+        return h + Math.max(0, Math.min(1, f)) * Math.max(0, width - h);
     }
 }

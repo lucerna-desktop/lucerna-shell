@@ -197,14 +197,10 @@ function run(t) {
             t.check(c3(d.accentFill, d.track) >= 3, where("preenchimento", d.accentFill, d.track));
             t.check(c3(d.mutedFill, d.track) >= 3, where("preenchimento do mudo", d.mutedFill, d.track));
             t.check(c3(d.fillIcon, d.accentFill) >= 3, where("ícone sobre o preenchimento", d.fillIcon, d.accentFill));
-            t.check(c3(d.trackIcon, d.track) >= 3, where("ícone sobre o trilho", d.trackIcon, d.track));
             t.check(c3(d.mutedFillIcon, d.mutedFill) >= 3, where("mudo sobre o cinza", d.mutedFillIcon, d.mutedFill));
-            t.check(c3(d.mutedTrackIcon, d.track) >= 3, where("mudo sobre o trilho", d.mutedTrackIcon, d.track));
             // O ícone do mudo continua vermelho: o canal vermelho manda.
-            for (const icon of [d.mutedFillIcon, d.mutedTrackIcon]) {
-                const [r, g, b] = [1, 3, 5].map(i => parseInt(String(icon).slice(i, i + 2), 16));
-                t.check(r > g && r > b, `${id}: mudo ainda vermelho ${icon}`);
-            }
+            const [r, g, b] = [1, 3, 5].map(i => parseInt(String(d.mutedFillIcon).slice(i, i + 2), 16));
+            t.check(r > g && r > b, `${id}: mudo ainda vermelho ${d.mutedFillIcon}`);
             // O cinza do mudo é um cinza: sem o tom do destaque.
             t.eq(String(d.mutedFill), String(T.fillOf(x.textFaint, x.surface, d.track)), `${id}: o textFaint a 3:1 do trilho`);
         }
@@ -236,8 +232,7 @@ function run(t) {
         t.eq(String(T.colors.accentIcon), String(T.iconOn(x.accent, c, true)));
         t.eq(String(T.containerIcon(T.colors.danger)), String(T.iconOn(x.danger, T.container(T.colors.danger), true)), "o ícone do estado com o tema ativo");
         const level = T.levelColorsOf(x, x.track, T.colors.accentFill, true);
-        t.eq([T.colors.mutedFill, T.colors.fillIcon, T.colors.trackIcon, T.colors.mutedFillIcon, T.colors.mutedTrackIcon].map(String),
-            [level.mutedFill, level.fillIcon, level.trackIcon, level.mutedFillIcon, level.mutedTrackIcon].map(String), "as cores da barra");
+        t.eq([T.colors.mutedFill, T.colors.fillIcon, T.colors.mutedFillIcon].map(String), [level.mutedFill, level.fillIcon, level.mutedFillIcon].map(String), "as cores da barra");
     });
 
     t.test("theme: sobrescrita pelo JSON", () => {
@@ -249,8 +244,8 @@ function run(t) {
         const all = T.derivedColors({ dark: true, colors: Object.assign({}, x, { accentContainer: "#3a3f5a", onAccentContainer: "#ffffff", accentFill: "#ff0000" }) });
         t.eq([String(all.onAccentContainer), String(all.accentFill)], ["#ffffff", "#ff0000"], "os três podem vir do JSON");
         t.eq(String(T.derivedColors({ dark: true, colors: Object.assign({}, x, { accentIcon: "#00ff00" }) }).accentIcon), "#00ff00", "e o ícone também");
-        const bar = T.derivedColors({ dark: true, colors: Object.assign({}, x, { mutedFill: "#808080", fillIcon: "#010101", trackIcon: "#020202", mutedFillIcon: "#030303", mutedTrackIcon: "#040404" }) });
-        t.eq([bar.mutedFill, bar.fillIcon, bar.trackIcon, bar.mutedFillIcon, bar.mutedTrackIcon].map(String), ["#808080", "#010101", "#020202", "#030303", "#040404"], "e as cores da barra");
+        const bar = T.derivedColors({ dark: true, colors: Object.assign({}, x, { mutedFill: "#808080", fillIcon: "#010101", mutedFillIcon: "#030303" }) });
+        t.eq([bar.mutedFill, bar.fillIcon, bar.mutedFillIcon].map(String), ["#808080", "#010101", "#030303"], "e as cores da barra");
         const gray = T.derivedColors({ dark: true, colors: Object.assign({}, x, { mutedFill: "#808080" }) });
         t.eq(String(gray.mutedFillIcon), String(T.nearestOn(x.danger, "#808080")), "o ícone do mudo calculado sobre o cinza do JSON");
         const light = T.derivedColors({ dark: false, colors: { raised: "#eeeeee", border: "#bbbbbb" } });

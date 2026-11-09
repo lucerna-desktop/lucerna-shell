@@ -19,11 +19,16 @@ function run(t) {
     });
 
     t.test("level: valor sob o ponteiro", () => {
-        t.eq(L.valueAt(50, 200, 0, 1, 0), 0.25);
-        t.eq([L.valueAt(-10, 200, 0, 1, 0), L.valueAt(500, 200, 0, 1, 0)], [0, 1], "fora da barra, presa");
-        t.eq(L.valueAt(100, 200, 150, 1000, 25), 575, "no passo");
-        t.eq(L.valueAt(0, 200, 0.01, 1, 0), 0.01, "o mínimo do brilho");
-        t.eq(L.valueAt(10, 0, 0, 1, 0), 0, "barra sem largura: from");
+        t.eq(L.valueAt(100, 200, 20, 0, 1, 0), 0.5, "o meio da barra");
+        t.eq(L.valueAt(55, 200, 20, 0, 1, 0), 0.25, "contado de h/2 a width − h/2");
+        t.eq([L.valueAt(10, 200, 20, 0, 1, 0), L.valueAt(190, 200, 20, 0, 1, 0)], [0, 1], "os centros dos círculos das pontas");
+        t.eq([L.valueAt(-10, 200, 20, 0, 1, 0), L.valueAt(500, 200, 20, 0, 1, 0)], [0, 1], "fora da barra, presa");
+        t.eq(L.valueAt(100, 200, 20, 150, 1000, 25), 575, "no passo");
+        t.eq(L.valueAt(0, 200, 20, 0.01, 1, 0), 0.01, "o mínimo do brilho");
+        t.eq(L.valueAt(10, 20, 20, 0, 1, 0), 0, "barra sem trecho útil: from");
+        // A ponta da parte cheia fica sob o dedo: largura − h/2 = x.
+        for (const x of [12, 37, 100, 163, 188])
+            t.near(L.fillWidth(L.valueAt(x, 200, 20, 0, 1, 0), 200, 20) - 10, x, 1e-9, `ponta em ${x}`);
     });
 
     t.test("level: passo do teclado e da roda", () => {
@@ -36,10 +41,11 @@ function run(t) {
     });
 
     t.test("level: largura da parte cheia", () => {
-        t.eq(L.fillWidth(0.5, 200, 20), 100, "até a metade");
+        t.eq(L.fillWidth(0, 200, 20), 20, "sem valor, o círculo da ponta");
+        t.eq(L.fillWidth(0.5, 200, 20), 110, "o círculo mais metade do resto");
         t.eq(L.fillWidth(1, 200, 20), 200);
-        t.eq(L.fillWidth(0.05, 200, 20), 20, "menos que a altura: o círculo da ponta");
-        t.eq(L.fillWidth(0, 200, 20), 0, "sem valor, nada");
-        t.eq([L.fillWidth(-1, 200, 20), L.fillWidth(2, 200, 20)], [0, 200], "fração presa");
+        t.check(L.fillWidth(0.01, 200, 20) > L.fillWidth(0, 200, 20) && L.fillWidth(0.02, 200, 20) > L.fillWidth(0.01, 200, 20), "valores perto do zero ficam distintos");
+        t.eq([L.fillWidth(-1, 200, 20), L.fillWidth(2, 200, 20)], [20, 200], "fração presa");
+        t.eq(L.fillWidth(0.5, 10, 20), 20, "barra menor que a altura: só o círculo");
     });
 }

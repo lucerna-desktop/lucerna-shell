@@ -36,7 +36,7 @@ Item {
 
     readonly property real fraction: Level.fraction(value, from, to)
     readonly property bool dragging: mouse.pressed
-    readonly property bool hovered: mouse.containsMouse || iconButton.hovered
+    readonly property bool hovered: mouse.containsMouse || iconTarget.containsMouse
     readonly property bool off: muted || !enabled
     readonly property string valueText: showValue ? format.call(null, value) : ""
     readonly property bool hasHeader: label !== "" || valueText !== ""
@@ -56,7 +56,7 @@ Item {
     activeFocusOnTab: true
 
     function setFromX(x: real): void {
-        moved(Level.valueAt(x, width, from, to, stepSize));
+        moved(Level.valueAt(x, width, bar.height, from, to, stepSize));
     }
 
     function wheelBy(event: var): void {
@@ -113,11 +113,6 @@ Item {
             id: bar
 
             readonly property bool raised: root.enabled && (root.hovered || root.dragging || keyHint.running)
-            // Com valor, a parte cheia tem pelo menos a altura da barra (o
-            // círculo da ponta esquerda) e cobre o ícone inteiro; sem valor, o
-            // ícone fica sobre o trilho. Sem recorte (ClippingRectangle é um
-            // shader e some no renderizador por software).
-            readonly property bool hasFill: fillPart.width > 0
 
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width
@@ -127,19 +122,20 @@ Item {
 
             Behavior on height { Anim { type: Anim.FastEffects } }
 
+            // A parte cheia: o círculo da ponta mais a fração do resto
+            // (Level.fillWidth), então ela cobre sempre o ícone. Sem recorte
+            // (o ClippingRectangle é um shader e some no renderizador por
+            // software).
             Rectangle {
-                id: fillPart
-
                 width: Level.fillWidth(root.shownFraction, bar.width, bar.height)
                 height: bar.height
                 radius: height / 2
                 color: root.off ? ThemeManager.colors.mutedFill : ThemeManager.colors.accentFill
-                visible: width > 0
 
                 Behavior on color { ColorAnim {} }
             }
 
-            // Cada fundo com a sua cor de ícone, a 3:1 dele (ThemeManager.levelColorsOf).
+            // O ícone, sempre sobre a parte cheia, a 3:1 dela (ThemeManager.levelColorsOf).
             Icon {
                 x: (bar.height - width) / 2
                 anchors.verticalCenter: parent.verticalCenter
@@ -147,7 +143,7 @@ Item {
                 icon: root.icon
                 size: ThemeManager.px(14)
                 filled: true
-                color: bar.hasFill ? (root.off ? ThemeManager.colors.mutedFillIcon : ThemeManager.colors.fillIcon) : (root.off ? ThemeManager.colors.mutedTrackIcon : ThemeManager.colors.trackIcon)
+                color: root.off ? ThemeManager.colors.mutedFillIcon : ThemeManager.colors.fillIcon
 
                 Behavior on color { ColorAnim {} }
             }
@@ -187,15 +183,21 @@ Item {
         onWheel: event => root.wheelBy(event)
     }
 
-    // O ícone silencia: fica por cima do arrasto.
-    Clickable {
-        id: iconButton
+    // O ícone silencia: fica por cima do arrasto. O alvo é maior que a
+    // barra (pelo menos 32 px, centrado no ícone, na altura do arrasto),
+    // transparente: um véu desse tamanho sairia da barra.
+    MouseArea {
+        id: iconTarget
+
+        readonly property real side: Math.max(ThemeManager.px(32), bar.height)
 
         visible: root.icon !== "" && root.iconClickable
-        anchors.verticalCenter: slot.verticalCenter
-        width: bar.height
-        height: bar.height
-        radius: height / 2
+        x: bar.height / 2 - width / 2
+        y: mouse.y
+        width: side
+        height: Math.max(side, mouse.height)
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
         onClicked: root.iconClicked()
         onWheel: event => root.wheelBy(event)
     }

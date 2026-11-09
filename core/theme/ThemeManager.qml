@@ -36,9 +36,7 @@ Singleton {
         property color accentFill
         property color mutedFill
         property color fillIcon
-        property color trackIcon
         property color mutedFillIcon
-        property color mutedTrackIcon
     }
 
     component FontTokens: QtObject {
@@ -180,12 +178,10 @@ Singleton {
         accentIcon: root.derived.accentIcon
         accentFill: root.derived.accentFill
         // A barra de porcentagem (levelColorsOf): o preenchimento do mudo e o
-        // ícone sobre o preenchimento e sobre o trilho, normal e no mudo.
+        // ícone sobre a parte cheia, normal e no mudo.
         mutedFill: root.derived.mutedFill
         fillIcon: root.derived.fillIcon
-        trackIcon: root.derived.trackIcon
         mutedFillIcon: root.derived.mutedFillIcon
-        mutedTrackIcon: root.derived.mutedTrackIcon
 
         Behavior on track { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on accentContainer { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
@@ -194,9 +190,7 @@ Singleton {
         Behavior on accentFill { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on mutedFill { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on fillIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
-        Behavior on trackIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on mutedFillIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
-        Behavior on mutedTrackIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
 
         Behavior on base { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on surface { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
@@ -496,11 +490,10 @@ Singleton {
 
     // As cores da barra de porcentagem (LevelSlider) além do trilho e do
     // preenchimento: o preenchimento do mudo (o textFaint a 3:1 do trilho, um
-    // cinza) e o ícone dentro da barra, que fica sobre o preenchimento ou
-    // sobre o trilho conforme o valor; cada fundo tem o seu, a 3:1 dele. Com
-    // valor normal, o ícone sobre o preenchimento é o base ou o texto (o que
-    // contrastar mais) e, sobre o trilho, o texto. No mudo, o perigo: sobre o
-    // trilho pelo iconOn; sobre o cinza, pelo nearestOn (o iconOn o levaria
+    // cinza) e o ícone dentro da barra, que fica sempre sobre a parte cheia
+    // (ela nunca é menor que o círculo da ponta), a 3:1 dela. Com valor
+    // normal, o base ou o texto (o que contrastar mais com o preenchimento);
+    // no mudo, o perigo sobre o cinza pelo nearestOn (o iconOn o levaria
     // quase ao branco em vários temas escuros).
     function levelColorsOf(c: var, track: color, fill: color, dark: bool): var {
         const mutedFill = c.mutedFill ?? fillOf(c.textFaint, c.surface, track);
@@ -508,9 +501,7 @@ Singleton {
         return {
             mutedFill: mutedFill,
             fillIcon: c.fillIcon ?? iconOn(ink, fill, dark),
-            trackIcon: c.trackIcon ?? iconOn(c.text, track, dark),
-            mutedFillIcon: c.mutedFillIcon ?? nearestOn(c.danger, mutedFill),
-            mutedTrackIcon: c.mutedTrackIcon ?? iconOn(c.danger, track, dark)
+            mutedFillIcon: c.mutedFillIcon ?? nearestOn(c.danger, mutedFill)
         };
     }
 
