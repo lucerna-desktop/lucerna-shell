@@ -174,7 +174,8 @@ OverlayPanel {
                                     radius: ThemeManager.radius.normal + ThemeManager.px(2)
                                     onClicked: SettingsState.setTopic(index)
 
-                                    // Ícone num ladrilho: acende (preenche e ganha a cor de acento) quando é o atual.
+                                    // Ícone num ladrilho: acende quando é o atual (o ladrilho no tom de
+                                    // contêiner, o ícone preenchido na cor de acento).
                                     Rectangle {
                                         id: tile
 
@@ -183,7 +184,7 @@ OverlayPanel {
                                         width: ThemeManager.px(34)
                                         height: ThemeManager.px(34)
                                         radius: row.current ? ThemeManager.px(17) : ThemeManager.px(10)
-                                        color: row.current ? ThemeManager.colors.accent : ThemeManager.alpha(ThemeManager.colors.text, 0.06)
+                                        color: row.current ? ThemeManager.colors.accentContainer : ThemeManager.alpha(ThemeManager.colors.text, 0.06)
 
                                         Behavior on radius { Anim { type: Anim.FastSpatial } }
                                         Behavior on color { ColorAnim {} }
@@ -193,7 +194,7 @@ OverlayPanel {
                                             icon: row.modelData.icon
                                             filled: row.current || row.hovered
                                             size: ThemeManager.px(19)
-                                            color: row.current ? ThemeManager.colors.accentText : row.modelData.soon ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
+                                            color: row.current ? ThemeManager.colors.accent : row.modelData.soon ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
                                             scale: row.current ? 1.08 : 1
 
                                             Behavior on color { ColorAnim {} }

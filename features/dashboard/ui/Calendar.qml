@@ -129,8 +129,8 @@ Item {
                     width: grid.cell
                     height: root.rowHeight
 
-                    // Hoje: uma bolha só, criada apenas na célula de hoje; anima só com o
-                    // painel aberto na aba Painel.
+                    // Hoje: uma bolha só, no tom de contêiner, criada apenas na célula de
+                    // hoje; anima só com o painel aberto na aba Painel.
                     Loader {
                         anchors.centerIn: parent
                         active: parent.modelData.today
@@ -143,7 +143,7 @@ Item {
                             spinning: true
                             spinDuration: 30000
                             steps: 48
-                            color: ThemeManager.colors.accent
+                            color: ThemeManager.colors.accentContainer
                         }
                     }
 
@@ -153,7 +153,7 @@ Item {
                         text: parent.modelData.day
                         font.pixelSize: ThemeManager.font.small + 1
                         font.features: { "tnum": 1 }
-                        color: parent.modelData.today ? ThemeManager.colors.accentText : parent.modelData.sunday ? (parent.modelData.inMonth ? ThemeManager.colors.danger : ThemeManager.alpha(ThemeManager.colors.danger, 0.45)) : parent.modelData.inMonth ? ThemeManager.colors.text : ThemeManager.colors.textFaint
+                        color: parent.modelData.today ? ThemeManager.colors.onAccentContainer : parent.modelData.sunday ? (parent.modelData.inMonth ? ThemeManager.colors.danger : ThemeManager.alpha(ThemeManager.colors.danger, 0.45)) : parent.modelData.inMonth ? ThemeManager.colors.text : ThemeManager.colors.textFaint
                         font.weight: parent.modelData.today ? Font.DemiBold : Font.Normal
                     }
                 }
