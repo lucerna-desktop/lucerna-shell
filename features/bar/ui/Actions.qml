@@ -18,7 +18,9 @@ Row {
         width: recRow.implicitWidth + ThemeManager.px(18)
         height: ThemeManager.px(28)
         radius: height / 2
-        color: ThemeManager.colors.danger
+        // No tom de contêiner do erro, com o texto dele; o ponto e o ícone
+        // na cor de erro cheia.
+        color: ThemeManager.container(ThemeManager.colors.danger)
         onClicked: BarState.stopRecording()
 
         Row {
@@ -34,7 +36,7 @@ Row {
                 width: ThemeManager.px(8)
                 height: ThemeManager.px(8)
                 radius: width / 2
-                color: ThemeManager.colors.accentText
+                color: ThemeManager.colors.danger
 
                 // Só pulsa à mostra: com a barra escondida, a animação
                 // redesenharia a janela da forma a cada quadro.
@@ -51,7 +53,7 @@ Row {
                 anchors.verticalCenter: parent.verticalCenter
                 text: BarState.recordingTime
                 mono: true
-                color: ThemeManager.colors.accentText
+                color: ThemeManager.onContainer(ThemeManager.colors.danger)
                 font.pixelSize: ThemeManager.font.small + 1
                 font.weight: Font.DemiBold
             }
@@ -61,7 +63,7 @@ Row {
                 icon: "stop"
                 filled: true
                 size: ThemeManager.px(16)
-                color: ThemeManager.colors.accentText
+                color: ThemeManager.colors.danger
             }
         }
     }
@@ -72,7 +74,7 @@ Row {
         visible: BarState.networkAvailable
         iconSize: ThemeManager.px(18)
         active: BarState.entryOpen("rede")
-        foreground: active ? ThemeManager.colors.accentText : BarState.online ? ThemeManager.colors.textMuted : ThemeManager.colors.textFaint
+        foreground: active ? ThemeManager.colors.onAccentContainer : BarState.online ? ThemeManager.colors.textMuted : ThemeManager.colors.textFaint
         onClicked: BarState.toggleEntry("rede")
     }
 
@@ -82,7 +84,7 @@ Row {
         visible: BarState.audioAvailable
         iconSize: ThemeManager.px(18)
         active: BarState.entryOpen("som")
-        foreground: active ? ThemeManager.colors.accentText : BarState.muted ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
+        foreground: active ? ThemeManager.colors.onAccentContainer : BarState.muted ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
         // Clique abre o Som; botão do meio silencia; a roda ajusta o volume.
         onClicked: event => {
             if (event.button === Qt.MiddleButton)
@@ -100,7 +102,7 @@ Row {
         visible: BarState.batteryAvailable
         iconSize: ThemeManager.px(18)
         active: BarState.entryOpen("energia")
-        foreground: active ? ThemeManager.colors.accentText : BarState.batteryLow ? ThemeManager.colors.danger : ThemeManager.colors.textMuted
+        foreground: active ? ThemeManager.colors.onAccentContainer : BarState.batteryLow ? ThemeManager.colors.danger : ThemeManager.colors.textMuted
         onClicked: BarState.toggleEntry("energia")
     }
 

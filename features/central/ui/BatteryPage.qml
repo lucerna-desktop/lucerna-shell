@@ -8,8 +8,8 @@ import qs.core.widgets
 import qs.features.central.state
 
 // Página da bateria no painel de ações da central: voltar e o título; o card
-// em forma de bateria, cheio até a carga na cor dela (destaque, aviso, erro
-// ou, carregando, verde), com a porcentagem e o tempo (ou "Carregando"/
+// em forma de bateria, cheio até a carga no tom de contêiner da cor dela
+// (destaque, aviso, erro ou, carregando, verde), com a porcentagem e o tempo (ou "Carregando"/
 // "Carregada") por cima; o perfil de energia em botões de texto (o atual
 // cheio); o consumo da última hora num gráfico; e a bateria dos dispositivos
 // Bluetooth conectados. Sem bateria, sem perfil ou sem dispositivos, o bloco
@@ -28,7 +28,12 @@ Column {
     Item {
         id: card
 
-        readonly property color fill: PowerState.cardBand === "success" ? ThemeManager.colors.success : PowerState.cardBand === "danger" ? ThemeManager.colors.danger : PowerState.cardBand === "warning" ? ThemeManager.colors.warning : ThemeManager.colors.accent
+        // A cor do estado (sem estado, o destaque), em tom de contêiner, com o
+        // texto dele por cima.
+        readonly property color hue: PowerState.cardBand === "success" ? ThemeManager.colors.success : PowerState.cardBand === "danger" ? ThemeManager.colors.danger : PowerState.cardBand === "warning" ? ThemeManager.colors.warning : ThemeManager.colors.accent
+        readonly property bool band: PowerState.cardBand === "success" || PowerState.cardBand === "danger" || PowerState.cardBand === "warning"
+        readonly property color fill: band ? ThemeManager.container(hue) : ThemeManager.colors.accentContainer
+        readonly property color ink: band ? ThemeManager.onContainer(hue) : ThemeManager.colors.onAccentContainer
         readonly property color empty: ThemeManager.colors.track
         // A carga mostrada anima até a nova.
         property real shown: PowerState.percentage
@@ -98,9 +103,8 @@ Column {
                 tint: ThemeManager.colors.text
             }
 
-            // A parte cheia leva a cópia do texto na cor de mais contraste com
-            // ela (ThemeManager.onColor), cortada
-            // na largura dela.
+            // A parte cheia leva a cópia do texto na cor do texto do contêiner,
+            // cortada na largura dela.
             Rectangle {
                 width: body.width * Math.max(0, Math.min(1, card.shown))
                 height: body.height
@@ -110,7 +114,7 @@ Column {
                 Behavior on color { ColorAnim {} }
 
                 CardLabel {
-                    tint: ThemeManager.onColor(card.fill)
+                    tint: card.ink
                     noteOpacity: 1
                 }
             }
