@@ -19,7 +19,9 @@ Column {
         onBack: CentralState.setPage("")
     }
 
-    PillSlider {
+    LevelSlider {
+        width: parent.width
+        wheelEnabled: true
         icon: SoundState.micIcon
         label: "Volume"
         value: SoundState.micVolume

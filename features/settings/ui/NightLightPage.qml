@@ -47,7 +47,7 @@ Column {
             description: "Mais baixa, mais quente. Ao ajustar, a tela mostra por alguns segundos"
             dimmed: !NightLightSettings.available
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 2500
                 to: 6000

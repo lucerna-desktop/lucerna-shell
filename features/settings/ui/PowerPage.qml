@@ -39,7 +39,7 @@ Column {
             title: "Bateria baixa"
             description: "Avisa uma vez por descarga, ao chegar neste nível"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 5
                 to: 40
@@ -56,7 +56,7 @@ Column {
             title: "Bateria crítica"
             description: "Sempre abaixo do nível baixo"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 1
                 to: 20
@@ -166,7 +166,7 @@ Column {
             title: "Nível"
             dimmed: !SettingsState.saverBelowEnabled
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 5
                 to: 60

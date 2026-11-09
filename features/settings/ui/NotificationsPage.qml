@@ -27,7 +27,7 @@ Column {
             title: "Tempo na tela"
             description: "Quanto um popup fica visível quando o app não define um prazo"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 2
                 to: 15

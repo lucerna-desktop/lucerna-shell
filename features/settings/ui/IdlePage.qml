@@ -45,7 +45,7 @@ Column {
                 // A tela com erro mostra o erro, com o slider desabilitado.
                 description: screenRow.screen.error || (screenRow.screen.kind === "ddc" ? `${screenRow.screen.output} · pelo DDC/CI` : "")
 
-                Slider {
+                LevelSlider {
                     width: parent.width
                     enabled: !screenRow.screen.error
                     from: 0.01

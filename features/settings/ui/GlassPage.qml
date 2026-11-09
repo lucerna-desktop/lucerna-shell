@@ -37,7 +37,7 @@ Column {
             title: "Opacidade dos painéis"
             description: "Quanto do fundo aparece através do painel"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 0.5
                 to: 1
@@ -54,7 +54,7 @@ Column {
             title: "Opacidade dos cartões"
             description: "Os blocos dentro de um painel, como os do painel superior"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 0.2
                 to: 1
@@ -104,7 +104,7 @@ Column {
             title: "Intensidade"
             description: "Raio do desfoque. Vale para todo o desfoque do Hyprland, inclusive o das janelas"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 1
                 to: 16
@@ -122,7 +122,7 @@ Column {
             title: "Suavidade"
             description: "Passadas do desfoque: mais passadas deixam mais liso e custam mais GPU"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 1
                 to: 4
