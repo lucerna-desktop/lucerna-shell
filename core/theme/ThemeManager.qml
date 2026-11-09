@@ -30,6 +30,9 @@ Singleton {
         property color success
         property color warning
         property color track
+        property color accentContainer
+        property color onAccentContainer
+        property color accentFill
     }
 
     component FontTokens: QtObject {
@@ -145,6 +148,11 @@ Singleton {
     readonly property string wallpaperShader: activeWallpaper.shader
     readonly property var hyprland: data.hyprland ?? ({})
 
+    // As cores derivadas do tema ativo, calculadas das cores de destino (não
+    // das animadas): a troca de tema anima o resultado, sem refazer a conta a
+    // cada quadro.
+    readonly property var derived: derivedColors(data)
+
     readonly property ColorTokens colors: ColorTokens {
         base: root.token("base")
         surface: root.token("surface")
@@ -158,11 +166,17 @@ Singleton {
         danger: root.token("danger")
         success: root.token("success")
         warning: root.token("warning")
-        // Trilho de medidores e barras. O tema pode definir; senão, "raised" no
-        // escuro e "border" no claro (onde "raised" some sobre o cartão).
-        track: root.data.colors?.track ?? (root.dark ? raised : border)
+        // Os derivados (derivedColors): trilho, contêiner do destaque e
+        // preenchimento das barras.
+        track: root.derived.track
+        accentContainer: root.derived.accentContainer
+        onAccentContainer: root.derived.onAccentContainer
+        accentFill: root.derived.accentFill
 
         Behavior on track { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on accentContainer { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on onAccentContainer { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on accentFill { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
 
         Behavior on base { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on surface { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
@@ -350,6 +364,79 @@ Singleton {
     // ou base, o que der mais contraste com ela (no empate, o primeiro).
     function onColor(c: color): color {
         return [colors.accentText, colors.text, colors.base].reduce((best, x) => contrast(c, x) > contrast(c, best) ? x : best);
+    }
+
+    // Mistura duas cores; t é o peso de b (0 dá a, 1 dá b).
+    function mix(a: color, b: color, t: real): color {
+        return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t);
+    }
+
+    // O tom de contêiner de uma cor cheia (destaque, aviso, erro, sucesso): o
+    // fundo das superfícies grandes ativas, com o texto do tema por cima. É a
+    // cor misturada ao base (no escuro, um tom escuro da cor; no claro, um tom
+    // claro tingido), com o máximo de cor que ainda deixa o texto a 4,5:1:
+    // parte de 60% da cor no escuro e 50% no claro e desce de 1 em 1% rumo ao
+    // base. Sem mistura que passe, o próprio base.
+    function containerOf(c: color, base: color, text: color, dark: bool): color {
+        for (let i = dark ? 60 : 50; i > 0; i--) {
+            const r = mix(base, c, i / 100);
+            if (contrast(text, r) >= 4.5)
+                return r;
+        }
+        return base;
+    }
+
+    // O texto sobre um contêiner: o texto do tema, se passa de 4,5:1; senão, o
+    // que der mais contraste entre ele, o base, o preto e o branco.
+    function onContainerOf(bg: color, text: color, base: color): color {
+        if (contrast(text, bg) >= 4.5)
+            return text;
+        return [text, base, Qt.rgba(0, 0, 0, 1), Qt.rgba(1, 1, 1, 1)].reduce((best, x) => contrast(bg, x) > contrast(bg, best) ? x : best);
+    }
+
+    // Os atalhos com o tema ativo, para as cores de estado:
+    // ThemeManager.container(colors.danger) e onContainer(colors.danger).
+    function container(c: color): color {
+        return containerOf(c, colors.base, colors.text, dark);
+    }
+
+    function onContainer(c: color): color {
+        return onContainerOf(container(c), colors.text, colors.base);
+    }
+
+    // O preenchimento de uma barra: a cor levemente misturada ao surface (15%),
+    // a 3:1 do trilho para a barra se ler. Se a mistura não passa, a cor pura;
+    // se nem ela passa, a cor afastada do trilho (rumo ao preto ou ao branco, o
+    // que contrastar mais com ele) até passar.
+    function fillOf(accent: color, surface: color, track: color): color {
+        const soft = mix(accent, surface, 0.15);
+        if (contrast(soft, track) >= 3)
+            return soft;
+        const black = Qt.rgba(0, 0, 0, 1);
+        const white = Qt.rgba(1, 1, 1, 1);
+        const away = contrast(black, track) > contrast(white, track) ? black : white;
+        let f = accent;
+        for (let i = 0; i < 20 && contrast(f, track) < 3; i++)
+            f = mix(f, away, 0.05);
+        return f;
+    }
+
+    // As cores derivadas de um tema (o data dele): o trilho e os tokens do
+    // contêiner e do preenchimento. Cada um pode vir do JSON (colors.track,
+    // colors.accentContainer...); sem ele, calculado. O trilho calculado é o
+    // raised no escuro e o border no claro (onde o raised some sobre o cartão).
+    function derivedColors(d: var): var {
+        const own = d.colors ?? {};
+        const dark = d.dark ?? true;
+        const get = name => own[name] ?? "#ff00ff";
+        const track = own.track ?? get(dark ? "raised" : "border");
+        const accentContainer = own.accentContainer ?? containerOf(get("accent"), get("base"), get("text"), dark);
+        return {
+            track: track,
+            accentContainer: accentContainer,
+            onAccentContainer: own.onAccentContainer ?? onContainerOf(accentContainer, get("text"), get("base")),
+            accentFill: own.accentFill ?? fillOf(get("accent"), get("surface"), track)
+        };
     }
 
     function parse(text: string): var {
