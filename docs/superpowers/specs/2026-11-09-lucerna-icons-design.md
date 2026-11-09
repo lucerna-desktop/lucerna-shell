@@ -51,7 +51,20 @@ O Lucide usa a licença ISC. Os ícones que vieram do Feather (lista no LICENSE 
   - os traços viram contornos no build.
   O repositório também instala os SVGs, para os apps Qt usarem com `QIcon`, se preferirem.
 - **A animação do preenchimento fica no QML.** Uma fonte variável com eixo FILL, montada a partir de ícones de traço, exige contornos compatíveis entre os dois estados e seria difícil de manter. No `Icon.qml`, o contorno e o preenchido ficam sobrepostos, com transição de opacidade e escala (`fill` de 0 a 1). A API do `Icon` não muda (`icon`, `size`, `filled`, `fill`).
-- **Um peso só** (traço 2 na grade de 24). Os eixos `wght`/`GRAD`/`opsz` do Material saem. Os dois usos de `weight: 600` (`Switch.qml`, `AppearancePage.qml`) são revistos na galeria: um ícone específico, se ficar fraco.
+- **Pesos pelo tamanho (tamanho óptico).** O traço 2 do Lucide na grade de 24 fica fino nos ícones pequenos (1,1 px em 13 px) e grosso nos grandes (6 px em 76 px). A fonte tem **4 pesos**, gerados dos mesmos SVGs (contorno e preenchido): traço **2,5 / 2 / 1,5 / 1**. O `Icon.qml` escolhe sozinho pelo tamanho: **até 16 px → 2,5; 17–24 → 2; 25–40 → 1,5; acima de 40 → 1**. O `weight: 600` (ênfase; hoje `Switch.qml` e `AppearancePage.qml`) sobe um degrau a partir do automático. Decisão do usuário, 2026-11-09. A galeria mostra os 4 pesos de cada ícone.
+- **Tamanhos padronizados.** O shell usa uns 15 tamanhos de ícone para poucas funções. Viram tokens do tema (`ThemeManager.icon.*`, escalados pelo `px()`), usados também pelos apps:
+
+  | Token | px | Uso | Traço |
+  |---|---|---|---|
+  | `xs` | 14 | selos, indicadores (hoje 13/14/16) | 2,5 |
+  | `sm` | 16 | controles pequenos (interruptor, segmentos) | 2,5 |
+  | `md` | 20 | central, listas, OSD, bloqueio (hoje 18/20) | 2 |
+  | `lg` | 24 | cabeçalhos, busca, notificações (hoje 22/24) | 2 |
+  | `xl` | 32 | destaque em cartões, mídia, menu de energia (hoje 26–32) | 1,5 |
+  | `empty` | 40 | estados vazios (hoje 36/40) | 1,5 |
+  | `display` | 64 | grade do lançador, mídia, clima (hoje 52–76) | 1 |
+
+  **Em aberto, decidir vendo:** a barra (hoje 18, barra de 44 px) ganha token próprio `bar: 18` ou passa a `md: 20`; e se clima/mídia ficam em 72 em vez de `display`. A migração do shell traz capturas das duas opções da barra para o usuário escolher. Decisão do usuário (2026-11-09): padronizar; esses dois pontos, na prática.
 - **Instalação:** segue o padrão dos outros repositórios da org (o lucernad), com um alvo de instalação para `/usr/share/fonts` e `/usr/share/lucerna-icons/svg`. O container de teste (`dev/test.sh`) e o CI do shell instalam o pacote no lugar do Material Symbols.
 
 ## Revisão (o processo com o usuário)
@@ -73,6 +86,7 @@ A ordem sugerida começa pelos mais visíveis e pelos que exigem mais desenho: a
 ## Migração do shell
 
 Feita depois de **todos** os ícones usados estarem aprovados, numa branch do shell:
+- todo `Icon`/`IconButton` passa a usar um token de tamanho (sem `px(N)` solto);
 - `Icons.qml` passa a apontar para os nomes do lucerna-icons;
 - `Icon.qml` passa às duas camadas;
 - `font.icon` dos 12 temas vira "Lucerna Icons";
