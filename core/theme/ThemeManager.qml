@@ -366,9 +366,13 @@ Singleton {
         return [colors.accentText, colors.text, colors.base].reduce((best, x) => contrast(c, x) > contrast(c, best) ? x : best);
     }
 
-    // Mistura duas cores; t é o peso de b (0 dá a, 1 dá b).
+    // Mistura duas cores; t é o peso de b (0 dá a, 1 dá b). Cada canal sai
+    // arredondado para 8 bits, como a tela desenha: o contraste medido sobre o
+    // resultado é o que se vê (sem isso, 4,5:1 em ponto flutuante vira 4,48:1
+    // no #rrggbb).
     function mix(a: color, b: color, t: real): color {
-        return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t);
+        const m = (x, y) => Math.round((x + (y - x) * t) * 255) / 255;
+        return Qt.rgba(m(a.r, b.r), m(a.g, b.g), m(a.b, b.b), m(a.a, b.a));
     }
 
     // O tom de contêiner de uma cor cheia (destaque, aviso, erro, sucesso): o
@@ -406,8 +410,10 @@ Singleton {
 
     // O preenchimento de uma barra: a cor levemente misturada ao surface (15%),
     // a 3:1 do trilho para a barra se ler. Se a mistura não passa, a cor pura;
-    // se nem ela passa, a cor afastada do trilho (rumo ao preto ou ao branco, o
-    // que contrastar mais com ele) até passar.
+    // se nem ela passa, a cor afastada do trilho rumo ao preto ou ao branco (o
+    // que contrastar mais com ele) de 5 em 5% até passar. O extremo sempre
+    // passa: o melhor entre preto e branco dá pelo menos ~4,6:1 com qualquer
+    // trilho.
     function fillOf(accent: color, surface: color, track: color): color {
         const soft = mix(accent, surface, 0.15);
         if (contrast(soft, track) >= 3)
@@ -416,8 +422,8 @@ Singleton {
         const white = Qt.rgba(1, 1, 1, 1);
         const away = contrast(black, track) > contrast(white, track) ? black : white;
         let f = accent;
-        for (let i = 0; i < 20 && contrast(f, track) < 3; i++)
-            f = mix(f, away, 0.05);
+        for (let i = 1; i <= 20 && contrast(f, track) < 3; i++)
+            f = mix(accent, away, i / 20);
         return f;
     }
 

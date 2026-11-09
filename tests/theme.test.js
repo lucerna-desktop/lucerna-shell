@@ -108,6 +108,9 @@ function run(t) {
                 const on = T.onContainerOf(c, x.text, x.base);
                 const where = `${id} ${name}: ${c} / ${on}`;
                 t.check(T.contrast(on, c) >= 4.5, `${where}: texto ${T.contrast(on, c).toFixed(2)}`);
+                // A tela desenha em 8 bits: o contraste vale também com a cor
+                // arredondada para #rrggbb.
+                t.check(T.contrast(String(on), String(c)) >= 4.5, `${where}: texto em 8 bits ${T.contrast(String(on), String(c)).toFixed(4)}`);
                 t.check(T.contrast(c, x.raised) >= 1.2, `${where}: com o raised ${T.contrast(c, x.raised).toFixed(2)}`);
                 if (x.dark)
                     t.check(T.luminance(c) < T.luminance(x[name]), `${where}: mais escuro que a cor`);
@@ -132,6 +135,13 @@ function run(t) {
             t.check(T.contrast(fill, x.track) >= 3, `${id}: preenchimento ${fill} ${T.contrast(fill, x.track).toFixed(2)}`);
             const danger = T.fillOf(x.danger, x.surface, x.track);
             t.check(T.contrast(danger, x.track) >= 3, `${id}: perigo ${danger} ${T.contrast(danger, x.track).toFixed(2)}`);
+            t.check(T.contrast(String(fill), x.track) >= 3 && T.contrast(String(danger), x.track) >= 3, `${id}: em 8 bits`);
+        }
+        // Um trilho cinza-médio (tema do usuário), com a cor igual a ele: o
+        // preenchimento vai até o preto ou o branco se precisar.
+        for (const gray of ["#5a5a5a", "#767676", "#777777", "#8a8a8a"]) {
+            const fill = T.fillOf(gray, gray, gray);
+            t.check(T.contrast(String(fill), gray) >= 3, `trilho ${gray}: ${fill} ${T.contrast(String(fill), gray).toFixed(2)}`);
         }
         t.eq(String(T.fillOf("#89b4fa", "#313244", "#45475a")), String(T.mix("#89b4fa", "#313244", 0.15)), "o destaque levemente misturado ao surface");
     });
