@@ -291,12 +291,59 @@ Singleton {
     function keep(): void {
         confirmTimer.stop();
         pending = false;
+        save(draft, appsMode);
+    }
+
+    // Salva um arranjo para o conjunto conectado. O do modo "Escala pelos
+    // apps" fica à parte (Monitors.setupKey): o da escala do monitor fica
+    // para a volta.
+    function save(specs: var, apps: bool): void {
         const saved = Object.assign({}, Config.monitorSetups ?? {});
         const entry = {};
-        for (const m of draft)
+        for (const m of specs)
             entry[m.key] = fieldsOf(m);
-        saved[setup] = entry;
+        saved[Monitors.setupKey(setup, apps)] = entry;
         Config.monitorSetups = saved;
+    }
+
+    // O modo de escala: "monitor" (o Hyprland escala cada monitor) ou "apps"
+    // (os monitores em 1 e cada toolkit aumenta os apps: AppsScale). O
+    // arranjo do modo novo vem pelo DisplaysState, que acompanha o
+    // Config.scaleMode. Ao entrar no modo dos apps sem um arranjo salvo, o de
+    // agora é salvo antes: é a ele que a volta retorna.
+    readonly property string scaleMode: Config.scaleMode
+    readonly property bool appsMode: scaleMode === "apps"
+    readonly property real appsScale: Config.appsScale
+    readonly property var scaleModeOptions: [
+        { label: "Escala do monitor", value: "monitor" },
+        { label: "Escala pelos apps", value: "apps" }
+    ]
+    readonly property var appsScaleOptions: [1, 1.25, 1.5, 1.75, 2].map(s => ({ label: `${Math.round(s * 100)}%`, value: s }))
+    readonly property string appsNotice: "Um fator só para todos os monitores. Os apps abertos antes continuam como estavam até serem reabertos, e o ambiente da sessão vale por inteiro depois de sair e entrar. O Firefox tem ajuste próprio (layout.css.devPixelsPerPx); apps que não seguem nenhum desses ajustes ficam pequenos."
+        + (AppsScale.hasXrdb ? "" : " Sem o xrdb, os apps X11 ficam sem o ajuste das fontes.")
+
+    function setScaleMode(mode: string): void {
+        if (mode === Config.scaleMode || (mode !== "apps" && mode !== "monitor"))
+            return;
+        if (pending)
+            revert();
+        if (mode === "apps") {
+            if (setup && !(Config.monitorSetups ?? {})[setup] && live.length)
+                save(live, false);
+            Config.scaleMode = "apps";
+            AppsScale.apply(Config.appsScale);
+        } else {
+            Config.scaleMode = "monitor";
+            AppsScale.restore();
+        }
+    }
+
+    function setAppsScale(value: real): void {
+        if (value === Config.appsScale)
+            return;
+        Config.appsScale = value;
+        if (appsMode)
+            AppsScale.apply(value);
     }
 
     function revert(): void {
@@ -349,9 +396,24 @@ Singleton {
         function identify(): void {
             root.identify();
         }
+
+        // O modo de escala: "monitor" ou "apps" (o mesmo da página).
+        function setScaleMode(mode: string): void {
+            root.setScaleMode(mode);
+        }
+
+        // O fator do modo "Escala pelos apps" (1, 1.25, 1.5, 1.75 ou 2).
+        function setAppsScale(value: string): void {
+            const f = Number(value);
+            if (root.appsScaleOptions.some(o => o.value === f))
+                root.setAppsScale(f);
+        }
     }
 
-    // Desde o login: o arranjo vai também para um arquivo que o hyprland.lua inclui.
+    // Desde o login: o arranjo vai também para um arquivo que o hyprland.lua
+    // inclui. Na sessão Lucerna, ele já vale desde o login (pelo arquivo do
+    // shell, HyprFile) e a opção some da página.
+    readonly property bool layered: HyprFile.layered
     readonly property bool atLogin: Config.monitorsAtLogin
     readonly property bool loginIncluded: Monitors.loginIncluded
     readonly property string includeLine: Monitors.includeLine

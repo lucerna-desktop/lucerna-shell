@@ -10,10 +10,13 @@ Clickable {
     property bool showDate: BarState.showDate
 
     width: clock.width + ThemeManager.spacing.normal * 2
-    height: ThemeManager.barHeight - 8
+    height: ThemeManager.barHeight - ThemeManager.px(8)
     radius: height / 2
     active: BarState.dashboardOpen
+    // Ativo, um véu translúcido do destaque: o texto por cima segue no texto
+    // do tema (não no do contêiner, que é para o fundo opaco).
     activeColor: ThemeManager.alpha(ThemeManager.colors.accent, 0.16)
+    layerColor: ThemeManager.colors.text
     onClicked: BarState.togglePanel("dashboard")
     onHoveredChanged: BarState.clockHovered(hovered)
 

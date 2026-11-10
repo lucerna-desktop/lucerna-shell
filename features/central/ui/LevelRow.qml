@@ -1,12 +1,11 @@
 import QtQuick
-import qs.core.format
 import qs.core.theme
 import qs.core.widgets
 
-// Uma linha de nível: o ícone (ou a imagem do app) à esquerda, o slider e a
-// porcentagem à direita. Com `iconClickable`, o ícone é um botão (silenciar).
-// Com `label` (o nome do app, quando ele não tem ícone), o nome fica pequeno
-// em cima do slider.
+// Uma linha de nível: o ícone (ou a imagem do app) à esquerda e a barra de
+// porcentagem (LevelSlider) à direita, com o nome do app (`label`, quando ele
+// não tem ícone) e a porcentagem na linha de cima dela. Com `iconClickable`,
+// o ícone é um botão (silenciar); no mudo, a barra fica no cinza dela.
 // Controlado: emite `moved` e `iconClicked`; quem usa decide `value`.
 Item {
     id: root
@@ -24,15 +23,15 @@ Item {
     signal iconClicked
 
     width: parent?.width ?? 0
-    height: label ? 52 : 44
+    height: Math.max(ThemeManager.px(44), slider.implicitHeight + ThemeManager.spacing.small)
 
     Clickable {
         id: tile
 
         x: ThemeManager.spacing.tiny
         anchors.verticalCenter: parent.verticalCenter
-        width: 36
-        height: 36
+        width: ThemeManager.px(36)
+        height: ThemeManager.px(36)
         radius: ThemeManager.radius.small
         enabled: root.iconClickable
         opacity: 1
@@ -41,10 +40,10 @@ Item {
         Image {
             anchors.centerIn: parent
             visible: root.image !== ""
-            width: 24
-            height: 24
+            width: ThemeManager.px(24)
+            height: ThemeManager.px(24)
             source: root.image
-            sourceSize: Qt.size(48, 48)
+            sourceSize: Qt.size(ThemeManager.px(48), ThemeManager.px(48))
             asynchronous: true
             opacity: root.muted ? 0.35 : 1
         }
@@ -53,7 +52,7 @@ Item {
             anchors.centerIn: parent
             visible: root.image === ""
             icon: root.icon
-            size: 20
+            size: ThemeManager.px(20)
             filled: tile.hovered
             color: root.muted ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
         }
@@ -64,47 +63,24 @@ Item {
             anchors.bottom: parent.bottom
             visible: root.image !== "" && root.muted
             icon: Icons.volumeOff
-            size: 14
+            size: ThemeManager.px(14)
             color: ThemeManager.colors.text
         }
     }
 
-    Txt {
-        anchors.left: slider.left
-        anchors.right: slider.right
-        y: ThemeManager.spacing.tiny
-        visible: root.label !== ""
-        text: root.label
-        muted: true
-        font.pixelSize: ThemeManager.font.small
-    }
-
-    Slider {
+    LevelSlider {
         id: slider
 
         anchors.left: tile.right
         anchors.leftMargin: ThemeManager.spacing.small
-        anchors.right: percent.left
-        anchors.rightMargin: ThemeManager.spacing.small
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: root.label ? 8 : 0
-        from: root.from
-        value: root.value
-        opacity: root.muted ? 0.5 : 1
-        onMoved: v => root.moved(v)
-    }
-
-    Txt {
-        id: percent
-
         anchors.right: parent.right
         anchors.rightMargin: ThemeManager.spacing.small
-        anchors.verticalCenter: slider.verticalCenter
-        width: 40
-        horizontalAlignment: Text.AlignRight
-        text: Format.percent(root.value)
-        mono: true
-        muted: true
-        font.pixelSize: ThemeManager.font.small + 1
+        anchors.verticalCenter: parent.verticalCenter
+        from: root.from
+        value: root.value
+        label: root.label
+        muted: root.muted
+        wheelEnabled: true
+        onMoved: v => root.moved(v)
     }
 }

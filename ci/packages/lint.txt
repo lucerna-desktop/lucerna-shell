@@ -5,3 +5,5 @@ qt6-multimedia
 shellcheck
 ruff
 python
+# o lua traz o luac, que confere a sintaxe dos session/**/*.lua (ci/lint.sh)
+lua

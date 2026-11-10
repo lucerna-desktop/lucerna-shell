@@ -9,6 +9,8 @@
 #   papel            o papel de parede animado e o painel superior aberto, S s
 #   janela           um kitty em tela cheia escrevendo a hora em linhas da largura
 #                    da tela a cada 16 ms (passa atrás do vidro) e a central aberta, S s
+#   janela-x11       igual ao janela, com o kitty em X11 (KITTY_DISABLE_WAYLAND=1,
+#                    pelo XWayland): o custo de um app X11 ampliado
 #   parado           nada aberto, S s
 #   parado-painel    o painel superior aberto e parado, S s (depois de 2 s)
 # Nos casos de ciclo, cada abertura e cada fechamento é uma fatia: começa logo
@@ -24,10 +26,15 @@
 # numa passada separada, porque gravar pesa no Hyprland e mudaria a CPU e os
 # quadros do qs. O dev/bench-paineis.py lê o log e os vídeos e imprime a tabela.
 # No fim (e no Ctrl+C), fecha os painéis, devolve o desfoque e o modo do papel
-# de parede, fecha o kitty e sobe o qs normal. Nenhum hyprctl keyword/eval/reload.
+# de parede, fecha o kitty e sobe o qs normal (o `lucerna-session shell
+# start`). Nenhum hyprctl keyword/reload; o único `hyprctl eval` é o do
+# BENCH_SCALE (abaixo).
 #   dev/bench-paineis.sh [ciclos] [segundos]   (padrão 10 e 10)
 # No container de teste:
 #   dev/test.sh run 'bash ~/.config/quickshell/lucerna/dev/bench-paineis.sh 10 10'
+# BENCH_SCALE=<s>: no começo, põe o 1º monitor nessa escala (`hyprctl eval
+# 'hl.monitor({ output = ..., scale = <s> })'`); no fim e no Ctrl+C, devolve a
+# escala lida antes. Sem ela, nada muda. É a única exceção ao "nenhum hyprctl eval".
 # BENCH_OUT: a pasta da saída (padrão /tmp/lucerna-bench).
 # BENCH_REC=1: só grava os três casos de ciclo em $BENCH_OUT/<caso>.mkv, sem
 # medir nem reiniciar o qs (para as tiras do dev/tira.sh).
@@ -67,12 +74,28 @@ hypr_pid=$(pgrep -xo Hyprland || pgrep -xo Hyprland-bin || true)
 hz=$(getconf CLK_TCK)
 output=$(hyprctl -j monitors | python3 -c 'import json, sys; m = json.load(sys.stdin)[0]; print(m["name"], "%dx%d@%.0f" % (m["width"], m["height"], m["refreshRate"]))')
 read -r output_name output_mode <<< "$output"
+output_geom=$(hyprctl -j monitors | python3 -c 'import json, sys; m = json.load(sys.stdin)[0]; print("%dx%d@%.2f" % (m["width"], m["height"], m["refreshRate"]))')
+output_pos=$(hyprctl -j monitors | python3 -c 'import json, sys; m = json.load(sys.stdin)[0]; print("%dx%d" % (m["x"], m["y"]))')
 
 can_record=0
 if command -v wf-recorder > /dev/null && command -v ffprobe > /dev/null; then
     can_record=1
 fi
 [ "$rec_only" != 1 ] || [ "$can_record" = 1 ] || { echo "ERRO: BENCH_REC=1 precisa do wf-recorder e do ffprobe" >&2; exit 1; }
+
+bench_scale=${BENCH_SCALE:-}
+[ -z "$bench_scale" ] || [[ $bench_scale =~ ^[0-9]+([.][0-9]+)?$ ]] || { echo "ERRO: BENCH_SCALE inválida: $bench_scale" >&2; exit 2; }
+scale_before=""
+
+# set_scale <escala>: põe o 1º monitor nessa escala (repetindo o modo e a posição,
+# que o hl.monitor exige) e confere que o Hyprland aplicou.
+set_scale() {
+    local got
+    hyprctl eval "hl.monitor({ output = \"$output_name\", mode = \"$output_geom\", position = \"$output_pos\", scale = $1 })" > /dev/null 2>&1 || return 1
+    sleep 2
+    got=$(hyprctl -j monitors | python3 -c 'import json, sys; print(json.load(sys.stdin)[0]["scale"])')
+    [ "$got" = "$1" ] || [ "$(awk -v a="$got" -v b="$1" 'BEGIN { print (a == b) }')" = 1 ]
+}
 
 class=lucerna-bench-paineis
 kitty_pid=""
@@ -95,21 +118,30 @@ restore() {
         kill "$tile_pid" 2> /dev/null || true
         wait "$tile_pid" 2> /dev/null || true
     fi
+    [ -z "$scale_before" ] || set_scale "$scale_before" || true
     [ "$osd_up" = 0 ] || ipc brightness down > /dev/null || true
     ipc panels close > /dev/null || true
     ipc blur set "$blur_before" > /dev/null || true
     ipc wallpaper mode "$wall_before" > /dev/null || true
     if [ "$restarted" = 1 ]; then
         # O config é gravado na hora, mas dá um respiro antes de matar o qs.
+        # O do bench é o à mão; o supervisor (parado pelo shell stop) sobe o
+        # normal de volta.
         sleep 0.5
         pkill -x qs || true
         sleep 0.5
-        setsid -f qs -c lucerna > /dev/null 2>&1 < /dev/null
+        lucerna-session shell start
         echo "qs normal de volta"
     fi
 }
 trap restore EXIT
 trap 'exit 130' INT TERM
+
+# Depois dos traps: a escala é devolvida mesmo se a troca falhar ou o Ctrl+C vier.
+if [ -n "$bench_scale" ]; then
+    scale_before=$(hyprctl -j monitors | python3 -c 'import json, sys; print(json.load(sys.stdin)[0]["scale"])')
+    set_scale "$bench_scale" || { echo "ERRO: não consegui pôr a escala $bench_scale" >&2; exit 1; }
+fi
 
 # ticks <pid>: utime + stime do processo, em ticks do relógio.
 ticks() {
@@ -267,11 +299,14 @@ if [ "$rec_only" = 1 ]; then
     exit 0
 fi
 
-# O qs com o log do render loop.
+# O qs com o log do render loop. O supervisor para o dele (sem contar como
+# queda) e espera o shell start do restore. O LUCERNA_SUPERVISED=1 faz as
+# vezes do supervisor parado: sem ela, o qs na sessão Lucerna sai logo.
+restarted=1
+lucerna-session shell stop
 pkill -x qs || true
 sleep 0.5
-restarted=1
-QT_LOGGING_RULES='qt.scenegraph.time.renderloop.debug=true' setsid -f qs -c lucerna > "$log" 2>&1 < /dev/null
+QT_LOGGING_RULES='qt.scenegraph.time.renderloop.debug=true' LUCERNA_SUPERVISED=1 setsid -f qs -c lucerna > "$log" 2>&1 < /dev/null
 # Sem instância, o `ipc call` também escreve na saída: pronto é responder o
 # mesmo desfoque de antes (o `panels get` sai vazio com tudo fechado).
 ready() { [ "$(ipc blur get || true)" = "$blur_before" ]; }
@@ -290,6 +325,7 @@ sleep 3
     printf 'info\tpapel de parede\t%s (estático fora do caso papel)\n' "$wall_before"
     printf 'info\tsaída\t%s %s\n' "$output_name" "$output_mode"
     printf 'info\tciclos\t%s\n' "$cycles"
+    printf 'info\tescala\t%s\n' "${bench_scale:-$(hyprctl -j monitors | python3 -c 'import json, sys; print(json.load(sys.stdin)[0]["scale"])')}"
     [ "$with_kitty" != 1 ] || printf 'info\tkitty\tlado a lado na área 1 (a barra se esconde), sem o caso janela\n'
     printf 'info\tsegundos\t%s\n' "$secs"
     printf 'rss\tantes\t%s\n' "$(rss)"
@@ -306,28 +342,47 @@ ipc panels close > /dev/null
 ipc wallpaper mode static > /dev/null
 sleep 1
 
-if [ "$with_kitty" != 1 ]; then
+# janela_case <caso> [VAR=valor...]: um kitty em tela cheia (com as variáveis no
+# ambiente) e a central aberta, S s.
+janela_case() {
+    local name=$1
+    shift
     # Em tela cheia e com linhas da largura da tela: o texto rola atrás do vidro
     # da central (lado a lado, a central reserva a área e nada passa atrás dela).
     # shellcheck disable=SC2016 # expande no sh do kitty
-    kitty --class "$class" -o confirm_os_window_close=0 sh -c \
+    env "$@" kitty --class "$class" -o confirm_os_window_close=0 sh -c \
         'while :; do t=$(date +%T.%N); echo "$t $t $t $t $t $t $t $t $t $t $t $t $t $t"; sleep 0.016; done' > /dev/null 2>&1 &
     kitty_pid=$!
     wait_client "$class" || true
+    if [ "$name" = janela-x11 ] && ! hyprctl -j clients | python3 -c '
+import json, sys
+sys.exit(0 if any(c["class"] == sys.argv[1] and c.get("xwayland") for c in json.load(sys.stdin)) else 1)' "$class"; then
+        echo "AVISO: o kitty não abriu em X11 (xwayland: true); caso janela-x11 pulado" >&2
+        printf 'skip\t%s\n' "$name" >> "$marks"
+        kill "$kitty_pid" 2> /dev/null || true
+        wait "$kitty_pid" 2> /dev/null || true
+        kitty_pid=""
+        return 0
+    fi
     hyprctl dispatch "hl.dsp.focus({ window = \"class:$class\" })" > /dev/null 2>&1 || true
     hyprctl dispatch 'hl.dsp.window.fullscreen()' > /dev/null 2>&1 || true
     sleep 1
     ipc central open "" > /dev/null
     sleep 2
-    continuous janela
+    continuous "$name"
     ipc panels close > /dev/null
     kill "$kitty_pid" 2> /dev/null || true
     wait "$kitty_pid" 2> /dev/null || true
     kitty_pid=""
     # Depois de uma janela em tela cheia fechar, o qs ainda redesenha por ~10 s
     # (medido na main: 92, 23, 1 e 0 quadros em blocos de 5 s): 15 s para o
-    # `parado` não herdar isso.
+    # caso seguinte não herdar isso.
     sleep 15
+}
+
+if [ "$with_kitty" != 1 ]; then
+    janela_case janela LUCERNA_BENCH=janela
+    janela_case janela-x11 KITTY_DISABLE_WAYLAND=1 "DISPLAY=${DISPLAY:-:0}"
 fi
 
 continuous parado

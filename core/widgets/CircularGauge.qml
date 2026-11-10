@@ -7,7 +7,7 @@ Item {
     id: root
 
     property real value: 0
-    property real thickness: 8
+    property real thickness: ThemeManager.px(8)
     property color color: ThemeManager.colors.accent
     property color trackColor: ThemeManager.colors.track
     property real animatedValue: Math.max(0, Math.min(1, value))
@@ -18,8 +18,8 @@ Item {
 
     Behavior on animatedValue { Anim { type: Anim.StandardLarge } }
 
-    implicitWidth: 120
-    implicitHeight: 120
+    implicitWidth: ThemeManager.px(120)
+    implicitHeight: ThemeManager.px(120)
 
     Shape {
         anchors.fill: parent

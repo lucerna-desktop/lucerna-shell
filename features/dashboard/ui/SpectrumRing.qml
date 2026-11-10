@@ -22,10 +22,10 @@ Item {
     required property int bands
     required property bool live
     property bool mirrored: false
-    property real barWidth: 3
+    property real barWidth: ThemeManager.px(3)
 
     readonly property int count: mirrored ? bands * 2 : bands
-    readonly property real barStart: innerSize / 2 + Math.max(3, size * 0.03)
+    readonly property real barStart: innerSize / 2 + Math.max(ThemeManager.px(3), size * 0.03)
     readonly property real barReach: size / 2 - barStart
 
     // 1 tocando, 0 pausado: as barras sobem e recolhem suave.

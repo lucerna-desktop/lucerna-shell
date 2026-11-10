@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs.core.frame
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.notifications.state
@@ -64,7 +65,7 @@ Item {
 
         x: root.width - width - margin
         y: margin
-        width: 380
+        width: ThemeManager.px(380)
         height: root.height - margin
         // Os cartões que saem pela direita somem na beira da coluna, como na
         // antiga janela dos popups.
@@ -86,7 +87,7 @@ Item {
                 implicitHeight: summaryRow.implicitHeight + ThemeManager.spacing.normal * 2
                 radius: ThemeManager.radius.normal
                 border.color: ThemeManager.colors.border
-                border.width: ThemeManager.outlines ? 1 : 0
+                border.width: ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
 
                 Clickable {
                     anchors.fill: parent
@@ -108,13 +109,13 @@ Item {
                     Icon {
                         anchors.verticalCenter: parent.verticalCenter
                         icon: "sports_esports"
-                        size: 22
+                        size: ThemeManager.px(22)
                         color: ThemeManager.colors.accent
                     }
 
                     Txt {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width - 22 - ThemeManager.spacing.normal
+                        width: parent.width - ThemeManager.px(22) - ThemeManager.spacing.normal
                         text: NotificationsState.summaryText
                         wrapMode: Text.Wrap
                     }
@@ -142,14 +143,14 @@ Item {
 
         add: Transition {
             ParallelAnimation {
-                Anim { property: "x"; from: 64; to: 0; type: Anim.Spatial }
+                Anim { property: "x"; from: ThemeManager.px(64); to: 0; type: Anim.Spatial }
                 Anim { property: "opacity"; from: 0; to: 1; type: Anim.Effects }
             }
         }
 
         remove: Transition {
             ParallelAnimation {
-                Anim { property: "x"; to: 96; type: Anim.EmphasizedAccel }
+                Anim { property: "x"; to: ThemeManager.px(96); type: Anim.EmphasizedAccel }
                 Anim { property: "opacity"; to: 0; type: Anim.EmphasizedAccel }
             }
         }

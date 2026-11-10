@@ -1,8 +1,96 @@
 # Lucerna — Pendências
 
-O que falta fazer, na ordem em que vamos seguir. Cada item vira um PR; ao terminar, ele é marcado aqui.
+O que falta fazer no shell, na ordem em que vamos seguir. Cada item vira um PR; ao terminar, ele é marcado aqui.
+
+Cada repositório do ecossistema tem o seu arquivo de pendências na raiz. Até 2026-11-04, os itens do `lucernad` e do `lucerna-sdk` ficavam aqui também; eles passaram para as [Pendências do `lucernad`](https://github.com/lucerna-desktop/lucernad/blob/main/lucernad%20%E2%80%94%20Pend%C3%AAncias.md) e as [Pendências do `lucerna-sdk`](https://github.com/lucerna-desktop/lucerna-sdk/blob/main/lucerna-sdk%20%E2%80%94%20Pend%C3%AAncias.md). Um item que envolve dois repositórios fica onde o trabalho acontece, com uma linha de referência no outro.
 
 ## Em ordem
+
+### Roteiro até o uso diário
+
+Decisão de 2026-11-04: **fechar 100% do shell antes dos apps**, para trocar a sessão KDE pelo Lucerna no dia a dia. A troca só acontece quando tudo estiver funcionando no container e não houver mais o que testar só por ele.
+
+O shell é para **qualquer usuário e qualquer hardware**: notebook ou desktop, tampa fechada, bateria, GPU integrada, dedicada ou híbrida, vários monitores, apps variados. A máquina do usuário (Acer Nitro AN515-57: Intel no painel de 144 Hz com escala 1,25 e RTX 3050 no HDMI do ultrawide 2560x1080@60; o Hyprland roda na Intel) é só um caso de teste, nunca a regra: nada do padrão pode depender dela. A triagem que originou o roteiro (itens, estimativas e o roteiro de teste de 9 etapas) é a base dos sub-itens abaixo; `P` é de horas a 1 dia, `M` de alguns dias (um PR) e `G` pede spec próprio e vários PRs.
+
+Os marcos seguem esta ordem; cada um só começa quando o anterior fecha. Os itens numerados de depois (1 a 17) continuam abaixo, com a nota do marco a que pertencem.
+
+- [ ] **Marco 1: base robusta.** Uma sessão que não deixa o usuário na mão.
+  - [ ] **Configuração padrão do Hyprland para qualquer máquina** (`hyprland.lua` instalado pelo pacote, com um arquivo do usuário opcional por cima): mod Super, atalhos de janela e de workspaces que não colidem com os do shell, `kb_layout`, terminal, `monitors` pelo arranjo salvo, ambiente da sessão importado para o systemd (`WAYLAND_DISPLAY`, `XDG_CURRENT_DESKTOP=Hyprland`). GPU híbrida (`AQ_DRM_DEVICES` e as variáveis da NVIDIA) como trecho opcional por detecção, nunca fixo. Hoje só existe o `dev/hyprland.lua` (ALT, feito para o aninhado). P–M
+  - [x] **O shell volta sozinho se cair:** unidade de usuário com `Restart=on-failure` e limite de tentativas, aviso "o shell reiniciou", e `misc.allow_session_lock_restore = true` no padrão. Conferir que o `WlSessionLock` reabre bloqueado depois da morte do processo (não só de um reload). Atalhos de pânico do Hyprland (reiniciar o shell, sair da sessão) que funcionam com o `qs` morto. P–M Feito na base robusta (branch `feat/base-robusta`): o supervisor próprio `lucerna-session supervise` reinicia o `qs` com pausa crescente (1, 2 e 4 s), passa ao modo de segurança e por fim à tela de emergência (`lucerna-session emergency`), com o aviso da queda no shell; o systemd só reinicia o supervisor (`lucerna-session.target` e `lucerna-shell.service` com `Restart=on-failure`); o `allow_session_lock_restore` está na base da sessão, e a marca do bloqueio (`$XDG_RUNTIME_DIR/lucerna/locked`) faz o shell voltar bloqueado, sem nenhum quadro da área de trabalho; Ctrl+Alt+Delete (energia) e Ctrl+Alt+Shift+Esc (sair) valem com o `qs` morto, e o `lucerna-session unlock` desbloqueia pelo TTY.
+  - [x] **Bloqueio confiável:** bloquear ao fechar a tampa, ao suspender de qualquer origem e com `loginctl lock-session`, e **bloquear antes de dormir** (*delay inhibitor* até a superfície do bloqueio estar desenhada; hoje o `systemctl suspend` do shell corre com o desenho). Comportamento da tampa com e sem monitor externo. A parte do daemon está nas [Pendências do `lucernad`](https://github.com/lucerna-desktop/lucernad/blob/main/lucernad%20%E2%80%94%20Pend%C3%AAncias.md) (bloqueio pelo logind). M Feito na base robusta (branch `feat/base-robusta`), no shell e sem módulo no `lucernad` (decisão registrada nas Pendências de lá): o `services/Logind.qml` escuta o `PrepareForSleep`, o `Lock`/`Unlock` e a tampa do logind e segura um *delay inhibitor* até a tela de bloqueio estar desenhada (com o shell morto, o logind dorme depois do prazo); a tampa com monitor externo apaga a `eDP` sem suspender e, com a opção de Energia, bloqueia. Testado com um logind falso; a máquina real está no marco 7.
+  - [ ] **Hibernar sem swap:** esconder o botão quando o logind diz que não dá (`CanHibernate`). P
+  - [ ] **Bugs que incomodam todo dia** (seções de sobras e "Depois" abaixo). P–M cada
+    - [ ] A **senha do Wi-Fi que some** quando a lista de redes atualiza ("Depois", Central, Wi-Fi).
+    - [ ] A **barra em repouso desfocando a tela inteira** na bateria ("Sobras do desfoque" e "Sobras dos painéis da moldura").
+    - [x] A **borda borrada em escala fracionária.** Feito na base robusta (Tarefa 12, branch `feat/base-robusta`): a suavização do `frame.frag` por `fwidth`, as beiras ao pixel físico e as linhas de 1 px como `Pixel.hairline`; depois, a escala interna do shell pelas medidas do tema (Tarefa 13). Detalhes em "Sobras dos painéis da moldura".
+    - [ ] O **painel superior parado redesenhando a ~67 fps** ("Sobras do desfoque" e "Sobras dos painéis da moldura").
+  - [x] **Cores dos blocos ativos** (decisão do usuário, 2026-11-04; logo depois da base robusta): na central, os blocos ligados (Wi-Fi, Bluetooth) e os sliders mostram texto preto sobre a cor de destaque, e o Volume desativado fica cinza sobre azul, quase ilegível; acontece em quase todos os temas. Usar um tom escuro do destaque ("primary container" do Material 3, calculado a partir do destaque de cada tema), texto claro e o ícone na cor de destaque; nos temas claros, o inverso (fundo claro tingido, texto escuro). No molde do modelo de cores ampliado do item 17, que depois o absorve. Conferir nos 12 temas com capturas. P Feito na branch `feat/cores-barras` (spec `docs/superpowers/specs/2026-11-06-cores-barras-design.md`): tokens novos no `ThemeManager`, calculados do destaque de cada tema e sobrescrevíveis pelo JSON (`accentContainer`, `onAccentContainer`, `accentIcon`, `accentFill`, `track`, e `container()`/`onContainer()`/`containerIcon()` para as cores de estado), com texto a ≥ 4,5:1 e ícone e preenchimento a ≥ 3:1 testados nos 12 temas (`tests/theme.test.js`). A regra: superfície grande com texto vai para o contêiner (botões ativos, blocos da central, botões primários, itens selecionados, dia de hoje, pílula de gravação); indicador pequeno sem texto continua no destaque cheio; o cartão da bateria continua sendo o próprio desenho preenchido pela carga (o trilho, com a parte cheia na cor do estado a 3:1 dele), agora com a porcentagem e o tempo numa linha acima, sem texto sobre o desenho; véu translúcido com texto usa `text`. **A barra única:** o `core/widgets/LevelSlider.qml` substitui o `PillSlider` da central e o `Slider` das Configurações (central, volume por app, entrada de áudio e todas as páginas): nome e valor numa linha acima, barra de 20 px arredondada com ícone opcional dentro, cresce ao passar o mouse e ao arrastar, sem alça nem balão; mudo e desativado com preenchimento cinza (nos temas claros, um cinza leve a 1,5:1 do trilho) e ícone em `danger` a 3,5:1 dele, sem opacidade sobre o texto (a linha `dimmed` das Configurações põe título e descrição num tom apagado que ainda fica a 4,5:1). O everforest define o próprio `accentContainer` (o calculado saía quase cinza). O JSON do tema pode definir também `onAccentContainer`, `accentIcon`, `accentFill`, `mutedFill`, `fillIcon` e `mutedFillIcon`. Capturas finais (o depois) nos 12 temas em `docs/screenshots/cores-barras/`; as de antes/depois ficaram só nas folhas de contato da conferência; sobras em "Sobras das cores e das barras".
+  - [ ] **Testes ponta a ponta** (começa pelo brainstorming → spec → plano; entra depois da base robusta e do PR das cores/barras, antes do greeter, para que greeter, integrações e a troca já nasçam cobertos). **Hoje:** a fumaça do CI (`ci/smoke.sh`, sway headless) já roda shell e lucernad reais, abre painéis por `qs ipc`, clica com `ci/vclick.py` e confere efeitos; o lucernad (`crates/lucernad/tests/process.rs`) e o lucerna-hello (`apps/lucerna-hello/tests/process.rs`) testam processo real com a outra ponta falsa (`FakeShell`). **Lacunas:** nenhum teste junta app do SDK, lucernad e shell reais; sem teclado real, atalhos nem config Lua do Hyprland; `lucerna-session` e supervisor sem teste automático (só o `dev/test.sh` manual); sem fluxos completos de usuário (abrir o lançador, digitar, escolher, conferir que o app abriu); capturas sem comparação automática. **Proposta em camadas:** (1) CI: a fumaça vira E2E, com teclado virtual, fluxos de usuário roteirizados e o lucerna-hello junto do lucernad e do shell; (2) local, no Hyprland do container (`dev/test.sh headless`): roteiro automatizado com asserções para atalhos com Super, config Lua, supervisor e, depois, greeter e bloqueio; (3) por último, comparação visual com referência por tema (a mais frágil). **Restrição:** os testes não tocam hardware, o D-Bus do host, a sessão real (KDE) nem o `~/.config` real.
+- [ ] **Marco 2: greeter próprio.** greetd com um greeter em Quickshell **no mesmo repositório**, no lugar do SDDM; passa por brainstorming, spec e desenho estático antes de qualquer código. G
+  - [ ] **Mesmo visual do shell:** o design do shell, o papel de parede e o fundo animado, e uma **troca animada e rápida para a sessão, sem corte**. A **tela de bloqueio e o greeter são o mesmo componente.**
+  - [ ] **Compositor do greeter:** um Hyprland mínimo, só para ele.
+  - [ ] **Funções:** escolha de sessão (Lucerna ou KDE), energia, layout do teclado, vários monitores, aviso de Caps Lock e digital pelo PAM.
+  - [ ] **Dados do usuário** (tema, papel de parede, avatar, monitores) num lugar que o greeter lê **sem que um usuário possa alterar os de outro**; o AccountsService guarda avatar e fundo.
+  - [ ] **Saída de emergência:** roteiro de volta ao SDDM pelo TTY e o `agreety` como greeter de reserva.
+- [ ] **Marco 3: integrações com o resto do sistema.** Cada uma com spec curto (a bandeja e o polkit) ou só o ajuste na sessão.
+  - [ ] **Bandeja do sistema (StatusNotifierItem)** na barra, com menu (`Quickshell.Services.SystemTray`); Discord e Steam dependem dela. M
+  - [ ] **Agente polkit:** subir um agente na sessão (`hyprpolkitagent`, ou o do KDE), e depois um diálogo próprio do shell. P / M
+  - [ ] **Autostart XDG** (`~/.config/autostart/*.desktop`); a página "Iniciar com a sessão" das Configurações vem depois. P
+  - [ ] **Tema dos apps:** `QT_QPA_PLATFORMTHEME`, tema GTK, cursor e ícones. P
+  - [ ] **Notificações persistentes** em disco (hoje só sobrevivem a um reload; liga com a lista vazia depois de um reinício do `qs`, em "Sobras do modo jogo"). M
+- [ ] **Marco 4: os projetos já aprovados**, antes da troca: a **dock** (item 13), os **temas por papel de parede** (item 17) e o **equalizador** (item 16). Cada um com o spec e as aprovações dos itens abaixo.
+  - [ ] **Papel de parede por área de trabalho** (decisão do usuário, 2026-11-04), depois dos temas por papel de parede: cada área pode ter o seu papel de parede, com transição suave na troca de área. **Só o papel de parede: as cores do tema não mudam por área.** M
+- [ ] **Marco 5: projetos novos.** Cada um começa por brainstorming.
+  - [ ] **Gerenciador de senhas próprio**, no lugar do KWallet. Deve implementar `org.freedesktop.secrets` (o Secret Service) para navegadores e apps; é uma decisão do usuário, **a confirmar no brainstorming**, junto com o repositório e a forma (serviço à parte, módulo do `lucernad`, ou o shell só como interface). G
+  - [ ] **Compartilhamento de tela e som:** o portal do Hyprland (`xdg-desktop-portal-hyprland` e o seletor de tela e janela) e o áudio do sistema na transmissão. Será detalhado depois. G
+  - [ ] **Barra rebalanceada** (decisão do usuário, 2026-11-04): horário centralizado e lados equilibrados (3 a 5 itens por lado; cuidado para a direita não crescer mais que a esquerda). Esquerda: ícone do sistema pela distro (`/etc/os-release`, genérico se não reconhecer; o clique abre o lançador), workspaces, indicadores só quando houver (modo jogo; microfone, câmera ou tela em uso; gravação) e um mini player quando algo toca. Centro: só o horário (a data sai; aparece ao passar o mouse e no calendário do painel superior). Direita: bandeja compacta, rede, **Bluetooth ao lado do Wi-Fi**, volume, **bateria sem o texto** (o ícone se enche conforme a carga, raio ao carregar, vermelho abaixo de 20 %, porcentagem ao passar o mouse; some em desktop) e, no lugar do sino (que sai), um ponto de não lidas e a lua do "Não perturbe". Layout do teclado só com mais de um. M
+  - [ ] **Nova visão geral das áreas de trabalho** (decisão do usuário, 2026-11-04): prévias ao vivo das janelas, arrastar e soltar janelas entre áreas, fechar janelas, criar e reorganizar áreas, navegação pelo teclado e busca de janelas por nome. Brainstorming, spec e desenho estático. G
+- [ ] **Marco 6: pacotes e instalação** (item 14): PKGBUILD e AUR do shell e do `lucernad` (o do daemon está nas Pendências do `lucernad`), versões casadas entre os dois, as dependências do Lucerna (fonte de ícones, portal, agente polkit) e **o roteiro de volta ao KDE** (escolher "Plasma" no login, TTY, desinstalar sem tocar no Plasma; `tar` de `~/.config` antes de começar). M
+  - [ ] **Caminhos instalados da sessão** (definidos na base robusta, branch `feat/base-robusta`; o pacote instala). O `lucerna-session` acha a pasta `session/` do repositório pelo próprio caminho (`realpath`) e, senão, usa estes:
+
+    | No repositório | Instalado em |
+    |---|---|
+    | `session/bin/lucerna-session` | `/usr/bin/lucerna-session` |
+    | `session/lib/*.sh` | `/usr/lib/lucerna/session/` |
+    | `session/hypr/` | `/usr/share/lucerna/hypr/` |
+    | `session/emergency/` | `/usr/share/lucerna/emergency/` |
+    | `session/systemd/*` | `/usr/lib/systemd/user/` |
+    | `session/wayland-sessions/lucerna.desktop` | `/usr/share/wayland-sessions/` |
+
+- [ ] **Marco 7: verificação no hardware real e a troca.** A seção "Verificar com hardware e entrada reais" inteira na máquina de teste do usuário, mais o roteiro de 9 etapas da triagem (instalar sem usar; primeira sessão só no notebook; monitor externo; energia na bateria; integrações; falhas de propósito; jogo e desempenho; uso real com o KDE de reserva), com as correções que saírem dali. Só então o Lucerna vira a sessão padrão (1 a 2 semanas sem voltar ao KDE por necessidade).
+  - [ ] **O que a base robusta deixou para a máquina real** (branch `feat/base-robusta`; no container só havia raízes falsas, o logind falso e a saída aninhada):
+    - [ ] As unidades do systemd de verdade: `systemd-analyze verify --user` no `lucerna-session.target` e no `lucerna-shell.service` instalados; subir o `lucerna-session.target` a partir de inativo e conferir o `lucerna-shell.service` ativo (o `Requisite=graphical-session.target`, Ruling R10; se não subir, trocar por `Wants`/`BindsTo`); e a queda do supervisor (`kill` no `lucerna-session supervise`: o systemd o reinicia e ele retoma o `qs` sem duplicar).
+    - [ ] O logind real: a tampa, o `loginctl lock-session`/`unlock-session`, suspender pelo botão de energia e pelo `systemctl suspend` com o bloqueio na tela antes de dormir, e o mesmo com o elogind (sem systemd).
+    - [ ] NVIDIA e GPU híbrida de verdade (a detecção do `lucerna-session` e as variáveis da base), com o `nvidia-drm.modeset=1` ligado e desligado.
+    - [ ] O Super sozinho (lançador ao soltar) com o teclado real: Super sozinho abre; Super+tecla e Super+arrastar não abrem.
+    - [ ] Os caminhos dos arquivos de flags do Electron/Chromium em cada distro (o `*-flags.conf` é do wrapper do Arch; noutras, o modo "Escala pelos apps" pode não pegar) e a sessão sem o `xrdb` (o `Xft.dpi` não vai para os apps X11).
+    - [ ] O custo do Hyprland em 1,25 numa GPU e num monitor reais: na base (Tarefa 1) o `bench-blur` deu 6 a 11 % de um núcleo em 1,25 contra 2,6 a 6,7 % em 1; na medição final, na mesma saída headless do container, 2,5 a 3,0 % em 1,25 contra 2,3 a 2,9 % em 1 (`docs/superpowers/bench/2026-11-04-escala-final.txt`). Repetir os dois benches na máquina real, com `BENCH_SCALE=1.25` e no modo "Escala pelos apps", para confirmar que o custo sumiu fora do container.
+    - [ ] Investigar na máquina real o blur `full` logo depois de abrir painéis no modo "Escala pelos apps": no container, picos de `qs %` e `Hyprland %` (até 88,8 % e 21,7 %) em 2 de 4 rodadas do `bench-blur` logo depois do `bench-paineis`, não repetidos em 5 medições extras e tratados como ruído do host (ruling R18; `docs/superpowers/bench/2026-11-04-escala-final.txt`).
+    - [ ] O formato real da descrição dos monitores (`desc:`, com ou sem o sufixo do conector) e o estado do Lua num reload do Hyprland (a guarda `LUCERNA_BASE_LOADED`), que o container não deixou conferir (sem EDID e sem `hyprctl reload`).
+    - [ ] **Sem o shell, ninguém bloqueia ao dormir** (revisão final da base robusta, M1). O inibidor delay do logind é do `qs` (`services/Logind.qml`, com `--pdeathsig`): com o shell morto (na pausa de 1 a 4 s depois de uma queda, ou parado na tela de emergência, que pode ficar aberta indefinidamente), o inibidor morre junto, e uma suspensão nessa janela dorme e acorda sem bloqueio. Não abre uma tela bloqueada (só deixa de bloquear), e o plano aceitou que "com o shell morto, a suspensão não fica presa". Caminho futuro: o supervisor pega o próprio inibidor delay enquanto não há `qs` (e o solta quando o shell novo pega o dele), e, na volta, o shell bloqueia se houve um `PrepareForSleep` no meio (uma marca no `$XDG_RUNTIME_DIR/lucerna/`, como a do bloqueio). Conferir na máquina real com o `systemctl suspend` durante a emergência.
+
+
+**App de captura (`lucerna-capture`), depois da troca** (decisão do usuário, 2026-11-04): um projeto separado em Rust, no padrão dos apps do ecossistema (núcleo Rust, linha de comando em inglês, interface Qt com o design comum, funciona sozinho em qualquer ambiente pelo portal freedesktop; o shell fica com os atalhos, o indicador de gravação na barra e as ações da notificação). Na troca vale a captura atual do shell (item 9). Referência de ideias: o Spectacle do KDE. Recursos:
+- **Formas de capturar:** região, janela sob o cursor, janela ativa, monitor atual, todos os monitores; contagem regressiva; com ou sem o cursor.
+- **Editor de anotações** logo depois da captura: setas, caixas, texto, numeração, destaque, desfoque e pixelização para esconder dados.
+- **Ações:** copiar sem salvar, salvar, salvar como, abrir com, arrastar para outro app, nome automático por data, mudar a resolução, histórico das últimas capturas, fixar a captura na tela como um adesivo.
+- **Texto:** extração de texto (OCR) e pesquisa pela imagem.
+- **Traduzir a tela**, como o Google Lens: o texto da captura é reconhecido, traduzido e desenhado por cima, no mesmo lugar e tamanho, apagando o original.
+- **Vídeo:** gravar região, janela ou tela, com a escolha do formato e outros recursos.
+Passa por brainstorming, spec e desenho estático; criar o repositório com as configurações espelhando os outros.
+
+**Gerenciador do sistema (projeto aprovado, nome a definir), depois da troca, com os outros apps:** algo como o NitroSense da Acer, mas em Linux, para qualquer hardware e com mais recursos. Cobre ventoinhas (com curvas), processador, placa de vídeo, RAM, armazenamento, energia e bateria, sensores e RGB. Começa por brainstorming, spec e plano. Separação espelhando o explorador de arquivos (`lucerna-files`):
+- **Projeto:** repositório próprio; núcleo e serviço em Rust, linha de comando em inglês, TUI e interface Qt. Funciona sozinho em qualquer ambiente (KDE, GNOME, servidor); o shell é só um cliente opcional.
+- **Arquitetura:** um serviço de sistema pequeno (root) é o único que toca o hardware, com polkit e D-Bus do sistema; as interfaces rodam como usuário. O núcleo tem a API comum, perfis, permissões, validação e o estado do hardware. Os adaptadores são: notebook (EC, ACPI, sysfs e drivers de fabricante: Acer/Nitro pelo módulo da comunidade, Asus, Lenovo, ThinkPad, Dell, Framework; aproveitar as configs do nbfc-linux), desktop (Super I/O e placa-mãe pelo hwmon, controladores), CPU e GPU (cpufreq, RAPL, platform_profile, Nvidia, amdgpu, Intel) e RGB (OpenRGB e periféricos). Detecta o que o hardware suporta e só mostra o que existe.
+- **Segurança:** se o serviço ou o cliente cair, volta ao controle automático do firmware; há limites de temperatura; tudo é desfeito ao sair.
+- **Conflitos:** detectar power-profiles-daemon, TLP, auto-cpufreq e similares, e integrar ou avisar, sem disputar o hardware.
+- **Shell:** o shell já tem um painel de desempenho, e nada pode ficar redundante. Na hora de implementar, trazer recomendações de como dividir (painel de desempenho × bloco rápido na central × app). O bloco de perfil de energia (power-profiles-daemon) pode vir antes, sem o serviço.
+
+Depois dos marcos, sem pressa e sem bloquear a troca: o item 15 (lógica fora do shell), o porte para o KWin e as outras distros (item 14), os apps e os bugs de gravidade média e baixa que a triagem listou.
+
+### Itens numerados
+
+A lista original, com o histórico dos feitos. As notas em itálico dizem a que marco o item pertence.
 
 1. [x] **Proposta atualizada.** A tabela "Escopo" de `Lucerna — Proposta.md` ainda diz que barra, painel e energia estão por fazer e descreve o launcher como só "abrir aplicativos". Faltam monitores, mouse, teclado, papel de parede animado e vídeo.
 2. [x] **Launcher: o que hoje só o estilo completo tem.** Fixar nos favoritos e ocultar um app (por clique direito ou atalho) no compacto e na tela cheia. Busca em arquivos e na web também fora do estilo completo (por prefixo ou atalho).
@@ -16,8 +104,8 @@ O que falta fazer, na ordem em que vamos seguir. Cada item vira um PR; ao termin
 10. [x] **Visão geral dos workspaces**, com as janelas em miniatura.
 11. [x] **Brilho de monitores externos** por DDC/CI.
 12. [x] **Central.** Dois painéis flutuantes na direita, no lugar da barra lateral: ações (tiles com uma página por recurso, inclusive o volume de cada app, e os sliders de volume e brilho) e notificações, independentes (`Super+A`, `Super+N`; os dois com `Super+C`). Mudança de comportamento: `Super+N` (a ação `notifications`) agora abre só as notificações; a central inteira fica em `Super+C`.
-13. [ ] **Dock**, com spec próprio.
-14. [ ] **Instalação e distribuição:** script de instalação (link, trecho do `hyprland.lua`, atalhos padrão) e pacote no AUR. A verificação no CI já está feita: quatro checks obrigatórios (`ci/`, `dev/ci.sh`).
+13. [ ] **Dock**, com spec próprio. *(Marco 4.)*
+14. [ ] **Instalação e distribuição:** script de instalação (link, trecho do `hyprland.lua`, atalhos padrão) e pacote no AUR. A verificação no CI já está feita: quatro checks obrigatórios (`ci/`, `dev/ci.sh`). *(Marco 6; o AUR e as outras distros depois dele.)*
     - **Outras distros** (o Lucerna não depende do Arch, e sim de Hyprland 0.56+, Quickshell 0.3+ e Qt 6 recente; o `lucernad` compila em qualquer distro com PipeWire, D-Bus e logind). Ordem sugerida:
       1. AUR (o shell e o `lucernad`), a base dos outros;
       2. Nix (flake): NixOS e quem usa Nix em qualquer distro, com as versões fixadas (resolve Qt e Hyprland antigos);
@@ -26,14 +114,14 @@ O que falta fazer, na ordem em que vamos seguir. Cada item vira um PR; ao termin
       5. sem systemd (Void, Alpine, Artix): o shell inicia o `lucernad` quando não acha o socket (hoje ele sobe por socket do usuário do systemd).
     - Debian e Ubuntu estáveis ficam para depois (fora o Nix): o Hyprland e o Qt deles costumam estar atrás das versões mínimas.
     - **Porte futuro para o KDE Plasma (KWin)**, só se houver interesse. Referência: o [caelestia-kde](https://github.com/ladybug-me/caelestia-kde), que leva o Caelestia ao KDE com um plugin C++ no Quickshell e um efeito do KWin (GPL-3.0; não reaproveitar o código). No Lucerna, o caminho seria um serviço de compositor no shell e, no `lucernad`, uma implementação para o KWin ao lado da do Hyprland (janelas e áreas de trabalho, atalhos pelo `kglobalaccel`, Night Color, monitores pelo KScreen). Ficam de fora no KWin: bordas e cores do tema nas janelas, lado a lado nativo, áreas de trabalho dinâmicas e a tela de bloqueio própria.
-15. [ ] **Lógica fora do shell (Rust).** Ver a seção "Separação da lógica" abaixo. Substitui o plano de plugins em C++ de `Lucerna — Plugins Próprios.md`, que precisa ser revisto à luz dela.
-16. [ ] **Equalizador de áudio**, com spec próprio: muda o som (filtro do PipeWire, `filter-chain`, ou controle do EasyEffects) e mostra o espectro ao vivo atrás das faixas, reaproveitando o módulo de espectro.
-17. [ ] **Temas com mais cores e o papel de parede como escolha**, com spec próprio (projeto aprovado em 2026-10-26). O modelo de tema hoje tem um destaque só (`accent`, 152 usos) e usa 11 das 26 cores do Catppuccin; o ajuste rápido (o Catppuccin com o azul como destaque) já foi feito (PR #51).
+15. [ ] **Lógica fora do shell (Rust).** Ver a seção "Separação da lógica" abaixo. Substitui o plano de plugins em C++ de `Lucerna — Plugins Próprios.md`, que precisa ser revisto à luz dela. *(Depois dos marcos, salvo o que um marco precisar.)*
+16. [ ] **Equalizador de áudio**, com spec próprio: muda o som (filtro do PipeWire, `filter-chain`, ou controle do EasyEffects) e mostra o espectro ao vivo atrás das faixas, reaproveitando o módulo de espectro. *(Marco 4.)*
+17. [ ] **Temas com mais cores e o papel de parede como escolha**, com spec próprio (projeto aprovado em 2026-10-26). O modelo de tema hoje tem um destaque só (`accent`, 152 usos) e usa 11 das 26 cores do Catppuccin; o ajuste rápido (o Catppuccin com o azul como destaque) já foi feito (PR #51). *(Marco 4.)*
     - **Modelo de cores ampliado**, no estilo do Material 3: primário, secundário e terciário, com os containers e as cores "sobre" cada um; níveis de superfície; estados (erro, sucesso, aviso, informação/link). Revisar onde cada cor entra no shell.
     - **Temas prontos fiéis às paletas oficiais**, sem algoritmo (no Mocha: primário Blue, secundário Mauve, terciário Peach ou Teal, superfícies Base, Mantle, Crust e Surface 0–2).
     - **O papel de parede vira a unidade de escolha:** o `Super+T` passa a ser o carrossel de papéis de parede e troca o fundo e as cores juntos. Cada papel de parede tem o tema definido pelo usuário (opcional) e o tema gerado pelo `lucernad` (Material 3 a partir da imagem, guardado pelo hash do arquivo; num vídeo, por um quadro). O Tab no carrossel alterna entre "seu tema" e "gerado", com a etiqueta no card.
     - **A última escolha fica lembrada por papel de parede**; na primeira vez, os papéis de parede do Lucerna abrem no tema definido e os do usuário, no gerado.
-    - Vários papéis de parede por tema (os 13 temas viram papéis de parede prontos); claro/escuro global, com a opção "seguir o horário"; a variante do gerado global (padrão: tonal spot); pastas de papéis de parede; fonte, raios e efeitos vêm do tema definido, e o gerado usa os padrões do Lucerna.
+    - Vários papéis de parede por tema (os 12 temas viram papéis de parede prontos); claro/escuro global, com a opção "seguir o horário"; a variante do gerado global (padrão: tonal spot); pastas de papéis de parede; fonte, raios e efeitos vêm do tema definido, e o gerado usa os padrões do Lucerna.
     - Antes de implementar, o usuário aprova a documentação final completa e um desenho estático das telas (o carrossel, a página Aparência etc.), como foi feito com a aba Clima.
 
 ## Separação da lógica (a definir melhor)
@@ -44,99 +132,36 @@ Princípio da migração: cada `services/` do shell mantém as mesmas propriedad
 
 Fica no shell: as APIs nativas do Quickshell (PipeWire, MPRIS, Bluetooth, rede, notificações, PAM, Hyprland), a coordenação dos painéis, os temas, a geometria dos monitores nas configurações, a formatação e as animações.
 
-Módulos propostos, em ordem de prioridade:
+Os módulos (os feitos e os que faltam: launcher, Hyprland, luz noturna, o `lucerna-video` e a captura de tela) e as sobras de cada um no daemon estão nas [Pendências do `lucernad`](https://github.com/lucerna-desktop/lucernad/blob/main/lucernad%20%E2%80%94%20Pend%C3%AAncias.md). Aqui ficam as sobras do lado do shell.
 
-1. [x] **Espectro:** captura do PipeWire e FFT próprias no lugar do `cava` (feito em 2026-10-20: módulo `spectrum` do `lucernad`; a batida fica para depois).
-2. [x] **Sistema:** CPU, memória, rede, discos, temperaturas e GPU no lugar do parse em `services/SystemStats.qml`, do `gpu-status.sh`, do `drm-fdinfo.sh`, do `df` e do `lsblk`; NVIDIA pela NVML, sem `nvidia-smi` (feito em 2026-10-20: módulo `system` do `lucernad`).
-3. [x] **Área de transferência:** observador do Wayland, histórico com deduplicação e imagens (SQLite), no lugar do `wl-paste --watch`, do base64 decodificado em JS e do `clipboard.json` (feito em 2026-10-21: módulo `clipboard` do `lucernad`).
-4. [x] **Energia e brilho:** histórico do UPower e perfis de energia por D-Bus (hoje `busctl`), brilho interno e DDC/CI por biblioteca (hoje `brightnessctl` e `ddcutil`). (feito em 2026-10-22: módulo `power` do `lucernad`)
-5. [x] **Rede externa:** letras (LRCLIB) e clima (Open-Meteo), com cache em disco (hoje sem cache). (feito em 2026-10-26: módulo `web` do `lucernad`)
-6. [ ] **Launcher:** índice de apps com pontuação, frecência de verdade (hoje só contagem), busca de arquivos (hoje `fd`/`find`) e metadados de apps (hoje `app-info.sh`).
-7. [ ] **Hyprland:** binds, entrada, keymap (hoje `xkbcli`) e monitores pelo socket IPC do Hyprland, no lugar do `hyprctl eval` e da geração de Lua.
-8. [ ] **Luz noturna:** gama direto pelo protocolo `wlr-gamma-control`, sem o `hyprsunset`.
-- [ ] **Ferramenta à parte:** `lucerna-video`, o conversor de papel de parede em vídeo (hoje `video-wallpaper.sh`, com `ffmpeg`), em lote, fora do daemon.
-- [ ] Depois, se valer: captura de tela e gravação (hoje `grim` e `wf-recorder`).
+## Sobras do módulo de espectro
 
-Sobras do módulo de sistema:
+- [ ] Falta um teste do `spectrum.configure` com um player de verdade (os testes só cobrem `null`) e do `onPlayerChanged`.
+- [ ] O `Spectrum.available` não tem consumidor fora dos testes.
+- [ ] O `applyBands` não confere se as bandas são números.
 
-- [ ] **`status` sem a primeira amostra:** o `lucernad status` (o `status` do `lucerna-cli`, no SDK) imprime o retrato inicial dos tópicos amostrados (`data: null`, `seq` 0) e sai, então `system.stats`, `system.disks` e `system.gpus` aparecem vazios. Ele deveria esperar a primeira amostra por um prazo curto.
-- [ ] **Pacote do `lucernad`:** um PKGBUILD no repositório do `lucernad`. Hoje ele é instalado à mão pelos comandos do README e precisa ser recompilado e reinstalado a cada merge.
-- [ ] **Uso da Intel na primeira amostra:** o fdinfo precisa de duas leituras, então ao abrir a aba Desempenho o uso da Intel fica "—" por ~2 s. Dá para tirar uma leitura curta extra no primeiro ciclo.
+## Sobras do módulo da área de transferência
 
-Sobras do módulo de espectro (baixo risco, adiadas na revisão final):
-
-- [ ] **Captura, por dentro (`lucernad-spectrum/src/pipewire.rs`):**
-  - quando um client sai, o grafo não é reenviado;
-  - um nó novo só é ligado no próximo tique (até 100 ms);
-  - um alvo que o WirePlumber recusa sempre é recriado a cada ~600 ms, sem log nem teto;
-  - a sessão não espera a thread do PipeWire terminar;
-  - a sonda que liga a captura logo que o nó aparece não confere o link player → sink.
-- [ ] **Threads presas por sessão:** com o `/proc` travado para sempre, cada ciclo de assinatura deixa uma thread de casamento presa. O limite de um casamento em voo vale por sessão, não para o processo todo.
-- [ ] **Casamento:**
-  - o `/proc` é lido em duas vezes (`stat` e `exe`), então um PID reciclado no meio pode misturar processos;
-  - um prazo do D-Bus estourado não refaz a conexão;
-  - com `LUCERNA_TEST_HOST_BUS`, o PID do host é procurado no `/proc` do container.
-- [ ] **Análise:**
-  - se dois nós do mesmo player vierem com taxas diferentes, o analisador é recriado a cada amostra e o anel quase para;
-  - com o player pausado e os nós ainda casados, as FFTs seguem rodando sem publicar;
-  - a `magnitudes_db` cria o planejador da FFT a cada chamada.
-- [ ] **"Capturando" depois de recarregar o shell:** o `spectrum.status` fica `capturing: true` por alguns segundos depois de um reload do Quickshell. A causa provável é o socket da geração antiga do shell ainda aberto; conferir com `ss -x` logo após um reload.
-- [ ] **Shell:**
-  - falta um teste do `spectrum.configure` com um player de verdade (os testes só cobrem `null`) e do `onPlayerChanged`;
-  - o `Spectrum.available` não tem consumidor fora dos testes;
-  - o `applyBands` não confere se as bandas são números.
-
-Sobras do módulo da área de transferência (baixo risco, adiadas na revisão final):
-
-- [ ] **Apagar de verdade (`lucernad-clipboard/src/store.rs`):**
-  - o `secure_delete` (e o `secure-delete` do FTS) só protege dali em diante: o que foi apagado antes de ligá-lo fica nas páginas livres do banco até um `VACUUM`;
-  - o corte pelo limite (`evict`) não passa pelo `forget`, então as páginas apagadas ficam no `-wal` até o checkpoint automático;
-  - um `forget` que falha depois do `delete` devolve erro sem publicar a revisão nova.
-- [ ] **Item que some entre o `locate` e a leitura** (apagado no meio de um `copy`/`get`): sai como erro interno, não como o `1001` "O item <id> não existe mais.".
-- [ ] **`lucernad copiar` como primeiro cliente** (sem o shell nem outro assinante) cria um `history.db` vazio antes de achar o item.
-- [ ] **`O_NONBLOCK` no fd de quem cola:** a escrita da seleção põe o fd em não bloqueante, e isso fica na descrição de arquivo do outro app; o caminho `WouldBlock`/`POLLOUT` do envio não tem teste.
-- [ ] **Miniatura reduzida e girada** (EXIF com rotação numa imagem grande): sem teste.
-- [x] **Marcas de direção no `historico`** (U+202E, U+2066–2069): trocadas por U+FFFD na saída, como os caracteres de controle (resolvido na revisão final).
-- [ ] **Shell:**
-  - falta um teste da ordem do `Component.onCompleted` do `Clipboard` (configurar antes de assinar) com o cliente já conectado;
-  - o `onAtYEndChanged` do painel não dispara de novo quando a página somada cabe inteira na tela (a lista não chega a rolar): o "mais" seguinte só vem pelas setas.
+- [ ] Falta um teste da ordem do `Component.onCompleted` do `Clipboard` (configurar antes de assinar) com o cliente já conectado.
+- [ ] O `onAtYEndChanged` do painel não dispara de novo quando a página somada cabe inteira na tela (a lista não chega a rolar): o "mais" seguinte só vem pelas setas.
 
 ## Sobras do módulo de energia e brilho
 
-Adiadas na revisão do módulo `power` do `lucernad` (lucernad#14) e do shell (PR #50).
+Adiadas na revisão do shell (PR #50); as do `lucernad` (lucernad#14) estão nas Pendências de lá.
 
-- [ ] **lucernad:**
-  - cada escrita na integrada faz 4 chamadas D-Bus ao logind (dá para usar um `GetAll` e guardar o `Type`/`Seat` da sessão);
-  - um `GetHistory` que falha derruba o histórico inteiro (o último bom poderia ficar, com o erro ao lado);
-  - os perfis ficam sem estado inicial se a primeira leitura falha (só voltam no próximo `PropertiesChanged` ou `NameOwnerChanged`);
-  - o `O_NOFOLLOW` do `TreeWriter` vale só no último componente do caminho;
-  - `EBUSY` no endereço 0x50 (EDID) sem tentar o `I2C_SLAVE_FORCE`;
-  - docks DisplayLink (monitores sem barramento i2c de placa de vídeo) ficam de fora.
-- [ ] **Shell:**
-  - o slider recua quando o DDC leva mais de 1 s (o hold acaba antes da publicação final) e avança na publicação;
-  - corrida mínima no `reload` (`power.list`) quando o módulo volta enquanto chega um `power.screens`;
-  - com o lucernad fora desde a partida, os botões de perfil ficam escondidos (o `profilesAvailable` não tem último valor);
-  - um `1003` no meio do arrasto marca a tela com erro e o slider da central passa para a próxima tela;
-  - o `busctl` continua na imagem do container (vem do systemd do Arch base), embora o shell não o use mais.
+- [ ] O slider recua quando o DDC leva mais de 1 s (o hold acaba antes da publicação final) e avança na publicação.
+- [ ] Corrida mínima no `reload` (`power.list`) quando o módulo volta enquanto chega um `power.screens`.
+- [ ] Com o lucernad fora desde a partida, os botões de perfil ficam escondidos (o `profilesAvailable` não tem último valor).
+- [ ] Um `1003` no meio do arrasto marca a tela com erro e o slider da central passa para a próxima tela.
+- [ ] O `busctl` continua na imagem do container (vem do systemd do Arch base), embora o shell não o use mais.
 
 ## Sobras do módulo de rede externa
 
-Adiadas na revisão do módulo `web` do `lucernad` (lucernad#17) e do shell (PR #52).
+Adiadas na revisão do shell (PR #52); as do `lucernad` (lucernad#17), inclusive o teste do Vagalume na máquina real, estão nas Pendências de lá.
 
-- [ ] **Vagalume não testado na máquina real:** a API (`api.vagalume.com.br`) respondeu 503 durante todo o desenvolvimento, inclusive a documentação e os termos. Quando voltar: conferir o formato da resposta (`type` `exact`/`aprox`), colar a chave nas Configurações e testar uma faixa brasileira que a LRCLIB não tenha.
-- [ ] **lucernad:**
-  - letra em erro não tem nova tentativa automática (só ao reabrir a aba, no `web.refresh` ou na volta da conexão);
-  - com a chave do Vagalume, uma faixa instrumental é buscada de novo a cada vez que toca;
-  - a busca de cidade em andamento não é cancelada quando o modo offline liga, e há uma corrida curta entre a troca da conexão e a busca;
-  - o clima fica em `loading` ou com o erro de offline já superado enquanto não há assinante, e aparece um `loading` passageiro quando um `configure` troca a cidade e liga o offline juntos;
-  - a normalização faz as minúsculas depois de tirar os acentos (`İstanbul` vira `i stanbul`); o sufixo só é reconhecido depois de ` - ` com hífen comum (não ` – ` nem ` — `); os formatadores bidi (Cf) não são removidos do texto (o shell passa pelo `plain()`);
-  - o cache: a poda varre as duas pastas, mas só confere a do tipo gravado (um link na outra apagaria `.json` fora do cache), e a leitura segue link (um FIFO no lugar do arquivo trava a leitura);
-  - a conectividade: o `PropertiesChanged` não filtra pela interface do NetworkManager; há uma janela estreita no `watch()` em que um receptor novo fica num canal morto;
-  - testes: o corpo lido em pedaços (resposta sem `Content-Length`) não tem teste; o `LocalServer` solto não fecha as conexões abertas; o `base_from_env` aceita porta com zero à esquerda; falta teste do `--lat`/`--lon` negativos na linha de comando; umidade e chance de chuva saem como `58.0` (o shell não se importa).
-- [ ] **Shell:**
-  - o "Hoje" e a data do topo da aba Clima usam a data da máquina, e os dias vêm pela data da cidade: com a cidade em outro fuso, perto da meia-noite, os dois podem divergir;
-  - a barra de ações rápidas do Painel não tem navegação pelo teclado (o Tab do painel troca de aba); se fizer falta, as setas;
-  - sem teste do `openLink` (só `https://`) da página Créditos nem do `openSettings` da aba Clima.
+- [ ] O "Hoje" e a data do topo da aba Clima usam a data da máquina, e os dias vêm pela data da cidade: com a cidade em outro fuso, perto da meia-noite, os dois podem divergir.
+- [ ] A barra de ações rápidas do Painel não tem navegação pelo teclado (o Tab do painel troca de aba); se fizer falta, as setas.
+- [ ] Sem teste do `openLink` (só `https://`) da página Créditos nem do `openSettings` da aba Clima.
 
 ## Sobras dos painéis da moldura
 
@@ -144,7 +169,7 @@ Adiadas na revisão final da branch `feat/paineis-moldura` (a barra fundida à m
 
 - [x] **O conteúdo dos painéis na mesma janela da forma** (branch `feat/conteudo-janela-forma`). A forma e o conteúdo da barra, do painel superior, da central, do OSD e dos popups de notificação agora vivem numa janela só por tela (`FrameWindow`, `lucerna-panel-frame`), sempre mapeada, que encolhe a 1 px na borda em repouso e muda só entre quatro níveis (1 px, coluna, coluna larga, tela cheia). O conteúdo desliza com o fundo desde o 1º quadro, as camadas ficam na ordem certa e o teclado vai só com uma entrada `keyboard` ativa (`OnDemand`, nunca `Exclusive`). O caminho antigo (janelas próprias `lucerna-frame-*`, `BarWindow`, `Frame.isReady`, `contentOpacity`) saiu.
 - [ ] **A barra revelada pelo mouse custa mais que na `main`.** Com ela, a moldura aparece nos quatro lados, e a janela da forma ocupa a tela toda: o Hyprland desfoca a tela inteira a cada quadro da animação (na `main`, só o retângulo da pílula). Fica perto de 62 contra 67 FPS no container. Só se resolve dividindo a moldura em janelas por borda ou desligando o desfoque durante a animação. Continua aberto (fora do escopo da branch, decisão do usuário): a janela agora é `lucerna-panel-frame` e só encolhe a 1 px sem nada à mostra; com a barra revelada ela ocupa a tela toda.
-- [ ] **A borda da forma com escala fracionária:** a suavização é de 1 px lógico (`frame.frag`), e em 1,25 ou 1,5 a beira e o contorno do tema ficam um pouco borrados. Usar `fwidth` no lugar.
+- [x] **A borda da forma com escala fracionária:** a suavização é de 1 px lógico (`frame.frag`), e em 1,25 ou 1,5 a beira e o contorno do tema ficam um pouco borrados. Usar `fwidth` no lugar. Resolvido na base robusta (Tarefa 12): a suavização do `frame.frag` usa `fwidth`, as beiras dos pedaços vão ao pixel físico (`Frame.snapRect`), e as bordas e as linhas de 1 px são `Pixel.hairline` (1 px físico).
 - [ ] **O Esc na central aberta pelo atalho com uma janela focada por baixo.** Agora o Esc chega pelo grab (a janela da forma pede `OnDemand` só com uma entrada `keyboard` ativa). Não foi conferido na Tarefa 8 (o container não tem uma janela focada por baixo que reproduza o caso); continua a conferir no Hyprland de verdade.
 - [ ] **Depois de um `hyprctl reload`**, as regras do tema, do desfoque e da moldura são reenviadas pelo shell; conferir numa sessão de verdade (no container, o reload derruba a saída aninhada).
 - [x] **A janela da forma volta à tela inteira quando o OSD acaba.** Com `parts` vazio, o `Frame.compactOn` dá falso, e a janela pede um resize de tela cheia só para os quadros do `lingering`. Manter o último `compact` enquanto não houver pedaços (ou tratar a lista vazia como compacta). Resolvido com a janela sempre mapeada (`feat/conteudo-janela-forma`): não há mais `lingering` nem `compactOn`.
@@ -159,7 +184,7 @@ Adiadas na revisão final da branch `feat/paineis-moldura` (a barra fundida à m
 - [ ] **Painel superior aberto e parado redesenha a ~67 fps já na `main`** (medição `parado-painel`, base do bench). Se continuar assim no fim, fica aberto.
 - [ ] **O canto próprio da central reaparece na subida das Notificações.** O `top-` do bloco só entra com o topo a até 0,5 px da moldura; quando as Ações saem e o inbox sobe animado, o bloco fica solto e "estala" na junção ao chegar. Conferir a olho; se incomodar, interpolar a junção pela distância até a moldura (prender sem esticar o bloco).
 - [x] **A expansão dos painéis termina num corte seco.** Resolvido na branch `fix/animacao-corte-seco`. A causa: o tipo do `Anim` do `Behavior on shown` (`OverlayPanel`, e o mesmo padrão na `BarWindow`, no OSD, nos avisos dos monitores e no véu da ociosidade) era escolhido pelo estado (`open ? ... : ...`), lido antes de ser reavaliado: a abertura rodava a curva da saída (um salto de 28% no 1º quadro, com o conteúdo indo de quase nada ao cheio) e o fechamento, a mola. Agora a escolha sai do `targetValue` do Behavior, e a regra `animações` do `ci/rules.py` barra o padrão. Na central, a altura do bloco pulava de 496 para 1192 px quando as Notificações entravam abaixo das Ações; agora elas crescem a partir das Ações (e encolhem até elas ao sair) só quando entram sozinhas; com as duas juntas, o bloco desliza já na altura toda (ver acima). O fechamento foi conferido em câmera lenta: o conteúdo esmaece antes de a forma terminar, sem a janela sumir no meio. Fica de fora o conteúdo entrar junto da forma (hoje a partir de ~70%, `Frame.contentStart`): vai pelo item do conteúdo na janela da forma, acima.
-- [ ] **As capturas da documentação:** a `docs/screenshots/desktop.jpg` já mostra a barra fundida à moldura; a `hero.jpg` (e as dos painéis, se for o caso) ainda mostram a barra antiga.
+- [ ] As capturas da documentação: ver o item "Refazer todas as capturas do README" em "Depois".
 
 ## Sobras do desfoque
 
@@ -175,17 +200,78 @@ Adiadas na revisão final da branch `feat/desfoque` (níveis do desfoque, xray, 
 
 ## Sobras do modo jogo
 
-Da implementação do modo jogo no shell (branch `feat/modo-jogo`, com o `lucernad` do PR #19).
+Da implementação do modo jogo no shell (branch `feat/modo-jogo`, com o `lucernad` do PR #19). As sobras do daemon (M2, M3, M9, M10 e M7 da revisão do `lucernad`) estão nas Pendências de lá.
 
 - [x] **Perfil falso no ambiente de teste:** o container monta o D-Bus do sistema do host, e o modo jogo seguraria o perfil de energia do host. Resolvido com o lucernad#21: com o `LUCERNAD_POWER_ROOT`, o perfil e o GameMode são falsos em arquivos (o `ci/power-root.sh` cria as pastas); o `dev/bench-game.sh` exige o lucernad na raiz de teste, e a fumaça ainda aponta o `DBUS_SYSTEM_BUS_ADDRESS` do lucernad para um socket inexistente.
 - [ ] **O resumo depois de um reinício do processo do `qs`** (revisão final, M3): ele sobrevive a um reload (o `keepOnReload` e o `receivedAt` persistido), mas com o `qs` morto e subido de novo a lista do `NotificationServer` volta vazia e o resumo sai nulo. Coerente com o que já existia; o "reinício" dos testes e do spec é o reload. Conferir no container quando houver notificações persistentes.
 - [ ] **O ícone da barra não tem dica flutuante** (revisão final, M6): a barra não tem um componente de dica. O ícone mostra "Desligar" ao lado com o mouse em cima, e o texto completo ("Modo jogo ligado: tela cheia, jogo. Clique para desligar.") fica no `BarState.gameTooltip` (o `Accessible.name`). Fazer a dica quando houver um componente para isso.
-- [ ] **A lista "nunca" de fábrica está copiada** do `DEFAULT_NEVER` do `lucernad` no padrão do `Config.gameNever` (revisão final, M2): o shell sempre manda a lista dele no `game.configure`, e o daemon não publica a de fábrica (nem no `game.state` nem num método), então ler dela pede uma mudança no `lucernad` (um `game.defaults` ou o campo no `game.status`). Até lá, o comentário no `Config` aponta a origem; se a lista do daemon mudar, mudar aqui também. Depois: a fumaça comparar as duas, e um botão "voltar à lista de fábrica" na página.
+- [ ] **A lista "nunca" de fábrica está copiada** do `DEFAULT_NEVER` do `lucernad` no padrão do `Config.gameNever` (revisão final, M2): o shell sempre manda a lista dele no `game.configure`, e o daemon não publica a de fábrica (nem no `game.state` nem num método), então ler dela pede uma mudança no `lucernad` (um `game.defaults` ou o campo no `game.status`), registrada nas Pendências de lá. Até lá, o comentário no `Config` aponta a origem; se a lista do daemon mudar, mudar aqui também. Depois: a fumaça comparar as duas, e um botão "voltar à lista de fábrica" na página.
 - [ ] **O resumo das notificações conta as que ainda estão na lista:** uma notificação dispensada durante o jogo (pelo app ou na central) não entra (decisão D20 do spec).
+
+## Sobras da base robusta
+
+Da revisão final da branch `feat/base-robusta` (triagem do ledger de minors das Tarefas 1 a 14, e os residuais depois das correções). Nada aqui bloqueia o merge; os pontos de máquina real estão no Marco 7.
+
+**Sessão, supervisor e emergência**
+- [ ] Dois supervisores por corrida: vale um `flock` no `supervisor.pid`. `shell stop` passando de 5 s pode perder o SIGUSR1 (o `wait_hold` acha o start no arquivo em 1 s) e há uma corrida de milissegundos entre o `hold` e o `qs.pid`; no pior caso, o próximo `shell stop` resolve.
+- [ ] `show-environment` sem timeout (vale um `timeout 5`); `have` com `command -v`; `session.env` sem aspas (o `AppsScale` grava assim); `Config.filePath` cai em `/tmp/lucerna` sem `XDG_RUNTIME_DIR` (alinhar com o `/run/user/$UID` do `common.sh`).
+- [ ] `LUCERNA_SAFE_MODE` e `QS_DISABLE_CRASH_HANDLER` são herdados pelos apps (só incomoda quem roda `qs` à mão); pelo mesmo caminho, os apps abertos pelo shell herdam `LUCERNA_SUPERVISED=1`, e um `qs` digitado nesse terminal não é barrado.
+- [ ] `unlock` esvazia a marca mesmo com o `hyprctl` falhando (o bloqueio caído segue no Hyprland, repetir resolve); o log "volta ao normal" é enganoso; a emergência: corrida entre o pid file e o `close_emergency`, tamanhos fixos (de propósito, sem tema), sem teste do IPC travado nem do power com a emergência aberta.
+- [ ] Logind: o backoff zera com as linhas de cabeçalho (volta em 1 s); soltar e repegar o inibidor rápido deixa 1 s de buraco; o `GetSession` que falha só é tentado de novo com o monitor; um `secure` falso depois de hot reload bloqueado faz a suspensão esperar o `InhibitDelayMaxUSec` (5 s), nunca abrir.
+
+**Tampa e monitores**
+- [ ] Partida com `Monitors.monitors` vazio: uma `eDP` deixada desligada por um shell que caiu enquanto a tampa abria fica assim sem arranjo salvo (a página de Monitores religa). Correção barata: no primeiro `monitorsChanged` depois de um `lidRead` com a lista vazia, chamar `followLid(false)`.
+- [ ] A `eDP` desligada de propósito pisca ao abrir a tampa e a cada reconexão do `gdbus`; o espelho da `eDP` conta como externo; o `lock` só na virada da tampa; uma corrida do `PropertiesChanged` antes do `Get` pula o `lock` (só na partida); `restoreDelay` duplica o `reloadDelay`; `restore` forçado e `lastLidPlan` sem teste.
+- [ ] Monitores: seções semeadas de um Lua antigo nunca saem (regras ausentes são inofensivas); texto do `settings.lua` por argv (128 KiB); recarga depois de gravação que falhou; só as funções puras têm teste; arquivo gravado fora da sessão Lucerna (inofensivo, decidir e registrar); chave `original` misturada em `claims`; regras automáticas se acumulam; hl.on devolvendo nil; o formato do `description` no reload.
+
+**Atalhos e apps**
+- [ ] `writeApps` descarta a escrita com a anterior rodando (enfileirar como o `HyprFile`); `Wants` comparado como lista ordenada; drag/resize mapeado em tecla ganharia `mouse = true`; teste do `SUPER_L` sem efeito no modo dev; testes do `ShortcutsState` no arquivo errado; `pretty()` com casos mortos.
+
+**Escala**
+- [ ] `ThemeManager.scale` sem limite (precisa de edição à mão; o modo de segurança recupera); `setShellScale` sem teste; `blurMax` não escala; as outras páginas das Configurações não foram conferidas em 1,25; a lista lateral das Configurações em 1,25 ainda passa do fim visível (Tarefas 1 e 15).
+- [ ] Shader: o `fwidth` depois de um `discard` não uniforme (mover o `w` para antes), a suavização alarga nas diagonais de L1, `Window.window?.devicePixelRatio ?? 1` repetido, `Pixel` sem guarda para `dpr <= 0`; `CaptureOverlay` com `h.y > 40` sem px, `GlassPreview` com -70/-20.
+- [ ] Modo "Escala pelos apps": gaps escalados da base, não os da pessoa; restaurar pode deixar monitores em 1 se o conjunto mudou; `force_zero_scaling` não é restaurado (a base já põe `true`); o modo de segurança aplica meio modo (some ao reiniciar normalmente); `xrdb` na volta põe `Xft.dpi` 96; pastas `gtk` vazias ficam; `restoreLua` com `||` troca um original vazio pelo neutro; o `.lucerna-bak` da primeira entrada fica para sempre (decisão consciente).
+- [ ] `AppsScale`: o arquivo temporário nasce com o umask antes do `chmod` (uma janela curta de leitura, e quebra hardlinks); o `QT_SCALE_FACTOR` é sempre gravado como "ausente antes" (o supervisor o tira), então a volta o desfaz no systemd mesmo que a pessoa o tenha posto pelo `environment.d`; com o `dbus-daemon` clássico, o ambiente do modo continua no ambiente de ativação dele.
+
+**Ambiente de teste (dev)**
+- [ ] `dev/test.sh`: `headless off` fixa 1920x1080 em vez do `LUCERNA_TEST_SIZE`; a mensagem do `shot` fala só da `WAYLAND-1`; sem `pkill`; Hyprland com stdin `/dev/null`; o `help` (`sed 2,42p`) corta; `dev/test.sh logind` imprime `()`; o logind falso casa `sleep` por substring, rejeita `block-weak`/`delay-weak`, o `stop` mata o PID sem conferir o `comm`, `on_get` None e sem `session/auto` nem `GetSessionByPID`.
+- [ ] Benches: `set_scale` e a leitura duplicados, o cabeçalho com `hl.monitor` sem `mode`/`position`, `LUCERNA_BENCH=janela` sem uso, o `restore` engole a falha do `set_scale`, o parado-painel fora da tolerância (stall do host).
+
+## Sobras das cores e das barras
+
+Da branch `feat/cores-barras` (ledger das Tarefas 1 a 3 e a conferência visual da Tarefa 4). Nada aqui bloqueia o merge; os pontos de gosto ficam para o usuário decidir pelas capturas.
+
+**Desativado e foco**
+- [ ] **Desativado ainda por opacidade em outros controles:** o `Clickable` (0,4) e o `DetailsPanel` (0,45) derrubam o texto abaixo de 4,5:1 (pré-existente); os outros 22 usos do `dimmed` ainda põem opacidade 0,45 no controle (`SegmentedControl`/`Select` com texto); a seção "Horário" da Luz noturna fica a 0,55 e o `BindEditor` a 0,45. Levar todos à regra da barra: o controle mostra o próprio desativado, sem opacidade sobre o texto.
+- [ ] **O mudo da barra não recebe foco pelo Tab** e a barra não tem anel de foco visível.
+- [ ] **O alvo de clique do mudo (32 px) cobre os ~26 px iniciais da barra:** um clique ali silencia em vez de levar o valor ao começo. E o `iconTarget` não depende do `root.enabled`.
+- [x] **A linha desativada nas Configurações quase não se distinguia da ativa** (conferência visual). Resolvido: título e descrição vão ao `ThemeManager.dimmedOn(textMuted, raised)`, o tom mais apagado que ainda fica a 4,5:1 do cartão.
+- [ ] **O `textMuted` do everforest (3,86:1) e do rose-pine-dawn (3,67:1) fica abaixo de 4,5:1 contra o `raised`** (pré-existente; o fundo real dos cartões é translúcido e costuma dar mais). Nesses dois, a linha desativada fica no próprio `textMuted`; acertar a paleta deles e um teste por tema do `dimColor` da linha desativada.
+
+**Cores**
+- [ ] **O `container()`/`onContainer()` partem do `base`/`text` animados** durante a troca de tema: as cores de estado passam por tons intermediários por um instante (só visual).
+- [ ] **A tabela de cores dos temas está copiada no `tests/theme.test.js`** e pode desatualizar; trocar por um teste que compare com o `T.data.colors` de cada JSON.
+- [ ] **Folga de contraste pequena** (4,50 a 4,6) no texto sobre o contêiner: consequência da escolha de "o máximo de cor que ainda passa".
+- [ ] **Medidores ainda no accent puro:** `features/osd/ui/Osd.qml:97` (o OSD, com o mudo em `textFaint`), `core/widgets/CircularGauge.qml:11` e `features/settings/ui/WallpaperPage.qml:112`. Passar ao `accentFill` e à linguagem da barra única (trilho, preenchimento a 3:1, cinza do mudo).
+- [ ] **O `iconOn` e o `fillOf` repetem o laço rumo ao extremo** (o `towardContrast` já junta parte; terminar a unificação).
+- [ ] **O `band` da `BatteryPage`** repete as comparações do estado (a escolha da cor está no componente e o teste a refaz).
+- [ ] **O teste do hover usa `mix`** em vez da composição alfa (equivalente para cores opacas).
+- [ ] **O comentário do `Tile.qml` (linhas 45–46)** diz "3:1 do contêiner", mas o teste garante o ícone contra o círculo.
+
+**Para o usuário decidir nas capturas** (conferência visual da Tarefa 4; detalhes no relatório da tarefa)
+- [ ] O ícone de 14 px dentro da barra de 20 px: legível, mas pequeno.
+- [x] O ícone do mudo, vermelho-escuro sobre o cinza, quase não se lia como vermelho (pior no catppuccin-latte, perto do 3:1). Resolvido: a 3,5:1 do cinza e, nos claros, sobre um cinza leve, onde fica vermelho de verdade.
+- [x] O preenchimento do mudo nos temas claros era um cinza escuro, mais pesado que a barra ativa. Resolvido: nos claros, o trilho levado rumo ao `textFaint` só até 1,5:1 (o 3:1 o deixaria mais escuro que o próprio `textFaint`; o mudo também se lê pelo ícone e pelo nome e valor).
+- [x] O cartão da bateria com uma barra de 8 px dentro (quase branca nos escuros) e o cartão inteiro vermelho-escuro com bateria baixa. Resolvido (decisão do usuário): o desenho volta a ser preenchido pela carga, com a porcentagem fora dele; só o preenchimento fica vermelho.
+- [ ] Os ícones sobre o contêiner ficam mais claros (escuros) ou mais escuros (claros) que o destaque, mas mantêm a cor.
+- [x] O contêiner no everforest saía um verde-oliva acinzentado. Resolvido: o tema define `accentContainer` `#445936` (texto a 4,56:1).
+- [ ] No matte-black o contêiner é cinza (o destaque do tema é cinza, `#d0d0d0`): coerente, mas sem cor.
 
 ## Depois
 
-- [ ] **Comandos de linha para todo o ecossistema, em inglês** (pedido do usuário, 2026-11-01). Ter comandos para as principais funções do shell inteiro e dos apps (notes, routine, phone, files e os próximos), com nomes padronizados em inglês (subcomandos, opções e métodos). Levantar o que existe hoje (o `qs ipc` do shell, `lucernad` com subcomandos em português como `restaurar-jogo`, os `lucerna-<app>` pelo `lucerna-cli` do sdk), desenhar um padrão comum (verbos, nomes, saída em texto e `--json`, códigos de saída) no `docs/ecossistema.md` do lucerna-sdk e migrar os nomes em português mantendo apelidos por um tempo. Passa por brainstorming e spec.
+- [ ] **Host de painéis dos apps: subir o serviço quando a conexão é recusada** (do "Trabalho seguinte" do lucerna-sdk#14; item 7 do lucerna-sdk#13). Com a conexão ao `<app>.sock` recusada, o host roda `<app.tui do manifesto> serve` pelo mesmo molde do `Client::connect_or_spawn` do SDK (grupo de processos novo, saída no `serve.log`, até 2 s com espera crescente) e reconecta. Vai junto com o cliente QML do protocolo.
+- [ ] **O lado do shell do explorador (`lucerna-files`, v3 do spec):** o formato do tema que o shell publica (o tema resolvido em JSON público, num spec do shell), o progresso das operações na central (pelo `progress.*` do `lucerna-sdk`), o `FileSearch.qml` pelo `files.sock`, arrastar e soltar com os painéis, "definir como papel de parede" e miniaturas compartilhadas.
+- Os **comandos de linha para todo o ecossistema, em inglês** (pedido de 2026-11-01, PR #63) passaram para as [Pendências do `lucerna-sdk`](https://github.com/lucerna-desktop/lucerna-sdk/blob/main/lucerna-sdk%20%E2%80%94%20Pend%C3%AAncias.md): o padrão é desenhado no `docs/ecossistema.md` de lá, e a migração do `qs ipc` acontece aqui depois.
 - [ ] Aba Desempenho: um medidor de bateria em forma de pilha, só no notebook. Rascunhos de três encaixes (ao lado de CPU e GPU, em pé ao lado da Memória, faixa embaixo) em `.superpowers/brainstorm/436361-1792526405/content/bateria-desempenho.html`; o usuário quer planejar melhor antes.
 - [ ] Aurora, Brasas, Chama e Vaga-lumes somam luz ao fundo e, num tema claro, estouram para branco. Adaptá-los como o Ondas (que já tem versão clara). Os efeitos próprios dos temas claros (Ondas e Névoa) estão bons.
 - [ ] Sliders das configurações gravam o `Config` a cada movimento (GlassPage, NightLightPage, IdlePage, MousePage, KeyboardPage, PowerPage e NotificationsPage). Com `blockWrites` não há perda nem corrupção, e a gravação mediu 1,4 ms em NVMe, mas em disco lento o arrasto pode engasgar. Correção prevista: debounce de uns 200 ms, com o reload suspenso durante a espera e um flush ao sair.
@@ -195,15 +281,25 @@ Da implementação do modo jogo no shell (branch `feat/modo-jogo`, com o `lucern
 - [x] (feito em 2026-10-22: módulo `power` do `lucernad`) Central, bateria: a sonda do power-profiles-daemon (`busctl`) roda só na partida do shell. Se o daemon subir depois, os botões de perfil (e o tile "Energia" de um desktop) não aparecem até reiniciar o shell. Repetir a sonda (ao abrir a central ou ao mudar o `PowerProfiles`).
 - [ ] Central, saída de áudio: o volume por app mostra qualquer app com áudio aberto, inclusive pausado, porque o `PwNode` do Quickshell 0.3 não diz se o stream está tocando. Filtrar quando houver esse estado.
 - [ ] Central, saída de áudio (aceito): sem saída padrão, o volume por app não aparece, porque a página da Saída some junto com o tile.
-- [ ] Central, sliders (aceito): a roda do mouse sobre um slider largo (volume, brilho, microfone) muda o valor em vez de rolar a página.
+- [ ] Central, sliders (aceito): a roda do mouse sobre um slider largo (volume, brilho, microfone) muda o valor em vez de rolar a página. Desde `feat/cores-barras`, o volume por app (`LevelRow`, `wheelEnabled: true`) também prende a roda.
 - [ ] Central (aceito): as ações e as notificações são sub-estados de um painel modal só, então o `panels get` mostra só `central`, sem dizer qual dos dois está aberto.
 - [ ] Central (aceito): durante a saída animada de um dos dois painéis, um clique na área dele ainda conta como dentro (não fecha a central).
 - [ ] Central, saída de áudio (aceito; conferir com o mouse): ao trocar para um sink Bluetooth recém-conectado, a página da Saída pode voltar ao estado inicial se o sink demorar a ficar pronto (o recurso "some" por um instante).
 - [ ] Central, popups (alternativa adiada): com só as ações abertas, os popups ficam escondidos e esperam. Poderiam descer para baixo das ações e continuar aparecendo.
 - [ ] Notificações: histórico persistente (hoje só sobrevive ao reload) e modo avião (o shell não tem rfkill), ambos fora do escopo da central.
-- [ ] README: a captura `docs/screenshots/hero.jpg` (cena montada com terminais e música) ainda mostra o visual antigo do painel superior. Refazer a cena.
+- [ ] **Refazer todas as capturas do README com papéis de parede próprios** (pedido do usuário, 2026-11-06). As capturas em `docs/screenshots/` estão desatualizadas (a `hero.jpg` e outras ainda mostram a barra e o painel superior antigos) e usam os fundos gerados pelo shell. Trocar por papéis de parede próprios, escolhidos para a apresentação do produto, como o Caelestia faz no README dele; montar as cenas (terminais, música, painéis abertos) de novo com o visual atual, em todas as capturas (`hero`, `desktop`, painéis, central, temas, launcher, barra, configurações, efeitos). Usar papéis de parede com licença que permita redistribuição (ou próprios do projeto) e registrar a origem de cada um. Fazer depois das mudanças visuais em andamento (barra rebalanceada, cores dos blocos), para não refazer duas vezes. Em `feat/cores-barras`, as que mostravam as cores e as barras foram refeitas com o visual novo, ainda com os fundos gerados (hero, central, as três do painel superior, os dois temas, os três launchers e as cinco das Configurações; a de Monitores mostra só a saída `HEADLESS-T` do container). O `osd.png` está desatualizado desde antes desta branch (mostra o OSD horizontal antigo): refazer junto.
 - [ ] Lint: quando o CI deixar de testar o Qt 6.11, tirar o `unqualified` da linha de supressão da margem e do `QMLLINT_ALLOWED_COMMENT` em `ci/rules.py`.
 - [ ] Crédito ao Caelestia também na página Sobre das configurações (hoje só no README).
+- [ ] Atalhos (base robusta, Tarefa 11): arrastar e redimensionar (`Super` + botão esquerdo/direito) só mostram a tecla na página de Atalhos; falta escolher o modificador (a captura é de teclas, e os botões esquerdo e direito ficam fora da captura do mouse).
+- [ ] Apps padrão (Tarefa 11): o `apps.conf` só é gravado quando a escolha muda na página de Atalhos; um `Config.defaultApps` mudado por fora (o `config.json` à mão, `dev/test.sh setc`) não chega ao `apps.conf` até a próxima escolha. De propósito, para não apagar um `apps.conf` escrito à mão na partida; rever se o `apps.conf` passar a ser só do shell.
+- [ ] Escala fracionária (base robusta, Tarefa 12): só as linhas de 1 px viraram `Pixel.hairline`; as bordas de 2 px (foco, seleção, notificação crítica) ficam em 2 lógicos (2,5 físicos em 1,25) e vão com o `ThemeManager.px()` da Tarefa 13. No pixel físico ficaram a forma (as vagas do shader), o painel superior, os centralizados (Configurações, área de transferência, energia, visão geral) e os três estilos do lançador; a central, o OSD e os popups (presos à direita, com larguras múltiplas de 4) e os cartões do seletor de temas (no carrossel) seguem em pixel lógico.
+- [ ] Escala fracionária (achados da Tarefa 1, não são de alinhamento): na tela de bloqueio em 1,5 sobra uma faixa sem desenho embaixo depois de trocar a escala com o shell aberto (o fundo fica no tamanho da escala anterior), e a lista lateral das Configurações sai cortada no fim em 1,25 e 1,5 (a altura da janela não cabe a lista). Para a Tarefa 13/15.
+- [ ] Escala pelos apps (base robusta, Tarefa 14): o `hl.env` do Hyprland não desfaz uma variável, então ao voltar para a escala do monitor (e no fator 100% dentro do modo) as variáveis que não existiam antes vão com o valor neutro (`QT_SCALE_FACTOR=1`, `GDK_SCALE=1`, `GDK_DPI_SCALE=1`, cursor 24) para os apps abertos até sair e entrar; o `GDK_SCALE=1` fixa a escala inteira do GTK no X11 (num monitor em 2, um app GTK X11 aberto nesse meio-tempo sai em 1). O valor de antes do `QT_SCALE_FACTOR` nunca é conhecido (o supervisor o tira do ambiente do shell). Se houver como tirar a variável (um `hl.env` sem valor numa versão nova, ou um `exec` com `env -u`), usar.
+- [ ] Escala pelos apps: a cópia `.lucerna-bak` nunca é sobrescrita (para um `scale-backup.json` perdido no meio do modo não trocar a cópia de verdade pela versão do modo). Numa segunda entrada no modo, depois de a pessoa mudar o arquivo, a cópia continua a de antes da primeira e comparar com ela engana. A volta normal usa o `scale-backup.json` e a marca, não a cópia; só sem o JSON (perdido no meio do modo) os originais vêm das cópias, e então valem os de antes da primeira entrada.
+- [ ] Escala pelos apps: sem o `scale-backup.json` (apagado à mão), a volta só tira o que é marcado (a linha das flags, o `session.env` e o `Xresources` gerados) e deixa o `gtk-xft-dpi`, cujo valor de antes não se sabe. A volta pelo `scale-backup.json` mantém o que a pessoa mudou nesses arquivos durante o modo (não copia o `.lucerna-bak` de volta); um `gtk-xft-dpi` trocado à mão nesse meio-tempo é sobrescrito pelo valor guardado.
+- [ ] Escala pelos apps: ao entrar no modo sem um arranjo salvo, o arranjo de agora é salvo como o da escala do monitor (é a ele que a volta retorna), e passa a valer no lugar da escala automática da base para aqueles monitores (o mesmo valor, mas fixo). A página lê o `Monitors.monitors`, que não se atualiza com uma escala trocada por fora (`hyprctl eval` sem evento): nesse caso, salva a escala velha.
+- [ ] Escala pelos apps: o modo leva o arranjo dele à parte (`apps: <conjunto>` no `Config.monitorSetups`); sem ele, os monitores em 1 seguem o da escala do monitor pelas bordas encostadas (`Monitors.atScale`), e um arranjo em L ou com deslocamentos fora das bordas anda na proporção do tamanho, não exato.
+- [ ] Regra `acentos` do `ci/rules.py` (base robusta, Tarefa 4): os `.lua` da sessão (`session/hypr/`) ficam fora dela (o `SEGMENTS` não tem `.lua`); os textos e as notificações de lá foram escritos com acentos, mas nada no CI garante. Incluir os comentários e as strings do Lua na regra.
 
 ## Verificar com hardware e entrada reais
 
@@ -224,11 +320,17 @@ No ambiente de teste não dá para simular cliques, e o Hyprland ignora teclado 
 - [ ] Aba Desempenho: a temperatura da RTX (lida pela NVML do `lucernad`, só com a placa em uso; o container de teste não tem a NVIDIA) e o uso da Intel pelo fdinfo do `lucernad` na máquina real.
 - [ ] Painéis da moldura: o clique de verdade na barra fundida (a fumaça e o roteiro usam um ponteiro virtual), a barra e a moldura em dois monitores (o painel abre no monitor com foco e sai da barra dele; com o painel superior, a central, o OSD ou um popup à mostra, passar o mouse para o outro monitor não os leva junto), e a barra se transformando no painel superior com o mouse de verdade (o conteúdo esmaecendo, sem clique perdido).
 - [ ] Modo jogo: entrar com um jogo de verdade (Steam/Proton, Wine, Lutris) e pela tela cheia de um jogo; o clique no ícone da barra desligando; a chave das ações rápidas com o mouse; o atalho (a ação "Ligar/desligar o modo jogo" com uma tecla escolhida em Atalhos) e a ação "Mostrar/esconder a barra" com o teclado de verdade; o clique no cartão de resumo abrindo as notificações; o perfil de desempenho e o GameMode da Feral numa máquina com os dois; a medição (`dev/bench-game.sh`) numa sessão Hyprland real.
+- [ ] Tela de emergência (`lucerna-session emergency`): em dois monitores (um véu por tela, todos com o foco exclusivo; conferir que as setas e o Enter chegam), o Ctrl+Alt+Delete com o teclado de verdade, e o Desligar e o Reiniciar de verdade (no container só simulam), com e sem systemd.
+- [ ] Bloqueio pelo logind (`services/Logind.qml`): na máquina real, o `GetSession("auto")` com o shell subido pelo `lucerna-shell.service` (fora do escopo da sessão, o logind cai na sessão gráfica do usuário), o inibidor delay aceito pelo polkit, o bloqueio na tela antes de dormir pelo `systemctl suspend`, pela tecla de energia e pela tampa, a hibernação, o `loginctl lock-session`/`unlock-session` e o `LockedHint` no `loginctl show-session`. No container só o logind falso.
+- [ ] Tampa com monitor externo (`Monitors.lidPlan`, `DisplaysState.followLid`): num notebook de verdade (o container só tem a `WAYLAND-1`, que não é interna), fechar a tampa com um externo ligado apaga a `eDP` sem suspender (o `HandleLidSwitchDocked=ignore` padrão do logind; quem mudou isso no `logind.conf` suspende mesmo assim) e, com a opção de Energia, bloqueia; abrir religa a `eDP` com o arranjo salvo; tirar o externo com a tampa fechada religa a `eDP`. Ver também o externo espelhando a `eDP` (com a tampa fechada a `eDP` desliga e o espelho perde a origem).
 - [ ] Central: os ícones da barra abrindo as ações na página certa e fechando no mesmo ícone (sem fechar as notificações), o sino abrindo e fechando só as notificações, e o foco voltando ao painel (o `Esc` fecha) depois de fechar as ações com a senha do Wi-Fi sendo digitada; os tiles (o corpo liga e desliga, a setinha abre a página), os sliders de volume e brilho e os volumes do microfone e de cada app; a troca de dispositivo, conectar a uma rede com senha, parear, os perfis de energia, a engrenagem e o "Limpar".
+- [ ] Escala pelos apps (Tarefa 14): numa sessão real, com o xrdb, o Chromium/Chrome e um app Electron lendo os `*-flags.conf` (o wrapper do Arch), um app GTK 3 e um GTK 4 com o `gtk-xft-dpi` e o `GDK_DPI_SCALE`, um app Qt com o `QT_SCALE_FACTOR`, um app X11 com o `Xft.dpi` e o cursor no tamanho novo; o `session.env` valendo depois de sair e entrar (pelo `systemctl --user import-environment` também, com systemd). No container só o kitty e os arquivos.
+- [ ] Super sozinho (lançador ao soltar, `release = true` no `SUPER + SUPER_L`): conferido no container com o Alt e o `wtype` (Alt sozinho abre; Alt+1 e soltar não abre; Alt+arrastar uma janela com o ponteiro virtual e soltar não abre). Conferir com o teclado e o mouse de verdade na sessão real, com o Super.
 
 ## Ambiente de teste
 
 - [ ] Os atalhos com Alt pararam de funcionar no Hyprland aninhado (o teclado chega; os binds existem e as ações funcionam). Com o `wtype`, a causa foi achada: o Hyprland aninhado resolve os binds pelo keycode do keymap real, e o `wtype` dá ao primeiro caractere o keycode 1, que é o Esc (`wtype -M alt c` vira `Alt+Esc`, o menu de energia). O contorno, com caracteres de enchimento antes da tecla, está no `dev/test.sh`. Falta conferir com o teclado de verdade.
 - [ ] `dev/ci.sh` usa nomes fixos de contêiner (`lucerna-ci-<check>`) e começa com `docker rm -f`, então duas execuções ao mesmo tempo (dois worktrees) se derrubam. Acrescentar um sufixo por worktree ou PID.
 - [ ] A imagem do container de teste avisa "locale C" (o `LANG=pt_BR.UTF-8` sem o locale gerado) e o log mostra `qt.qpa.wayland.textinput ... disableSurface`. Gerar o locale no `dev/Dockerfile` e conferir se o aviso do textinput some.
+- [ ] A imagem do container de teste não tem o `less`: o "Ver o registro" (do modo de segurança e da tela de emergência) abre o kitty com "Failed to launch child: less". Instalar o `less` no `dev/Dockerfile`; e, para qualquer sistema, o `lucerna-session open terminal` poderia cair para o `$PAGER` ou para um `tail` quando não houver `less`.
 - [ ] Os testes de áudio no container tocam pelo PipeWire do host (saem nos alto-falantes). Usar sempre `mpv --ao=null` ou um sink nulo; documentar no `dev/test.sh`.

@@ -6,8 +6,15 @@ import Quickshell.Io
 
 // Preferências do usuário, persistidas em ~/.local/state/quickshell/.../config.json.
 // Qualquer alteração numa propriedade é gravada no disco automaticamente.
+// No modo de segurança (o supervisor sobe o shell com LUCERNA_SAFE_MODE=1
+// depois de quedas seguidas), vale o arquivo $XDG_RUNTIME_DIR/lucerna/config.safe.json,
+// que o supervisor apaga ao entrar no modo: o shell sobe com os padrões e a
+// config da pessoa não é lida nem gravada.
 Singleton {
     id: root
+
+    readonly property bool safeMode: Quickshell.env("LUCERNA_SAFE_MODE") === "1"
+    readonly property string filePath: safeMode ? `${Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"}/lucerna/config.safe.json` : Quickshell.statePath("config.json")
 
     property alias theme: adapter.theme
     property alias doNotDisturb: adapter.doNotDisturb
@@ -17,6 +24,9 @@ Singleton {
     property alias blurOverride: adapter.blurOverride
     property alias blurWindows: adapter.blurWindows
     property alias animationScale: adapter.animationScale
+    property alias shellScale: adapter.shellScale
+    property alias scaleMode: adapter.scaleMode
+    property alias appsScale: adapter.appsScale
     property alias notificationTimeout: adapter.notificationTimeout
     property alias settingsTopic: adapter.settingsTopic
     property alias outlines: adapter.outlines
@@ -51,6 +61,7 @@ Singleton {
     property alias saverBelowEnabled: adapter.saverBelowEnabled
     property alias saverBelow: adapter.saverBelow
     property alias batteryLightMode: adapter.batteryLightMode
+    property alias lockOnLidDocked: adapter.lockOnLidDocked
     property alias panelsTogether: adapter.panelsTogether
     property alias monitorSetups: adapter.monitorSetups
     property alias monitorsAtLogin: adapter.monitorsAtLogin
@@ -89,6 +100,7 @@ Singleton {
     property alias keyRemaps: adapter.keyRemaps
     property alias inputBinds: adapter.inputBinds
     property alias shellShortcuts: adapter.shellShortcuts
+    property alias defaultApps: adapter.defaultApps
     property alias clipboardEnabled: adapter.clipboardEnabled
     property alias clipboardLimit: adapter.clipboardLimit
     property alias clipboardPersist: adapter.clipboardPersist
@@ -120,7 +132,7 @@ Singleton {
     property alias gameNotices: adapter.gameNotices
 
     FileView {
-        path: Quickshell.statePath("config.json")
+        path: root.filePath
         blockLoading: true
         // Grava de forma síncrona: a gravação precisa terminar antes de o
         // watcher disparar o reload, senão ele lê o arquivo antigo e desfaz
@@ -154,6 +166,14 @@ Singleton {
             property bool blurWindows: true
             // Velocidade das animações; negativo = seguir o tema.
             property real animationScale: -1
+            // O tamanho do shell (1 = o do tema): multiplica as medidas do
+            // tema (ThemeManager.px), sem mudar a escala do monitor.
+            property real shellScale: 1
+            // De onde vem a escala da tela: "monitor" (a do Hyprland) ou
+            // "apps" (o monitor em 1 e a escala pelos toolkits, com
+            // appsScale também no shell).
+            property string scaleMode: "monitor"
+            property real appsScale: 1.25
             // Tempo padrão dos popups de notificação, em ms.
             property int notificationTimeout: 5000
             property string settingsTopic: "glass"
@@ -210,6 +230,9 @@ Singleton {
             property int saverBelow: 20
             // Na bateria: sem transparência/desfoque e animações mais rápidas
             property bool batteryLightMode: false
+            // Bloquear ao fechar a tampa com um monitor externo ligado (desligado:
+            // só apaga a tela do notebook).
+            property bool lockOnLidDocked: false
             // Painéis que ficam abertos junto das configurações (só o
             // dashboard; os outros são modais).
             property var panelsTogether: ["dashboard"]
@@ -285,6 +308,9 @@ Singleton {
             // Atalhos do shell que o usuário mudou: { <id da ação>: [{ mods, trigger }] }
             // (os padrões estão em core/input/ShellShortcuts).
             property var shellShortcuts: ({})
+            // Apps padrão (o `lucerna-session open` os abre; o shell grava o
+            // ~/.config/lucerna/apps.conf): "" = automático (o primeiro instalado).
+            property var defaultApps: ({ terminal: "", browser: "", files: "" })
             // Histórico da área de transferência: guardar, quantos, manter ao
             // reiniciar e colar direto ao escolher.
             property bool clipboardEnabled: true

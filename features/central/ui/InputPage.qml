@@ -19,7 +19,9 @@ Column {
         onBack: CentralState.setPage("")
     }
 
-    PillSlider {
+    LevelSlider {
+        width: parent.width
+        wheelEnabled: true
         icon: SoundState.micIcon
         label: "Volume"
         value: SoundState.micVolume
@@ -31,7 +33,7 @@ Column {
 
     Column {
         width: root.width
-        spacing: 2
+        spacing: ThemeManager.px(2)
 
         Repeater {
             model: SoundState.inputs

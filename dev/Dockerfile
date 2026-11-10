@@ -15,7 +15,9 @@ FROM archlinux:latest
 
 # mpv e mpv-mpris só servem para testar a aba Mídia (um player MPRIS). A
 # libpipewire é do lucernad (o módulo de espectro). O ffmpeg e o Qt Multimedia
-# (com o driver VA-API da Intel) são dos wallpapers em vídeo.
+# (com o driver VA-API da Intel) são dos wallpapers em vídeo. O python-gobject
+# é do logind falso (ci/logind-fake.py); o lua, dos testes da config Lua da
+# sessão (session/hypr/tests).
 RUN pacman -Syu --noconfirm --needed \
         hyprland quickshell \
         qt6-svg qt6-imageformats qt6-5compat \
@@ -23,8 +25,9 @@ RUN pacman -Syu --noconfirm --needed \
         qt6-multimedia qt6-multimedia-ffmpeg intel-media-driver libva-utils \
         dbus kitty foot htop grim libnotify wtype \
         libpipewire wireplumber hyprsunset wf-recorder \
-        ttf-material-symbols-variable ttf-jetbrains-mono-nerd ttf-cascadia-code-nerd noto-fonts noto-fonts-emoji \
+        ttf-material-symbols-variable ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji \
         mpv mpv-mpris ffmpeg \
+        python-gobject lua \
         hicolor-icon-theme adwaita-icon-theme \
     && pacman -Scc --noconfirm
 
@@ -41,7 +44,7 @@ RUN groupadd -g "$GID" dev \
     && useradd -m -u "$UID" -g "$GID" -s /bin/bash dev \
     && echo 'dev:lucerna' | chpasswd \
     && install -d -m 0700 -o "$UID" -g "$GID" "/run/user/$UID" \
-    && install -d -o "$UID" -g "$GID" /home/dev/.config/quickshell /home/dev/.config/hypr
+    && install -d -o "$UID" -g "$GID" /home/dev/.config /home/dev/.config/quickshell /home/dev/.config/hypr
 
 USER dev
 ENV USER=dev \
@@ -53,3 +56,9 @@ ENV USER=dev \
 WORKDIR /home/dev
 
 CMD ["dbus-run-session", "start-hyprland"]
+
+# O sha256 deste arquivo: o dev/run.sh e o dev/test.sh reconstroem a imagem
+# quando ele difere (um pacote novo aqui chega sem o --build). No fim, para a
+# etiqueta não invalidar o cache das camadas de cima.
+ARG DOCKERFILE_SHA
+LABEL dockerfile.sha=$DOCKERFILE_SHA

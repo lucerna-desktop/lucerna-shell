@@ -46,6 +46,20 @@
 # fonte (LRCLIB, previsão, busca de cidade). Na fase "lucernad fora", a página
 # Tela e ociosidade das configurações também é capturada, com o brilho
 # "Indisponível", e a aba Clima, com o "Indisponível".
+# Por último, a fase "logind": o shell roda desde o começo com o logind falso
+# (ci/logind-fake.sh, num barramento privado na pasta temporária da fumaça;
+# LUCERNA_LOGIND_BUS só no ambiente do shell, nunca o barramento do sistema).
+# O shell precisa segurar o inibidor delay (10 s); o org.lucerna.Test.Suspend
+# precisa terminar com o inibidor solto antes do prazo (lastSleep.timedOut
+# false), o LockedHint ligado na hora de dormir e o `session isLocked` em true
+# (com a captura); ao acordar, o inibidor de novo (10 s); o UnlockSession
+# desbloqueia e o LockSession bloqueia (5 s cada), e um UnlockSession no fim
+# deixa a tela livre para o repouso.
+# Antes do repouso, a fase "qs sem supervisor": um segundo qs com
+# LUCERNA_SESSION=1 e sem a LUCERNA_SUPERVISED (o exec_cmd do qs no
+# hyprland.lua da pessoa, dentro da sessão Lucerna) precisa sair sozinho em
+# 10 s, com código 0 e a linha "este qs sai" no log dele, sem derrubar o shell
+# da fumaça.
 # O som nunca alcança um alto-falante: o PipeWire da fumaça é próprio, sem os
 # monitores de hardware, e o mpv toca só no sink nulo. A unidade roda de novo
 # numa cópia separada (unit_suites e unit_run, do ci/lib.sh), e a cobertura de
@@ -69,9 +83,13 @@
 # de teste" no log, a cidade escolhida diferente de "Cacaulândia, Rondônia, BR",
 # a previsão que não chega a ready com 7 dias, a letra que não chega a found da
 # lrclib com 4 linhas, cada uma em 5 s, ou o log do servidor falso sem um pedido
-# de cada fonte), `ipc call`
+# de cada fonte), o logind (o falso que não sobe, o inibidor que o shell não
+# segura ou não pega de novo ao acordar, o Suspend que espera o prazo ou dorme
+# sem o LockedHint, a sessão que não bloqueia ao dormir, o Unlock e o Lock que
+# o shell não segue), `ipc call`
 # com código diferente de 0, `panels get` diferente do esperado, painel que não
 # fecha, shell que cai (inclusive no repouso de 5 s depois do último passo),
+# o qs sem supervisor na sessão Lucerna que não sai em 10 s com a linha no log,
 # shell que não encerra limpo com `qs kill` (código 0 em 10 s), aviso ou erro
 # fora do ci/tolerated.txt no log final (conferido depois do encerramento), a
 # unidade da cópia separada que falha e todo `ipc call` ou grim que passa de
@@ -89,7 +107,7 @@
 #
 # Saída em $CI_OUT: shell.log, sway.log, dbus.log, pipewire.log,
 # wireplumber.log, mpv.log, web-fake.log, hypr-fake.log, lucernad.log,
-# kill.log, unit-smoke.log, shots/NN-<passo>.png, coverage.md e summary.md (tabela passo, esperado, veio).
+# kill.log, logind-fake.log, unit-smoke.log, shots/NN-<passo>.png, coverage.md e summary.md (tabela passo, esperado, veio).
 set -euo pipefail
 
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -113,6 +131,7 @@ mpv_pid=""
 lucernad_pid=""
 web_pid=""
 hypr_pid=""
+logind_dir=""
 selecao_pids=()
 qs_pid=""
 shell_pid=""
@@ -147,6 +166,10 @@ cleanup() {
     stop_group "$lucernad_pid"
     stop_group "$web_pid"
     stop_group "$hypr_pid"
+    if [ -n "$logind_dir" ]; then
+        bash "$repo/ci/logind-fake.sh" stop "$logind_dir" || true
+        cp "$logind_dir/lucerna-fake-logind.log" "$out/logind-fake.log" 2> /dev/null || true
+    fi
     stop_group "$wireplumber_pid"
     stop_group "$pipewire_pid"
     stop_group "$dbus_pid"
@@ -360,11 +383,19 @@ grep -qF "LUCERNAD_WEB_BASE=$web_base: a rede é de teste" "$out/lucernad.log" \
     || fail "o lucernad não avisou que a rede é de teste ($web_base; veja lucernad.log)"
 row "lucernad" "rede de teste" "LUCERNAD_WEB_BASE=$web_base"
 
+# O logind falso (ci/logind-fake.sh) num barramento privado, antes do shell:
+# o shell o escuta pelo LUCERNA_LOGIND_BUS e segura o inibidor nele. Nunca o
+# barramento do sistema (rodada no host, seria o logind de verdade).
+logind_dir="$work/logind"
+logind_bus=$(bash "$repo/ci/logind-fake.sh" start "$logind_dir") \
+    || fail "o logind falso não subiu (veja $logind_dir/lucerna-fake-logind.log)"
+row "logind falso" "o nome org.freedesktop.login1 em 10 s" "barramento privado"
+
 # O shell grava o próprio PID (o bash do meio dá lugar ao qs com exec, e o
 # grupo é o dele): é por ele que a fumaça confere que o shell continua vivo e o
 # encerra no fim.
 # shellcheck disable=SC2016 # o $$ e o $1 expandem no bash de dentro
-setsid bash -c 'echo "$$" > "$1" && exec qs -c lucerna' _ "$work/qs.pid" > "$work/raw.log" 2>&1 &
+LUCERNA_LOGIND_BUS=$logind_bus setsid bash -c 'echo "$$" > "$1" && exec qs -c lucerna' _ "$work/qs.pid" > "$work/raw.log" 2>&1 &
 qs_pid=$!
 for _ in $(seq 120); do
     [ -z "$shell_pid" ] && [ -s "$work/qs.pid" ] && shell_pid=$(cat "$work/qs.pid")
@@ -871,6 +902,84 @@ step dashboard dashboard open performance
 step dashboard dashboard open overview
 step dashboard dashboard open weather
 step settings settings open idle
+
+# Fase "logind": o Suspend do falso emite o PrepareForSleep(true) e espera o
+# inibidor delay do shell (até 5 s); o shell bloqueia e só solta o inibidor com
+# o bloqueio na tela (secure) e o LockedHint ligado.
+# logind_call <método>: um método do controle (org.lucerna.Test) do falso.
+logind_call() {
+    timeout 20 gdbus call --address "$logind_bus" --dest org.freedesktop.login1 \
+        --object-path /org/lucerna/Test --method "org.lucerna.Test.$1"
+}
+# logind_status <expressão>: o valor (Python, sobre o dict `s`) do Status do falso.
+logind_status() {
+    logind_call Status 2> /dev/null | python3 -I -c '
+import ast, json, sys
+s = json.loads(ast.literal_eval(sys.stdin.read())[0])
+print(json.dumps(eval(sys.argv[1])))' "$1"
+}
+# wait_held <passo>: espera até 10 s pelo inibidor delay do shell no falso.
+wait_held() {
+    local held=""
+    for _ in $(seq 50); do
+        held=$(logind_status 's["delayHeld"] > 0') || true
+        [ "$held" = true ] && break
+        sleep 0.2
+    done
+    row "logind" "$1" "delayHeld ${held:-(sem resposta)}"
+    [ "$held" = true ] || fail "logind: $1 — o shell não segurou o inibidor delay em 10 s (veja shell.log e logind-fake.log)"
+}
+# wait_locked <esperado> <passo>: espera até 5 s pelo session isLocked.
+wait_locked() {
+    local got=""
+    for _ in $(seq 25); do
+        got=$(ipc session isLocked) || fail "ipc call session isLocked falhou: $(why $?)"
+        [ "$got" = "$1" ] && break
+        sleep 0.2
+    done
+    row "logind" "$2" "isLocked $got"
+    [ "$got" = "$1" ] || fail "logind: $2 — o session isLocked ficou em \"$got\" (esperado \"$1\" em 5 s)"
+}
+wait_held "o inibidor delay ao iniciar"
+logind_call Suspend > /dev/null || fail "o org.lucerna.Test.Suspend do logind falso falhou: $(why $?)"
+sleep_state=$(logind_status '[s["lastSleep"]["timedOut"], s["lastSleep"]["lockedHintAtSleep"], s["lastSleep"]["releasedMs"]]') || true
+row "logind" "Suspend: timedOut false, LockedHint ao dormir" "${sleep_state:-(sem resposta)}"
+case "$sleep_state" in
+    "[false, true, "*) ;;
+    *) fail "logind: o Suspend devia soltar o inibidor antes do prazo com o LockedHint ligado ([timedOut, lockedHintAtSleep, releasedMs] veio \"$sleep_state\"; veja shell.log e logind-fake.log)" ;;
+esac
+alive || fail "o shell caiu na suspensão do logind falso"
+wait_locked true "Suspend bloqueia"
+n=$((n + 1))
+shot "$out/shots/$(printf '%02d' "$n")-logind-dormir.png" || fail "o grim não capturou o bloqueio do logind: $(why $?)"
+wait_held "o inibidor de novo ao acordar"
+logind_call UnlockSession > /dev/null || fail "o org.lucerna.Test.UnlockSession falhou: $(why $?)"
+wait_locked false "UnlockSession desbloqueia"
+logind_call LockSession > /dev/null || fail "o org.lucerna.Test.LockSession falhou: $(why $?)"
+wait_locked true "LockSession bloqueia"
+logind_call UnlockSession > /dev/null || fail "o org.lucerna.Test.UnlockSession falhou: $(why $?)"
+wait_locked false "UnlockSession no fim"
+
+# O qs sem supervisor na sessão Lucerna sai sem abrir nada (o log dele fica
+# fora do shell.log: o aviso é o esperado).
+env -u LUCERNA_SUPERVISED LUCERNA_SESSION=1 setsid qs -c lucerna > "$out/unsupervised.log" 2>&1 < /dev/null &
+dup_pid=$!
+for _ in $(seq 50); do
+    kill -0 "$dup_pid" 2> /dev/null || break
+    sleep 0.2
+done
+if kill -0 "$dup_pid" 2> /dev/null; then
+    kill -TERM -- "-$dup_pid" 2> /dev/null || kill "$dup_pid" 2> /dev/null || true
+    row "qs sem supervisor na sessão Lucerna" "sai em 10 s" "(não saiu)"
+    fail "o qs com LUCERNA_SESSION=1 e sem LUCERNA_SUPERVISED não saiu em 10 s (veja unsupervised.log)"
+fi
+dup_code=0
+wait "$dup_pid" || dup_code=$?
+grep -qF "este qs sai" "$out/unsupervised.log" \
+    || fail "o qs sem supervisor saiu (código $dup_code) sem a linha \"este qs sai\" no log (veja unsupervised.log)"
+[ "$dup_code" -eq 0 ] || fail "o qs sem supervisor saiu com código $dup_code (veja unsupervised.log)"
+alive || fail "o shell caiu com o qs sem supervisor"
+row "qs sem supervisor na sessão Lucerna" "sai em 10 s, código 0, com a linha no log" "código $dup_code"
 
 # Repouso: o shell fica parado alguns segundos depois do último passo, para o
 # que chega tarde (um Timer, uma resposta assíncrona, o efeito do último

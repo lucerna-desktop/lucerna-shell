@@ -34,7 +34,10 @@ Singleton {
         return ThemeManager.wallpaperFor(sourceTheme(screen));
     }
 
+    // No modo de segurança, sempre o estático.
     function mode(screen: var): string {
+        if (Config.safeMode)
+            return "static";
         return monitors[nameOf(screen)]?.mode ?? Config.wallpaperMode;
     }
 

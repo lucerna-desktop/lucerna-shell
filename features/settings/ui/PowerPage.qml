@@ -3,7 +3,7 @@ import qs.core.theme
 import qs.core.widgets
 import qs.features.settings.state
 
-// Energia e bateria: avisos, ação no nível crítico, perfil automático e modo leve.
+// Energia e bateria: avisos, ação no nível crítico, perfil automático, tampa e modo leve.
 Column {
     spacing: ThemeManager.spacing.large
 
@@ -39,7 +39,7 @@ Column {
             title: "Bateria baixa"
             description: "Avisa uma vez por descarga, ao chegar neste nível"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 5
                 to: 40
@@ -56,7 +56,7 @@ Column {
             title: "Bateria crítica"
             description: "Sempre abaixo do nível baixo"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 1
                 to: 20
@@ -165,8 +165,9 @@ Column {
             wide: true
             title: "Nível"
             dimmed: !SettingsState.saverBelowEnabled
+            dimsControl: false
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 5
                 to: 60
@@ -175,6 +176,23 @@ Column {
                 format: v => `${Math.round(v)}%`
                 enabled: SettingsState.saverBelowEnabled
                 onMoved: v => SettingsState.setSaverBelow(v)
+            }
+        }
+    }
+
+    // Só em notebooks: num desktop não há tampa.
+    SettingSection {
+        visible: SettingsState.hasBattery
+        title: "Tampa"
+
+        SettingRow {
+            icon: Icons.lock
+            title: "Bloquear ao fechar a tampa com monitor externo"
+            description: "Desligado, fechar a tampa com um monitor externo ligado só apaga a tela do notebook."
+
+            Switch {
+                checked: SettingsState.lockOnLidDocked
+                onToggled: on => SettingsState.setLockOnLidDocked(on)
             }
         }
     }

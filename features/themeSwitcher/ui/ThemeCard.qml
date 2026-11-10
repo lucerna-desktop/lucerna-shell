@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell.Widgets
 import qs.core.carousel
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 
@@ -14,6 +15,9 @@ import qs.core.widgets
 // terceiro, some. O central ganha a borda na cor de destaque do tema ativo.
 Item {
     id: card
+
+    // A escala da janela (fracionária: 1,25), para as linhas finas (ver Pixel).
+    readonly property real dpr: Window.window?.devicePixelRatio ?? 1
 
     required property var theme
     required property int distance
@@ -38,14 +42,14 @@ Item {
 
     signal clicked
 
-    width: 320
-    height: 180
+    width: ThemeManager.px(320)
+    height: ThemeManager.px(180)
     z: -reach
     scale: Math.pow(0.8, reach)
     opacity: Math.min(1, shown)
     visible: shown > 0 && effect.opacity > 0
     // Sobe da borda de baixo na entrada e desce na saída.
-    transform: Translate { y: (1 - card.shown) * 240 }
+    transform: Translate { y: (1 - card.shown) * ThemeManager.px(240) }
 
     // O x é posto aqui, não por binding: o pulo é decidido antes de o x mudar.
     onDistanceChanged: {
@@ -110,13 +114,13 @@ Item {
             anchors.fill: parent
             radius: ThemeManager.radius.large
             color: card.c.base ?? "black"
-            border.width: ThemeManager.outlines ? 1 : 0
+            border.width: ThemeManager.outlines ? Pixel.hairline(card.dpr) : 0
             border.color: card.c.border ?? "gray"
 
             Image {
                 anchors.fill: parent
                 source: card.still ? `file://${card.still}` : ""
-                sourceSize: Qt.size(640, 360)
+                sourceSize: Qt.size(ThemeManager.px(640), ThemeManager.px(360))
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
             }
@@ -125,7 +129,7 @@ Item {
             Rectangle {
                 anchors.bottom: parent.bottom
                 width: parent.width
-                height: 64
+                height: ThemeManager.px(64)
                 gradient: Gradient {
                     GradientStop { position: 0; color: ThemeManager.alpha(card.c.base ?? "black", 0) }
                     GradientStop { position: 1; color: ThemeManager.alpha(card.c.base ?? "black", 0.85) }
@@ -148,8 +152,8 @@ Item {
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 anchors.margins: ThemeManager.spacing.normal
-                anchors.bottomMargin: ThemeManager.spacing.normal + 2
-                spacing: 4
+                anchors.bottomMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
+                spacing: ThemeManager.px(4)
 
                 Repeater {
                     model: ["raised", "text", "accent"]
@@ -157,11 +161,11 @@ Item {
                     delegate: Rectangle {
                         required property string modelData
 
-                        width: 12
-                        height: 12
-                        radius: 6
+                        width: ThemeManager.px(12)
+                        height: ThemeManager.px(12)
+                        radius: width / 2
                         color: card.c[modelData] ?? "gray"
-                        border.width: 1
+                        border.width: Pixel.hairline(card.dpr)
                         border.color: card.c.border ?? "gray"
                     }
                 }
@@ -173,7 +177,7 @@ Item {
             anchors.fill: parent
             radius: ThemeManager.radius.large
             color: "transparent"
-            border.width: 2
+            border.width: ThemeManager.px(2)
             border.color: ThemeManager.colors.accent
             opacity: card.reach === 0 ? 1 : 0
 
@@ -194,7 +198,7 @@ Item {
         shadowColor: "#000000"
         shadowOpacity: 0.35
         shadowBlur: 0.8
-        shadowVerticalOffset: 6
+        shadowVerticalOffset: ThemeManager.px(6)
 
         Behavior on opacity { enabled: card.shown > 0; Anim { type: Anim.Effects } }
     }

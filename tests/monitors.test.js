@@ -1,4 +1,4 @@
-// Testes de services/Monitors: normalização do hyprctl e o Lua do arranjo.
+// Testes de services/Monitors: normalização do hyprctl, o Lua do arranjo e a tampa.
 function run(t) {
     const M = t.Monitors;
     const raw = {
@@ -42,5 +42,62 @@ function run(t) {
         const line = 'hl.monitor({ output = "DP-1", disabled = false, mode = "2560x1440@143.97", position = "0x0", scale = 1.25, transform = 1, vrr = 1, bitdepth = 10, mirror = "" })';
         t.eq(M.luaFor(spec), line);
         t.eq(M.lua([spec, { name: "HDMI-A-1", enabled: false }]), `${line}\nhl.monitor({ output = "HDMI-A-1", disabled = true })`);
+    });
+
+    // A tampa: o interno casa com eDP/LVDS/DSI; os outros são externos.
+    const mon = (name, enabled) => ({ name: name, enabled: enabled });
+    const laptop = mon("eDP-1", true);
+
+    t.test("monitors: tampa fechada com externo só desliga o interno", () => {
+        t.eq(M.lidPlan(true, [laptop, mon("HDMI-A-1", true)], false), { disable: ["eDP-1"], enable: [], lock: false });
+        t.eq(M.lidPlan(true, [mon("eDP-1", false), mon("HDMI-A-1", true)], false), { disable: [], enable: [], lock: false }, "já desligado");
+    });
+
+    t.test("monitors: com a opção ligada também bloqueia", () => {
+        t.eq(M.lidPlan(true, [laptop, mon("DP-2", true)], true), { disable: ["eDP-1"], enable: [], lock: true });
+    });
+
+    t.test("monitors: tampa fechada sem externo não faz nada", () => {
+        t.eq(M.lidPlan(true, [laptop], true), { disable: [], enable: [], lock: false });
+        t.eq(M.lidPlan(true, [laptop, mon("HDMI-A-1", false)], true), { disable: [], enable: [], lock: false }, "externo desligado não conta");
+    });
+
+    t.test("monitors: tampa aberta religa o interno", () => {
+        t.eq(M.lidPlan(false, [mon("eDP-1", false), mon("HDMI-A-1", true)], true), { disable: [], enable: ["eDP-1"], lock: false });
+        t.eq(M.lidPlan(false, [laptop, mon("HDMI-A-1", true)], true), { disable: [], enable: [], lock: false }, "já ligado");
+        t.eq(M.lidPlan(false, [mon("LVDS-1", false)], false), { disable: [], enable: ["LVDS-1"], lock: false });
+    });
+
+    t.test("monitors: o externo saiu com a tampa fechada religa o interno", () => {
+        t.eq(M.lidPlan(true, [mon("eDP-1", false)], true), { disable: [], enable: ["eDP-1"], lock: false });
+        t.eq(M.lidPlan(true, [mon("DSI-1", false), mon("HDMI-A-1", false)], false), { disable: [], enable: ["DSI-1"], lock: false });
+    });
+
+    t.test("monitors: desktop sem interno ignora a tampa", () => {
+        const none = { disable: [], enable: [], lock: false };
+        t.eq(M.lidPlan(true, [mon("WAYLAND-1", true)], true), none);
+        t.eq(M.lidPlan(true, [mon("DP-1", true), mon("HDMI-A-1", true)], true), none);
+        t.eq(M.lidPlan(false, [mon("DP-1", false), mon("HDMI-A-1", true)], true), none);
+        t.eq(M.lidPlan(true, [], true), none);
+    });
+
+    // O modo "Escala pelos apps": os monitores em 1, com o arranjo guardado à parte.
+    t.test("monitors: o arranjo do modo pelos apps tem chave própria", () => {
+        t.eq(M.setupKey("A | B", false), "A | B");
+        t.eq(M.setupKey("A | B", true), "apps: A | B");
+    });
+
+    t.test("monitors: o arranjo em outra escala segue as bordas encostadas", () => {
+        const at = (name, x, y, scale) => ({ name: name, enabled: true, width: 2560, height: 1440, refresh: 60, x: x, y: y, scale: scale, transform: 0, vrr: 0, tenBit: false, mirror: "" });
+        const row = M.atScale([at("DP-1", 0, 0, 1.25), at("DP-2", 2048, 0, 1.25)], 1);
+        t.eq(row.map(m => [m.x, m.y, m.scale]), [[0, 0, 1], [2560, 0, 1]], "lado a lado");
+        const column = M.atScale([at("DP-1", 0, 0, 1.25), at("DP-2", 0, 1152, 1.25)], 1);
+        t.eq(column.map(m => [m.x, m.y]), [[0, 0], [0, 1440]], "um em cima do outro");
+        const mixed = M.atScale([at("DP-1", 0, 0, 2), at("DP-2", 1280, 0, 1)], 1);
+        t.eq(mixed.map(m => m.x), [0, 2560], "escalas diferentes");
+        const spare = M.atScale([at("DP-1", 0, 0, 1.25), Object.assign(at("DP-2", 0, 0, 1.5), { enabled: false })], 1);
+        t.eq([spare[1].scale, spare[1].x], [1, 0], "o desligado só muda a escala");
+        const same = M.atScale([at("DP-1", 0, 0, 1), at("DP-2", 2560, 0, 1)], 1);
+        t.eq(same.map(m => m.x), [0, 2560], "já em 1, nada muda");
     });
 }

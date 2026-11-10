@@ -12,7 +12,9 @@ Rectangle {
     property bool active: false
     readonly property bool hovered: mouse.containsMouse
     readonly property bool pressed: mouse.pressed
-    property color activeColor: ThemeManager.colors.accent
+    // Ativo, o tom de contêiner do destaque (não o destaque cheio): o texto do
+    // tema por cima passa de 4,5:1 em todos os temas.
+    property color activeColor: ThemeManager.colors.accentContainer
     // Encolhe um pouco ao pressionar (1 = não encolhe). Para botões grandes.
     property real pressScale: 1
     // Falso apaga o véu de hover (um botão filho com o véu próprio por cima).
@@ -21,7 +23,12 @@ Rectangle {
     signal clicked(var mouse)
     signal wheel(var wheel)
 
-    readonly property color layerColor: active ? ThemeManager.colors.accentText : ThemeManager.colors.text
+    // O véu e a onda: fora do ativo, na cor do texto; sobre o contêiner, na
+    // do base, que leva o contêiner poucos % rumo ao fundo do tema e só
+    // aumenta o contraste com o texto (nunca volta ao destaque cheio). Quem
+    // pinta um contêiner sem `active` usa o base também; quem tem um fundo
+    // ativo próprio (um véu translúcido) troca pela cor do texto dele.
+    property color layerColor: active ? ThemeManager.colors.base : ThemeManager.colors.text
 
     radius: ThemeManager.radius.small
     color: active ? activeColor : "transparent"

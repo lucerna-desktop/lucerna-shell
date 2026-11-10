@@ -52,7 +52,7 @@ Column {
 
         width: root.width
         visible: WifiState.enabled && !WifiState.hardwareBlocked && WifiState.networks.length > 0
-        spacing: 2
+        spacing: ThemeManager.px(2)
 
         Repeater {
             model: WifiState.networks
@@ -64,7 +64,7 @@ Column {
                 readonly property bool open: WifiState.expanded === entry.modelData.network
 
                 width: parent?.width ?? 0
-                spacing: 4
+                spacing: ThemeManager.px(4)
 
                 ListRow {
                     id: row
@@ -80,14 +80,14 @@ Column {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: entry.modelData.secure
                         icon: Icons.lock
-                        size: 16
+                        size: ThemeManager.px(16)
                         color: ThemeManager.colors.textFaint
                     }
 
                     IconButton {
                         visible: entry.modelData.known && row.hovered
                         icon: Icons.trash
-                        iconSize: 18
+                        iconSize: ThemeManager.px(18)
                         foreground: ThemeManager.colors.textMuted
                         onClicked: WifiState.forget(entry.modelData)
                     }
@@ -96,7 +96,7 @@ Column {
                 // Senha, para redes protegidas ainda não salvas.
                 Item {
                     width: parent.width
-                    height: entry.open ? 52 : 0
+                    height: entry.open ? ThemeManager.px(52) : 0
                     clip: true
                     visible: height > 0
 
@@ -108,17 +108,17 @@ Column {
                         anchors.rightMargin: ThemeManager.spacing.small
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.leftMargin: ThemeManager.spacing.small
-                        height: 42
-                        radius: 21
+                        height: ThemeManager.px(42)
+                        radius: height / 2
                         color: ThemeManager.alpha(ThemeManager.colors.text, 0.06)
-                        border.width: password.activeFocus ? 2 : 0
+                        border.width: password.activeFocus ? ThemeManager.px(2) : 0
                         border.color: ThemeManager.colors.accent
 
                         TextInput {
                             id: password
 
                             anchors.fill: parent
-                            anchors.leftMargin: ThemeManager.spacing.normal + 2
+                            anchors.leftMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
                             anchors.rightMargin: ThemeManager.spacing.normal
                             verticalAlignment: TextInput.AlignVCenter
                             echoMode: TextInput.Password

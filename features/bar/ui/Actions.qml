@@ -10,31 +10,34 @@ import qs.features.bar.state
 // aparece antes o tempo, que para ao clicar.
 Row {
     anchors.verticalCenter: parent?.verticalCenter
-    spacing: 2
+    spacing: ThemeManager.px(2)
 
     Clickable {
         anchors.verticalCenter: parent.verticalCenter
         visible: BarState.recording
-        width: recRow.implicitWidth + 18
-        height: 28
-        radius: 14
-        color: ThemeManager.colors.danger
+        width: recRow.implicitWidth + ThemeManager.px(18)
+        height: ThemeManager.px(28)
+        radius: height / 2
+        // No tom de contêiner do erro, com o texto dele; o ponto e o ícone
+        // na cor de erro (a 3:1 do contêiner).
+        color: ThemeManager.container(ThemeManager.colors.danger)
+        layerColor: ThemeManager.colors.base
         onClicked: BarState.stopRecording()
 
         Row {
             id: recRow
 
             anchors.centerIn: parent
-            spacing: 5
+            spacing: ThemeManager.px(5)
 
             Rectangle {
                 id: pulse
 
                 anchors.verticalCenter: parent.verticalCenter
-                width: 8
-                height: 8
-                radius: 4
-                color: ThemeManager.colors.accentText
+                width: ThemeManager.px(8)
+                height: ThemeManager.px(8)
+                radius: width / 2
+                color: ThemeManager.containerIcon(ThemeManager.colors.danger)
 
                 // Só pulsa à mostra: com a barra escondida, a animação
                 // redesenharia a janela da forma a cada quadro.
@@ -51,7 +54,7 @@ Row {
                 anchors.verticalCenter: parent.verticalCenter
                 text: BarState.recordingTime
                 mono: true
-                color: ThemeManager.colors.accentText
+                color: ThemeManager.onContainer(ThemeManager.colors.danger)
                 font.pixelSize: ThemeManager.font.small + 1
                 font.weight: Font.DemiBold
             }
@@ -60,8 +63,8 @@ Row {
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "stop"
                 filled: true
-                size: 16
-                color: ThemeManager.colors.accentText
+                size: ThemeManager.px(16)
+                color: ThemeManager.containerIcon(ThemeManager.colors.danger)
             }
         }
     }
@@ -70,9 +73,9 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         icon: BarState.networkIcon
         visible: BarState.networkAvailable
-        iconSize: 18
+        iconSize: ThemeManager.px(18)
         active: BarState.entryOpen("rede")
-        foreground: active ? ThemeManager.colors.accentText : BarState.online ? ThemeManager.colors.textMuted : ThemeManager.colors.textFaint
+        foreground: active ? ThemeManager.colors.onAccentContainer : BarState.online ? ThemeManager.colors.textMuted : ThemeManager.colors.textFaint
         onClicked: BarState.toggleEntry("rede")
     }
 
@@ -80,9 +83,9 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         icon: BarState.volumeIcon
         visible: BarState.audioAvailable
-        iconSize: 18
+        iconSize: ThemeManager.px(18)
         active: BarState.entryOpen("som")
-        foreground: active ? ThemeManager.colors.accentText : BarState.muted ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
+        foreground: active ? ThemeManager.colors.onAccentContainer : BarState.muted ? ThemeManager.colors.textFaint : ThemeManager.colors.textMuted
         // Clique abre o Som; botão do meio silencia; a roda ajusta o volume.
         onClicked: event => {
             if (event.button === Qt.MiddleButton)
@@ -98,9 +101,9 @@ Row {
         icon: BarState.batteryIcon
         label: BarState.batteryShowPercent ? `${BarState.batteryPercent}%` : ""
         visible: BarState.batteryAvailable
-        iconSize: 18
+        iconSize: ThemeManager.px(18)
         active: BarState.entryOpen("energia")
-        foreground: active ? ThemeManager.colors.accentText : BarState.batteryLow ? ThemeManager.colors.danger : ThemeManager.colors.textMuted
+        foreground: active ? ThemeManager.colors.onAccentContainer : BarState.batteryLow ? ThemeManager.colors.danger : ThemeManager.colors.textMuted
         onClicked: BarState.toggleEntry("energia")
     }
 
@@ -109,7 +112,7 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         icon: "sports_esports"
         visible: BarState.gameIcon
-        iconSize: 18
+        iconSize: ThemeManager.px(18)
         label: hovered ? "Desligar" : ""
         foreground: ThemeManager.colors.accent
         Accessible.name: BarState.gameTooltip
@@ -119,7 +122,7 @@ Row {
     IconButton {
         anchors.verticalCenter: parent.verticalCenter
         icon: BarState.bellIcon
-        iconSize: 18
+        iconSize: ThemeManager.px(18)
         label: BarState.notificationCount > 0 ? `${BarState.notificationCount}` : ""
         active: BarState.notificationsOpen
         onClicked: BarState.toggleNotifications()

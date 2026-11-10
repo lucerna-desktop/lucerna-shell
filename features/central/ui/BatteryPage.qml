@@ -7,11 +7,11 @@ import qs.core.theme
 import qs.core.widgets
 import qs.features.central.state
 
-// Página da bateria no painel de ações da central: voltar e o título; o card
-// em forma de bateria, cheio até a carga na cor dela (destaque, aviso, erro
-// ou, carregando, verde), com a porcentagem e o tempo (ou "Carregando"/
-// "Carregada") por cima; o perfil de energia em botões de texto (o atual
-// cheio); o consumo da última hora num gráfico; e a bateria dos dispositivos
+// Página da bateria no painel de ações da central: voltar e o título; a
+// porcentagem e o tempo (ou "Carregando"/"Carregada") numa linha, e embaixo o
+// card em forma de bateria, preenchido pela carga na cor dela (destaque,
+// aviso, erro ou, carregando, verde), sem texto por cima; o perfil de energia em botões de texto (o
+// atual cheio); o consumo da última hora num gráfico; e a bateria dos dispositivos
 // Bluetooth conectados. Sem bateria, sem perfil ou sem dispositivos, o bloco
 // some.
 Column {
@@ -25,11 +25,57 @@ Column {
         onBack: CentralState.setPage("")
     }
 
+    // A porcentagem (com o raio, carregando) e o tempo, numa linha acima do
+    // desenho, no texto da página: o desenho fica sem texto por cima.
+    Item {
+        visible: PowerState.hasBattery
+        width: parent.width
+        height: percentLabel.implicitHeight
+
+        Row {
+            x: ThemeManager.px(2)
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: ThemeManager.px(2)
+
+            Icon {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: PowerState.charging
+                icon: Icons.bolt
+                size: ThemeManager.px(24)
+                filled: true
+                color: ThemeManager.colors.text
+            }
+
+            Txt {
+                id: percentLabel
+
+                text: Format.percent(PowerState.percentage)
+                mono: true
+                font.pixelSize: ThemeManager.font.huge - ThemeManager.px(10)
+                font.weight: Font.DemiBold
+            }
+        }
+
+        Txt {
+            anchors.right: parent.right
+            anchors.rightMargin: ThemeManager.px(2)
+            anchors.verticalCenter: parent.verticalCenter
+            text: PowerState.batteryNote
+            muted: true
+            font.weight: Font.Medium
+        }
+    }
+
+    // O desenho da bateria, preenchido pela carga: o corpo é o trilho, e a
+    // parte cheia, a cor do estado (destaque, aviso, erro ou, carregando,
+    // verde) ajustada a 3:1 do trilho pelo fillOf (o destaque é o accentFill).
     Item {
         id: card
 
-        readonly property color fill: PowerState.cardBand === "success" ? ThemeManager.colors.success : PowerState.cardBand === "danger" ? ThemeManager.colors.danger : PowerState.cardBand === "warning" ? ThemeManager.colors.warning : ThemeManager.colors.accent
+        readonly property color hue: PowerState.cardBand === "success" ? ThemeManager.colors.success : PowerState.cardBand === "danger" ? ThemeManager.colors.danger : PowerState.cardBand === "warning" ? ThemeManager.colors.warning : ThemeManager.colors.accent
+        readonly property bool band: PowerState.cardBand === "success" || PowerState.cardBand === "danger" || PowerState.cardBand === "warning"
         readonly property color empty: ThemeManager.colors.track
+        readonly property color fill: band ? ThemeManager.fillOf(hue, ThemeManager.colors.surface, empty) : ThemeManager.colors.accentFill
         // A carga mostrada anima até a nova.
         property real shown: PowerState.percentage
 
@@ -37,82 +83,23 @@ Column {
 
         visible: PowerState.hasBattery
         width: parent.width
-        height: 76
+        height: ThemeManager.px(76)
 
-        // O que vai por cima do card, nas duas cores: a porcentagem (com o
-        // raio, carregando) à esquerda e o tempo à direita.
-        component CardLabel: Item {
-            id: label
-
-            required property color tint
-            // O tempo fica mais apagado sobre o vazio; sobre a cor, cheio.
-            property real noteOpacity: 0.8
-
-            width: body.width
-            height: body.height
-
-            Row {
-                x: ThemeManager.spacing.normal + 2
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
-
-                Icon {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: PowerState.charging
-                    icon: Icons.bolt
-                    size: 26
-                    filled: true
-                    color: label.tint
-                }
-
-                Txt {
-                    text: Format.percent(PowerState.percentage)
-                    mono: true
-                    color: label.tint
-                    font.pixelSize: ThemeManager.font.huge - 8
-                    font.weight: Font.DemiBold
-                }
-            }
-
-            Txt {
-                anchors.right: parent.right
-                anchors.rightMargin: ThemeManager.spacing.normal + 2
-                anchors.verticalCenter: parent.verticalCenter
-                text: PowerState.batteryNote
-                color: label.tint
-                opacity: label.noteOpacity
-                font.weight: Font.Medium
-            }
-        }
-
-        // O corpo recorta o preenchimento e o texto no formato do card.
+        // O corpo recorta o preenchimento no formato do card.
         ClippingRectangle {
             id: body
 
-            width: parent.width - pole.width - 3
+            width: parent.width - pole.width - ThemeManager.px(3)
             height: parent.height
             radius: ThemeManager.radius.normal
             color: card.empty
 
-            CardLabel {
-                tint: ThemeManager.colors.text
-            }
-
-            // A parte cheia leva a cópia do texto na cor de mais contraste com
-            // ela (ThemeManager.onColor), cortada
-            // na largura dela.
             Rectangle {
                 width: body.width * Math.max(0, Math.min(1, card.shown))
                 height: body.height
-                clip: true
                 color: card.fill
 
                 Behavior on color { ColorAnim {} }
-
-                CardLabel {
-                    tint: ThemeManager.onColor(card.fill)
-                    noteOpacity: 1
-                }
             }
         }
 
@@ -122,10 +109,10 @@ Column {
 
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            width: 5
+            width: ThemeManager.px(5)
             height: parent.height * 0.36
-            topRightRadius: 3
-            bottomRightRadius: 3
+            topRightRadius: ThemeManager.px(3)
+            bottomRightRadius: ThemeManager.px(3)
             color: card.shown >= 0.995 ? card.fill : card.empty
 
             Behavior on color { ColorAnim {} }
@@ -150,7 +137,7 @@ Column {
                 readonly property var item: PowerState.profileButtons[profile.index] ?? null
 
                 width: (profiles.width - profiles.spacing * (PowerState.profileButtons.length - 1)) / PowerState.profileButtons.length
-                height: 40
+                height: ThemeManager.px(40)
                 label: profile.item?.label ?? ""
                 checked: profile.item?.value === PowerState.profile
                 onClicked: PowerState.setProfile(profile.item?.value ?? PowerState.profile)
@@ -164,7 +151,7 @@ Column {
 
         Item {
             width: parent.width
-            height: 32
+            height: ThemeManager.px(32)
 
             Txt {
                 x: ThemeManager.spacing.small
@@ -186,7 +173,7 @@ Column {
         Sparkline {
             x: ThemeManager.spacing.small
             width: parent.width - x * 2
-            height: 72
+            height: ThemeManager.px(72)
             normalized: PowerState.chart
 
             Txt {
@@ -218,7 +205,7 @@ Column {
                 readonly property var item: PowerState.devices[device.index] ?? null
 
                 width: parent?.width ?? 0
-                height: 44
+                height: ThemeManager.px(44)
 
                 Icon {
                     id: deviceIcon
@@ -226,7 +213,7 @@ Column {
                     x: ThemeManager.spacing.small
                     anchors.verticalCenter: parent.verticalCenter
                     icon: device.item?.icon ?? ""
-                    size: 20
+                    size: ThemeManager.px(20)
                     color: ThemeManager.colors.textMuted
                 }
 

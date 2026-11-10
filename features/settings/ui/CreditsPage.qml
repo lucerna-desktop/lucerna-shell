@@ -32,7 +32,7 @@ Column {
 
                     IconButton {
                         icon: Icons.openExternal
-                        iconSize: 18
+                        iconSize: ThemeManager.px(18)
                         Accessible.name: `Abrir ${row.modelData.name}`
                         onClicked: SettingsState.openLink(row.modelData.url)
                     }

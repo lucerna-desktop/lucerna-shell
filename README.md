@@ -100,7 +100,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 | --- | --- |
 | **Barra** | Workspaces, hora e data, rede, som, bateria e notificações. Uma aba fundida à moldura da tela, que aparece com ela e se esconde sozinha. Na área de trabalho vazia fica sempre à mostra, e aparece por um instante ao trocar de workspace. |
 | **Painel superior** | Visão geral (perfil, relógio, calendário, clima, recursos e mídia, com a capa num círculo e o espectro do som em volta, pelo `lucernad`), mídia com letra sincronizada (LRCLIB) e o espectro em volta da capa, desempenho (CPU, GPU, memória, disco e rede) e clima (Open-Meteo, pelo `lucernad`): a cidade e o dia, o nascer e o pôr do sol, o agora e os próximos sete dias. Abas reordenáveis e opção de abrir ao parar o mouse na hora. |
-| **Central** | Um bloco que sai da borda direita, com dois painéis independentes (`Super+A`, `Super+N`, os dois com `Super+C`, ou pelos ícones da barra): ações e notificações. As ações são tiles em duas colunas (Wi-Fi, Bluetooth, saída de áudio, bateria, microfone, luz noturna, não perturbe e não apagar a tela; cheios quando ligados), com uma página por recurso: a lista de redes, com senha; os dispositivos Bluetooth, para parear; as saídas e o volume de cada app com áudio aberto; o microfone e as entradas; a bateria (um card em forma de bateria, cheio até a carga), o perfil de energia (Economia, Equilibrado e Turbo), o consumo da última hora num gráfico e a bateria dos dispositivos Bluetooth. Embaixo, os sliders largos de volume e de brilho da tela em foco, com a porcentagem; a engrenagem abre as configurações. |
+| **Central** | Um bloco que sai da borda direita, com dois painéis independentes (`Super+A`, `Super+N`, os dois com `Super+C`, ou pelos ícones da barra): ações e notificações. As ações são tiles em duas colunas (Wi-Fi, Bluetooth, saída de áudio, bateria, microfone, luz noturna, não perturbe e não apagar a tela; ligados, ficam num tom escuro do destaque, com o texto claro, ou claro nos temas claros), com uma página por recurso: a lista de redes, com senha; os dispositivos Bluetooth, para parear; as saídas e o volume de cada app com áudio aberto; o microfone e as entradas; a bateria (a porcentagem e, embaixo, um card em forma de bateria, cheio até a carga na cor do estado), o perfil de energia (Economia, Equilibrado e Turbo), o consumo da última hora num gráfico e a bateria dos dispositivos Bluetooth. Embaixo, as barras de volume e de brilho da tela em foco, com o nome e a porcentagem acima e o ícone dentro (o do volume silencia); a engrenagem abre as configurações. |
 | **Notificações** | Popups com ações, pausa no mouse e prazo ajustável, não perturbe e a lista na central. |
 | **Launcher** | Três estilos: compacto (busca e lista), completo (categorias de aplicativos, arquivos, documentos, imagens, músicas, vídeos e web, com favoritos, grade e detalhes: ações do app, descrição, versão e desenvolvedor) e tela cheia (gaveta de apps por categoria). Os apps mais abertos vêm primeiro, com os favoritos na frente. Em todos os estilos: clique direito num item para as opções, `Ctrl+F` fixa ou tira dos favoritos e `Ctrl+H` oculta; no compacto e na tela cheia, `/texto` busca arquivos e `?texto` pesquisa na web. A busca de arquivos usa o `fd` quando há, e, sem busca, mostra os recentes. |
 | **Área de transferência** | Histórico num painel próprio (`Super+V`), pelo `lucernad`: textos, imagens (com miniatura) e arquivos, busca com o trecho em negrito, filtro, fixar e apagar. Escolher copia e cola na janela em foco (Ctrl+Shift+V nos terminais). Senhas marcadas pelos gerenciadores ficam de fora. |
@@ -144,6 +144,7 @@ Três estilos, escolhidos em Configurações → Launcher. O **completo** tem bu
 - **Quickshell 0.3.1+**
 - **lucernad** (o daemon do Lucerna): CPU, memória, rede, discos, temperatura e GPU da aba Desempenho e do card de recursos, o espectro do som do player em volta da capa (pelo PipeWire), o histórico da área de transferência (pelo protocolo de controle de dados do Wayland), o brilho das telas (a integrada pelo logind e os monitores externos por DDC/CI, que precisam da regra udev e do módulo `i2c-dev` do README do lucernad), o gráfico de consumo da bateria e os perfis de energia (pelo UPower e pelo power-profiles-daemon, no D-Bus); sem ele, aparecem como indisponíveis, o anel fica parado, o histórico fica desligado e o slider de brilho some. Instalação no [README do lucernad](https://github.com/lucerna-desktop/lucernad#instalação).
 - **Fonte de ícones**: `ttf-material-symbols-variable` (repositório oficial do Arch)
+- **Fonte mono**: `ttf-jetbrains-mono-nerd` (repositório oficial do Arch), a JetBrainsMonoNL Nerd Font Mono dos temas embutidos
 - Opcionais, cada um liga uma parte:
   - PipeWire: volume e mídia
   - UPower: bateria e perfis de energia
@@ -164,7 +165,39 @@ git clone https://github.com/lucerna-desktop/lucerna-shell
 ln -s "$PWD/lucerna-shell" ~/.config/quickshell/lucerna
 ```
 
-No `hyprland.lua`:
+Há dois jeitos de usar: a **sessão Lucerna**, escolhida na tela de login, e o shell por cima do seu Hyprland de sempre (fora da sessão Lucerna).
+
+### Sessão Lucerna
+
+A sessão sobe o Hyprland com uma base própria, cuida do shell e se recupera sozinha de uma queda. O pacote (marco 6) instala:
+
+| No repositório | Instalado em |
+| --- | --- |
+| `session/bin/lucerna-session` | `/usr/bin/lucerna-session` |
+| `session/lib/*.sh` | `/usr/lib/lucerna/session/` |
+| `session/hypr/` | `/usr/share/lucerna/hypr/` |
+| `session/emergency/` | `/usr/share/lucerna/emergency/` |
+| `session/systemd/*` | `/usr/lib/systemd/user/` |
+| `session/wayland-sessions/lucerna.desktop` | `/usr/share/wayland-sessions/` |
+
+O `lucerna-session` também roda direto do repositório: ele acha a pasta `session/` pelo próprio caminho.
+
+- **Login:** a entrada "Lucerna" aparece no gerenciador de login (o `lucerna.desktop`). Ela detecta a GPU (inclusive a híbrida e a NVIDIA), o teclado e o init, e sobe o Hyprland com a base (`/usr/share/lucerna/hypr/hyprland.lua`). A base põe os padrões e carrega por cima o arquivo do shell (`~/.config/lucerna/hypr/settings.lua`) e o seu `~/.config/hypr/hyprland.lua`, que vale por último. O shell nunca escreve no seu `hyprland.lua`.
+- **Não ponha o `qs -c lucerna` no `hyprland.lua` na sessão Lucerna.** Quem sobe o shell é a sessão. Tire o `hl.exec_cmd("qs -c lucerna")` e binds como `pkill -x qs; qs -c lucerna`: dentro da sessão, um `qs` subido por fora sai logo, com uma linha no log, para não haver dois shells. Para reiniciar o shell, use `lucerna-session shell restart`.
+- **Supervisor e modo de segurança:** o `lucerna-session supervise` (pelo `lucerna-shell.service` com systemd, ou direto sem ele) sobe o `qs` e o reinicia depois de uma queda, com pausas de 1, 2 e 4 s. Na 4ª queda em 30 s, o shell volta no **modo de segurança**: sem as suas personalizações e sem gravar nada, com um aviso. Se ele cair também ali, abre a **tela de emergência**, que roda sem o shell e tem "Tentar de novo", um terminal, o registro, desligar, reiniciar e sair. Os registros ficam em `~/.local/state/lucerna/` (`session.log` e `shell/qs-*.log`).
+- **Bloqueio:** se o shell cair com a tela bloqueada, ele volta bloqueado, e a área de trabalho não aparece no meio.
+- **Atalhos da sessão, que valem mesmo com o shell morto:**
+  - `Ctrl+Alt+Delete`: o menu de energia do shell. Com o shell morto ou travado, a tela de emergência, com "Reiniciar o shell" (o primeiro, no Enter), o terminal, o registro, desligar, reiniciar e sair.
+  - `Ctrl+Alt+Shift+Esc`: sai da sessão.
+  - `Super+Enter`: um terminal.
+- **Pelo TTY** (Ctrl+Alt+F2 e entrar com o seu usuário):
+  - `lucerna-session shell restart`: para o shell e sobe de novo. Se ele estava bloqueado, volta bloqueado e pede a senha. É também a saída para um shell vivo, mas travado na tela de bloqueio.
+  - `lucerna-session unlock`: libera a tela de bloqueio caída do Hyprland (o shell morreu com a tela bloqueada e não voltou), depois de você ter entrado com a senha no TTY. Com o shell de pé, a tela dele continua e pede a senha.
+  - `lucerna-session --help` lista os outros comandos (`shell stop|start|status`, `open terminal`, `logout`…).
+
+### Fora da sessão Lucerna
+
+No seu Hyprland de sempre, o shell sobe pelo `hyprland.lua`:
 
 ```lua
 hl.on("hyprland.start", function()
@@ -176,26 +209,42 @@ end)
 pcall(dofile, os.getenv("HOME") .. "/.config/hypr/lucerna-monitors.lua")
 ```
 
-Os atalhos do shell vêm prontos e se editam em Configurações → Atalhos:
+Na sessão Lucerna, nada disso entra: o shell e o arranjo dos monitores vêm da sessão.
 
-| Atalho | Ação |
-| --- | --- |
-| `Super+Espaço` | Launcher |
-| `Super+Tab` | Visão geral dos workspaces |
-| `Super+V` | Histórico da área de transferência |
-| `Print` / `Shift+Print` / `Ctrl+Print` | Captura (painel) / tela inteira / janela ativa |
-| `Super+Print` | Gravar a tela ou parar |
-| `Super+D` | Painel superior |
-| `Super+S` | Configurações |
-| `Super+A` / `Super+N` / `Super+C` | Ações / notificações / as duas (se as duas estão abertas, fecha as duas) |
-| `Super+T` | Seletor de temas |
-| `Super+Esc` | Menu de energia |
-| `Super+L` | Bloquear a tela |
-| Teclas de volume, mudo, microfone, mídia e brilho | O mesmo, com o OSD |
+### Atalhos
+
+Os atalhos do shell vêm prontos e se editam em Configurações → Atalhos. Os de janelas, áreas de trabalho, terminal e o Super sozinho são padrões só na sessão Lucerna. Fora dela, essas teclas ficam com o seu `hyprland.lua`, e as Configurações voltam ao `Super+S`. Um atalho que você mudou na página vale nas duas.
+
+| Atalho | Ação | Na sessão Lucerna | Fora dela |
+| --- | --- | --- | --- |
+| `Super` sozinho (ao soltar) | Launcher | sim | não |
+| `Super+Espaço` | Launcher | sim | sim |
+| `Super+Tab` | Visão geral dos workspaces | sim | sim |
+| `Super+V` | Histórico da área de transferência | sim | sim |
+| `Print` / `Shift+Print` / `Ctrl+Print` | Captura (painel) / tela inteira / janela ativa | sim | sim |
+| `Super+Print` | Gravar a tela ou parar | sim | sim |
+| `Super+D` | Painel superior | sim | sim |
+| `Super+,` | Configurações | sim | não (é `Super+S`) |
+| `Super+S` | Configurações | não | sim |
+| `Super+A` / `Super+N` / `Super+C` | Ações / notificações / as duas (se as duas estão abertas, fecha as duas) | sim | sim |
+| `Super+T` | Seletor de temas | sim | sim |
+| `Super+Esc` | Menu de energia | sim | sim |
+| `Super+L` | Bloquear a tela | sim | sim |
+| Teclas de volume, mudo, microfone, mídia e brilho | O mesmo, com o OSD | sim | sim |
+| `Super+Enter` | Terminal (o do Configurações → Atalhos → Apps padrão) | sim | não |
+| `Super+Q` / `Super+F` | Fechar a janela / tela cheia | sim | não |
+| `Super+1`…`9` / `Super+Shift+1`…`9` | Ir para a área de trabalho / mandar a janela para ela | sim | não |
+| `Super+setas` / `Super+Shift+setas` | Foco / mover a janela | sim | não |
+| `Super` + botão esquerdo / direito | Arrastar / redimensionar a janela | sim | não |
 
 Mudou: `Super+N` (a ação `notifications`) agora abre só as notificações; a central inteira (ações e notificações) fica em `Super+C`.
 
-O shell fica com essas teclas: se o `hyprland.lua` também tiver alguma delas, a dele sai (até o próximo reload). Então tire do `hyprland.lua` os atalhos antigos do Lucerna, se houver. Os do Hyprland (janelas, workspaces) continuam lá; o [`dev/hyprland.lua`](dev/hyprland.lua) tem um exemplo. As regras de desfoque dos painéis são aplicadas pelo próprio shell, sem mexer no `hyprland.lua`.
+O shell fica com essas teclas: se o `hyprland.lua` também tiver alguma delas, a dele sai (até o próximo reload). Então tire do `hyprland.lua` os atalhos antigos do Lucerna, se houver. Fora da sessão Lucerna, os do Hyprland (janelas, workspaces) continuam lá; o [`dev/hyprland.lua`](dev/hyprland.lua) tem um exemplo. As regras de desfoque dos painéis são aplicadas pelo próprio shell, sem mexer no `hyprland.lua`.
+
+### Escala
+
+- **Tamanho do shell** (Configurações → Aparência): aumenta só o shell (barra, painéis, textos), sem mudar a escala do monitor. A escala é interna, pelas medidas do tema, então o texto e as bordas ficam nítidos.
+- **Escala pelos apps** (Configurações → Monitores): em vez de o Hyprland escalar cada monitor (a "Escala do monitor", o padrão), os monitores ficam em 1 e cada toolkit aumenta os apps (Qt, GTK, Electron/Chromium, X11 e o cursor) por um fator só. É mais leve para a GPU em escalas fracionárias como 1,25, mas não fica igual em todos os apps. O modo mexe nos arquivos dos toolkits (o `gtk-xft-dpi` dos `~/.config/gtk-{3,4}.0/settings.ini`, uma linha marcada nos `~/.config/{electron,chromium,chrome}-flags.conf`, e o `~/.config/lucerna/session.env` e o `~/.config/lucerna/Xresources`, que são dele), com uma cópia `.lucerna-bak` dos seus arquivos antes da primeira mudança, e devolve tudo ao voltar para a escala do monitor. O ambiente completo vale depois de sair e entrar na sessão.
 
 ## Comandos IPC
 
@@ -236,6 +285,7 @@ Cada arquivo em `themes/*.json` é um tema, e o nome do arquivo é o id. Os tema
 - `fonts`: fontes que o tema traz em `themes/fonts/`, carregadas pelo shell sem instalar nada no sistema. Todos os temas embutidos trazem a Rubik, sob licença OFL.
 - `surfaces.outline`: contorno fino nos cartões. O padrão é sem contorno; os cartões se destacam pelo tom.
 - `colors.track`: cor opcional dos trilhos de medidores e sliders.
+- `colors.accentContainer`, `onAccentContainer`, `accentIcon`, `accentFill`, `mutedFill`, `fillIcon` e `mutedFillIcon`: opcionais. São o fundo das superfícies grandes ativas (blocos ligados, botões primários, itens selecionados), o texto e o ícone sobre ele, o preenchimento das barras, o cinza do mudo e os ícones dentro da barra (normal e mudo). Sem eles, saem calculados do destaque, com o texto a 4,5:1 e o ícone e o preenchimento a 3:1.
 
 Transparência, desfoque, contorno e velocidade das animações também se ajustam nas configurações, por cima de qualquer tema. "Restaurar padrões do tema" desfaz.
 
@@ -258,7 +308,7 @@ features/   uma pasta por parte do shell (bar, dashboard, central, settings,
 - A `ui` fala com o `state` da própria feature, e o `state` fala com `services` e `core`.
 - Uma feature não importa outra. Quando precisam conversar, a conversa passa pelo `core`: por exemplo, o `Panels` diz quais painéis estão abertos.
 
-Os princípios e o desenho completo estão em [`Lucerna — Proposta.md`](<Lucerna — Proposta.md>). O desenho dos wallpapers animados está em [`Lucerna — Proposta do Wallpaper.md`](<Lucerna — Proposta do Wallpaper.md>), os plugins próprios planejados, em [`Lucerna — Plugins Próprios.md`](<Lucerna — Plugins Próprios.md>), e o que falta fazer, na ordem, em [`Lucerna — Pendências.md`](<Lucerna — Pendências.md>).
+Os princípios e o desenho completo estão em [`Lucerna — Proposta.md`](<Lucerna — Proposta.md>). O desenho dos wallpapers animados está em [`Lucerna — Proposta do Wallpaper.md`](<Lucerna — Proposta do Wallpaper.md>), os plugins próprios planejados, em [`Lucerna — Plugins Próprios.md`](<Lucerna — Plugins Próprios.md>), e o que falta fazer no shell, na ordem, em [`Lucerna — Pendências.md`](<Lucerna — Pendências.md>). Os outros repositórios do ecossistema (o `lucernad`, o `lucerna-sdk` e os apps) têm cada um o seu arquivo de pendências na raiz.
 
 ## Desenvolvimento
 

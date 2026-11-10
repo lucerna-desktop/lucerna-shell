@@ -28,6 +28,11 @@ Singleton {
             pam.abort();
     }
 
+    // O bloqueio chegou à tela (ou saiu): o WlSessionLock.secure, do Lockscreen.
+    function setSecure(on: bool): void {
+        Session.setSecure(on);
+    }
+
     function submit(password: string): void {
         if (busy || password === "")
             return;

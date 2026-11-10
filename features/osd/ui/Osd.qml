@@ -16,8 +16,8 @@ Item {
     readonly property bool here: OsdState.screen === screen
     // A espessura da moldura entra só com ela à mostra (o painel superior
     // aberto); sozinho, o OSD sai da borda sem moldura.
-    readonly property real bodyWidth: 52 + Frame.thicknessAt(Frame.progressOn(screen))
-    readonly property real bodyHeight: 220
+    readonly property real bodyWidth: ThemeManager.px(52) + Frame.thicknessAt(Frame.progressOn(screen))
+    readonly property real bodyHeight: ThemeManager.px(220)
     readonly property bool open: OsdState.shown && here
     // A mola espera a janela da forma chegar à coluna (Frame.readyOn).
     property real shown: open && Frame.readyOn(screen, Frame.column) ? 1 : 0
@@ -48,7 +48,7 @@ Item {
     Item {
         x: root.width - root.bodyWidth * root.shown
         y: (root.height - root.bodyHeight) / 2
-        width: 52
+        width: ThemeManager.px(52)
         height: root.bodyHeight
         opacity: Frame.clamp(root.shown)
 
@@ -84,8 +84,8 @@ Item {
                 bottomMargin: ThemeManager.spacing.normal
                 horizontalCenter: parent.horizontalCenter
             }
-            width: 6
-            radius: 3
+            width: ThemeManager.px(6)
+            radius: width / 2
             visible: OsdState.kind !== "game"
             color: ThemeManager.colors.track
 
@@ -107,7 +107,7 @@ Item {
             anchors.bottomMargin: ThemeManager.spacing.normal
             anchors.horizontalCenter: parent.horizontalCenter
             icon: OsdState.icon
-            size: 20
+            size: ThemeManager.px(20)
             color: OsdState.muted || (OsdState.kind === "game" && !OsdState.gameOn) ? ThemeManager.colors.textFaint : ThemeManager.colors.accent
         }
     }

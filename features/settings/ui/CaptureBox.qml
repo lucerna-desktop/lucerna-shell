@@ -15,10 +15,10 @@ Rectangle {
     signal button(int qtButton, int modifiers)
     signal key(int qtKey, int code, int modifiers)
 
-    implicitHeight: 96
+    implicitHeight: ThemeManager.px(96)
     radius: ThemeManager.radius.normal
     color: ThemeManager.alpha(ThemeManager.colors.accent, area.containsMouse || keys.activeFocus ? 0.12 : 0.07)
-    border.width: 2
+    border.width: ThemeManager.px(2)
     border.color: ThemeManager.alpha(ThemeManager.colors.accent, 0.55)
 
     Component.onCompleted: {
@@ -38,13 +38,13 @@ Rectangle {
     Column {
         anchors.centerIn: parent
         width: parent.width - ThemeManager.spacing.large * 2
-        spacing: 4
+        spacing: ThemeManager.px(4)
 
         Icon {
             anchors.horizontalCenter: parent.horizontalCenter
             icon: root.mode === "mouse" ? Icons.mouse : Icons.keyboard
             filled: true
-            size: 26
+            size: ThemeManager.px(26)
             color: ThemeManager.colors.accent
         }
 

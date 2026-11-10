@@ -10,7 +10,7 @@ Item {
     id: root
 
     required property var item
-    property int size: 32
+    property int size: ThemeManager.px(32)
     property bool highlighted: false
 
     readonly property string iconPath: item?.icon ? Quickshell.iconPath(item.icon, true) : ""

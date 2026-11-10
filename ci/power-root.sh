@@ -5,7 +5,7 @@
 # sem conectores DRM nem /dev/i2c-* (nenhum monitor externo). Com a raiz, o
 # lucernad lê e grava o brilho só nessa árvore: sem logind, sem DDC, sem o
 # uevent do kernel. Usado pela fumaça (ci/smoke.sh) e pelo container do
-# dev/test.sh (dev/hyprland.lua), onde o D-Bus do sistema e o /sys do host
+# dev/test.sh (dev/hyprland-test.lua), onde o D-Bus do sistema e o /sys do host
 # estão à vista: sem a raiz falsa, um ajuste mudaria o brilho de verdade.
 # Cria também o power-profiles-daemon falso (<pasta>/power-profiles, com o
 # perfil `balanced` em `active`) e o GameMode falso (<pasta>/gamemode), que o

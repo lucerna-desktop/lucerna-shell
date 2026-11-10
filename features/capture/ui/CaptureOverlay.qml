@@ -55,7 +55,7 @@ OverlayPanel {
             visible: !panel.hole
             anchors.fill: parent
             color: panel.target === "screen" ? ThemeManager.alpha("#000000", 0.18) : panel.veil
-            border.width: panel.target === "screen" ? 4 : 0
+            border.width: panel.target === "screen" ? ThemeManager.px(4) : 0
             border.color: ThemeManager.colors.accent
         }
 
@@ -73,36 +73,36 @@ OverlayPanel {
             Rectangle { x: parent.h.x + parent.h.width; y: parent.h.y; width: Math.max(0, parent.width - x); height: parent.h.height; color: panel.veil }
 
             Rectangle {
-                x: parent.h.x - 2
-                y: parent.h.y - 2
-                width: parent.h.width + 4
-                height: parent.h.height + 4
+                x: parent.h.x - ThemeManager.px(2)
+                y: parent.h.y - ThemeManager.px(2)
+                width: parent.h.width + ThemeManager.px(4)
+                height: parent.h.height + ThemeManager.px(4)
                 color: "transparent"
-                border.width: 2
+                border.width: ThemeManager.px(2)
                 border.color: ThemeManager.colors.accent
-                radius: panel.target === "window" ? 6 : 0
+                radius: panel.target === "window" ? ThemeManager.px(6) : 0
             }
 
-            // Tamanho (área) ou título (janela)
+            // Tamanho (área) ou título (janela), no tom de contêiner
             Rectangle {
                 readonly property bool above: parent.h.y > 40
-                x: Math.max(8, Math.min(parent.width - width - 8, parent.h.x))
-                y: above ? parent.h.y - height - 8 : parent.h.y + 8
-                width: sizeText.implicitWidth + 16
-                height: 26
-                radius: 13
-                color: ThemeManager.colors.accent
+                x: Math.max(ThemeManager.px(8), Math.min(parent.width - width - ThemeManager.px(8), parent.h.x))
+                y: above ? parent.h.y - height - ThemeManager.px(8) : parent.h.y + ThemeManager.px(8)
+                width: sizeText.implicitWidth + ThemeManager.px(16)
+                height: ThemeManager.px(26)
+                radius: height / 2
+                color: ThemeManager.colors.accentContainer
 
                 Txt {
                     id: sizeText
 
                     anchors.centerIn: parent
                     text: panel.target === "window" ? (panel.hovered?.title || panel.hovered?.cls || "Janela") : `${Math.round(panel.local.width)} × ${Math.round(panel.local.height)}`
-                    color: ThemeManager.colors.accentText
+                    color: ThemeManager.colors.onAccentContainer
                     font.pixelSize: ThemeManager.font.small + 1
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
-                    width: Math.min(implicitWidth, 420)
+                    width: Math.min(implicitWidth, ThemeManager.px(420))
                 }
             }
 
@@ -113,13 +113,13 @@ OverlayPanel {
                 delegate: Rectangle {
                     required property int index
 
-                    x: frame.h.x + (index % 2 ? frame.h.width : 0) - 6
-                    y: frame.h.y + (index > 1 ? frame.h.height : 0) - 6
-                    width: 12
-                    height: 12
-                    radius: 6
+                    x: frame.h.x + (index % 2 ? frame.h.width : 0) - ThemeManager.px(6)
+                    y: frame.h.y + (index > 1 ? frame.h.height : 0) - ThemeManager.px(6)
+                    width: ThemeManager.px(12)
+                    height: ThemeManager.px(12)
+                    radius: width / 2
                     color: ThemeManager.colors.accent
-                    border.width: 2
+                    border.width: ThemeManager.px(2)
                     border.color: ThemeManager.colors.accentText
                 }
             }
@@ -140,7 +140,7 @@ OverlayPanel {
             function cornerAt(x: real, y: real): int {
                 const r = panel.local;
                 const corners = [[r.x, r.y], [r.x + r.width, r.y], [r.x, r.y + r.height], [r.x + r.width, r.y + r.height]];
-                return corners.findIndex(c => Math.abs(c[0] - x) < 14 && Math.abs(c[1] - y) < 14);
+                return corners.findIndex(c => Math.abs(c[0] - x) < ThemeManager.px(14) && Math.abs(c[1] - y) < ThemeManager.px(14));
             }
 
             function inside(x: real, y: real): bool {
@@ -211,7 +211,7 @@ OverlayPanel {
 
         Txt {
             anchors.horizontalCenter: parent.horizontalCenter
-            y: 64
+            y: ThemeManager.px(64)
             text: panel.target === "area" ? "Arraste para escolher a área · Enter ou clique duplo captura · Esc cancela"
                 : panel.target === "window" ? "Clique numa janela · Esc cancela"
                 : "Clique para capturar a tela · Esc cancela"
@@ -224,7 +224,7 @@ OverlayPanel {
         CaptureToolbar {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 48 + (1 - panel.progress) * -24
+            anchors.bottomMargin: ThemeManager.px(48) + (1 - panel.progress) * -ThemeManager.px(24)
             onCapture: panel.confirm()
         }
     }

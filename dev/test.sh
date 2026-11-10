@@ -12,8 +12,18 @@
 #   dev/test.sh ipc ARGS...        qs -c lucerna ipc call ARGS...
 #   dev/test.sh setc 'dict(...)'   mescla o dicionário (Python) no config.json do shell
 #   dev/test.sh shot NOME          captura a tela em $LUCERNA_TEST_OUT/NOME.png
+#   dev/test.sh headless on|off    liga/desliga a saída headless HEADLESS-T (veja abaixo)
 #   dev/test.sh see PREFIXO ARGS...  ipc call ARGS, 1 s, captura PREFIXO-ARGS.png, fecha
 #   dev/test.sh run 'COMANDO'      roda um comando na sessão (notify-send, hyprctl...)
+#   dev/test.sh logind suspend|lock|unlock|lid on|lid off|status
+#                                  comanda o logind falso (ci/logind-fake.py): o
+#                                  suspend emite PrepareForSleep(true), espera os
+#                                  inibidores delay (até 5 s), 1 s depois o false;
+#                                  o status dá o JSON (delayHeld, lockedHint, lid,
+#                                  lastSleep). O shell recebe o endereço privado
+#                                  dele em LUCERNA_LOGIND_BUS; para um cliente do
+#                                  sd-bus (systemd-inhibit), DBUS_SYSTEM_BUS_ADDRESS
+#                                  só no ambiente dele, nunca o barramento do host.
 # LUCERNA_TEST_OUT: pasta das capturas (padrão /tmp/lucerna-test).
 # LUCERNA_TEST_GPU="/dev/dri/renderDN /dev/dri/cardN": força a GPU repassada.
 # LUCERNA_TEST_HOST_BUS=1 (no up): o shell usa o barramento de sessão do host,
@@ -34,7 +44,13 @@
 # a maximização e a borda e a centraliza nesse tamanho; sem monitor assim, ela
 # fica onde está. Em escala fracionária a imagem sai borrada. Fora do KDE, não faz nada.
 # LUCERNA_TEST_SIZE=LARGURAxALTURA: o tamanho da janela (padrão 1920x1080).
-# O lucernad sobe com o Hyprland (dev/hyprland.lua). Para ver o shell sem ele:
+# headless on: cria a saída headless HEADLESS-T (1920x1080@60, posição 0x0, escala 1)
+# e desliga a WAYLAND-1: painéis, tela de bloqueio, foco e capturas passam a ser
+# nela. Serve quando a sessão do host está bloqueada ou a janela de teste escondida
+# (o Hyprland aninhado não desenha e o `shot` trava); a headless desenha sempre.
+# headless off: religa a WAYLAND-1 e remove a HEADLESS-T. Se a WAYLAND-1 não voltar,
+# o `dev/test.sh up` de novo é a saída. O `shot` e os benches usam a saída ativa.
+# O lucernad sobe com o Hyprland (dev/hyprland-test.lua). Para ver o shell sem ele:
 # `dev/test.sh run 'pkill -x lucernad'`; para voltar (sempre pelo `run`, que põe
 # o WAYLAND_DISPLAY do Hyprland aninhado, e sempre com a raiz falsa do brilho:
 # o container monta o D-Bus do sistema do host e vê o /sys dele; com a raiz,
@@ -120,6 +136,14 @@ out=${LUCERNA_TEST_OUT:-/tmp/lucerna-test}
 # "dropped operation" fica de fora: é o sintoma do bug do Config (spec linha
 # 112); se voltar, tem que aparecer no log e no errs, não ser filtrado.
 noise='portal'
+# O barramento privado do logind falso (ci/logind-fake.sh, que o
+# dev/hyprland-test.lua sobe com o Hyprland). Nunca o barramento do sistema: o
+# container monta o do host, onde está o logind de verdade.
+logind_bus=unix:path=/run/user/1000/lucerna-fake-system
+# A sessão entra pelo lucerna-session do repositório montado (a entrada real:
+# a base do Hyprland, com o dev/hyprland-test.lua como a camada do usuário); o
+# PATH o põe à frente, como o /usr/bin no sistema instalado.
+session_path=/home/dev/.config/quickshell/lucerna/session/bin:/usr/local/sbin:/usr/local/bin:/usr/bin
 
 fail() {
     echo "ERRO: $*" >&2
@@ -155,21 +179,35 @@ ex() {
     docker exec -i "$name" bash -c '
         pid=$(pgrep -x Hyprland) || { echo "ERRO: o Hyprland não está rodando no container" >&2; exit 3; }
         export "$(tr "\0" "\n" < "/proc/$pid/environ" | grep ^DBUS_SESSION_BUS_ADDRESS=)"
+        # O ambiente da sessão (o que o lucerna-session exportou): o shell e os
+        # comandos do run veem a mesma sessão que o Hyprland (LUCERNA_SESSION,
+        # LUCERNA_DATA_DIR, o teclado, o PATH com o lucerna-session).
+        while IFS= read -r line; do export "$line"; done < <(tr "\0" "\n" < "/proc/$pid/environ" | grep -E "^(LUCERNA_[A-Z_]*|XDG_SESSION_[A-Z]*|XDG_CURRENT_DESKTOP|PATH)=")
         HYPRLAND_INSTANCE_SIGNATURE=$(ls -t "$XDG_RUNTIME_DIR/hypr" | head -n 1)
         WAYLAND_DISPLAY=$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -type s -name "wayland-[0-9]*" -printf "%f\n" | sort | head -n 1)
         export HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY
         '"$1"
 }
 
-# Sobe o shell; com o barramento do host montado (LUCERNA_TEST_HOST_BUS=1 no
-# up), ele usa esse barramento no lugar do da sessão do container.
+# Sobe o shell pelo supervisor da sessão: `lucerna-session shell restart`
+# quando o `shell status` diz supervised; sem supervisor vivo, `shell start`
+# sobe um. Com o barramento do host montado (LUCERNA_TEST_HOST_BUS=1 no up),
+# `shell stop` e o qs à mão, como antes, com esse barramento no lugar do da
+# sessão do container (o supervisor fica parado até o próximo up; o
+# LUCERNA_SUPERVISED=1 faz as vezes dele, senão o qs na sessão Lucerna sai).
 start_shell() {
     # shellcheck disable=SC2016 # expande dentro do container, não aqui
-    ex 'pkill -x qs; sleep 0.5
-        if [ -S "$XDG_RUNTIME_DIR/host-bus" ]; then
+    ex 'if [ -S "$XDG_RUNTIME_DIR/host-bus" ]; then
+            lucerna-session shell stop
+            pkill -x qs; sleep 0.5
             export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/host-bus"
-        fi
-        setsid -f qs -c lucerna > /dev/null 2>&1 < /dev/null'
+            LUCERNA_SUPERVISED=1 setsid -f qs -c lucerna > /dev/null 2>&1 < /dev/null
+        elif [ "$(lucerna-session shell status)" = unsupervised ]; then
+            pkill -x qs; sleep 0.5
+            lucerna-session shell start
+        else
+            lucerna-session shell restart
+        fi'
 }
 
 running() {
@@ -218,10 +256,13 @@ print("config:", os.environ["SETC"])
 # aninhado para de desenhar e o grim trava esperando um frame que não vem.
 shot() {
     running
-    ex 'hyprctl monitors | grep -q "^Monitor WAYLAND-1 "' \
+    local mon
+    # A saída ativa: a headless, se estiver ligada, senão a WAYLAND-1.
+    mon=$(ex 'hyprctl monitors | grep -o "^Monitor \(HEADLESS-T\|WAYLAND-1\) " | head -n1 | cut -d" " -f2')
+    [ -n "$mon" ] \
         || fail "a saída WAYLAND-1 sumiu (Hyprland no FALLBACK, depois de um reload ou da janela fechada): rode dev/test.sh up"
     mkdir -p "$out"
-    ex 'timeout 10 grim -o WAYLAND-1 /tmp/lucerna-shot.png' \
+    ex "timeout 10 grim -o $mon /tmp/lucerna-shot.png" \
         || fail "a captura travou: a janela de teste está escondida ou minimizada? Traga-a para a frente (não precisa de foco) e tente de novo."
     docker cp -q "$name:/tmp/lucerna-shot.png" "$out/$1.png"
     echo "$out/$1.png"
@@ -269,12 +310,17 @@ up() {
     local runtime=${XDG_RUNTIME_DIR:-/run/user/$(id -u)} devices render card
     devices=$(gpu) || fail "nenhuma GPU utilizável em /sys/class/drm (a da NVIDIA não funciona no container); use LUCERNA_TEST_GPU"
     read -r render card <<< "$devices"
-    # A imagem é refeita quando falta ou quando o lucernad dela é de outra revisão.
-    local rev
+    # A imagem é refeita quando falta, quando o lucernad dela é de outra revisão
+    # ou quando o dev/Dockerfile mudou (a etiqueta dockerfile.sha). A mesma
+    # regra do dev/run.sh.
+    local rev sha
     rev=$(cat "$repo/dev/lucernad.rev")
+    sha=$(sha256sum "$repo/dev/Dockerfile" | cut -d' ' -f1)
     if ! docker image inspect "$image" &> /dev/null \
-        || [ "$(docker image inspect -f '{{ index .Config.Labels "lucernad.rev" }}' "$image")" != "$rev" ]; then
-        docker build --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" --build-arg LUCERNAD_REV="$rev" -t "$image" "$repo/dev"
+        || [ "$(docker image inspect -f '{{ index .Config.Labels "lucernad.rev" }}' "$image")" != "$rev" ] \
+        || [ "$(docker image inspect -f '{{ index .Config.Labels "dockerfile.sha" }}' "$image")" != "$sha" ]; then
+        docker build --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" --build-arg LUCERNAD_REV="$rev" \
+            --build-arg DOCKERFILE_SHA="$sha" -t "$image" "$repo/dev"
     fi
     local extra=()
     if [ -S "$runtime/pipewire-0" ]; then
@@ -296,17 +342,22 @@ up() {
         extra+=(-v "$target:$target:ro")
     done < <(findmnt -rno SOURCE,TARGET | awk '$1 ~ "^/dev/" && $1 !~ "^/dev/(loop|zram)" && $2 != "/" { print $2 }')
     docker rm -f "$name" &> /dev/null || true
+    # --ulimit core=0: se o qs cair no container, não gera core dump (o
+    # core_pattern do kernel é o do host, e iria para o systemd-coredump dele).
     docker run -d --name "$name" \
+        --ulimit core=0 \
         --user "$(id -u):$(id -g)" \
         --device "$render" --device "$card" \
         -e WAYLAND_DISPLAY=wayland-host \
         -e LUCERNA_DEV=1 \
+        -e LUCERNA_LOGIND_BUS="$logind_bus" \
         -v /etc/localtime:/etc/localtime:ro \
         -v "$runtime/$WAYLAND_DISPLAY:/run/user/1000/wayland-host" \
         -v "$repo:/home/dev/.config/quickshell/lucerna" \
-        -v "$repo/dev/hyprland.lua:/home/dev/.config/hypr/hyprland.lua:ro" \
+        -v "$repo/dev/hyprland-test.lua:/home/dev/.config/hypr/hyprland.lua:ro" \
+        -e PATH="$session_path" \
         "${extra[@]}" \
-        "$image" > /dev/null
+        "$image" dbus-run-session lucerna-session > /dev/null
     wait_loaded
     if [ "$host_bus" = 1 ]; then
         start_shell
@@ -373,13 +424,47 @@ case "${1:-}" in
         shot "$prefix-$(printf '%s-' "$@" | tr -cd 'a-z0-9-' | sed 's/-*$//')"
         ex 'qs -c lucerna ipc call panels close' > /dev/null
         ;;
+    headless)
+        running
+        case "${2:-}" in
+            on)
+                ex 'hyprctl monitors | grep -q "^Monitor HEADLESS-T " || hyprctl output create headless HEADLESS-T > /dev/null
+                    hyprctl eval "hl.monitor({ output = \"HEADLESS-T\", mode = \"1920x1080@60\", position = \"0x0\", scale = 1 })" > /dev/null
+                    hyprctl eval "hl.monitor({ output = \"WAYLAND-1\", disabled = true })" > /dev/null
+                    sleep 2; hyprctl monitors | grep "^Monitor"'
+                ;;
+            off)
+                ex 'hyprctl eval "hl.monitor({ output = \"WAYLAND-1\", mode = \"1920x1080@60\", position = \"0x0\", scale = 1, disabled = false })" > /dev/null
+                    sleep 2
+                    hyprctl output remove HEADLESS-T > /dev/null 2>&1 || true
+                    sleep 1; hyprctl monitors | grep "^Monitor"'
+                ;;
+            *) fail "uso: dev/test.sh headless on|off" ;;
+        esac
+        ;;
+    logind)
+        running
+        case "${2:-} ${3:-}" in
+            "suspend ") method=Suspend ;;
+            "lock ") method=LockSession ;;
+            "unlock ") method=UnlockSession ;;
+            "lid on") method="SetLid true" ;;
+            "lid off") method="SetLid false" ;;
+            "status ") method=Status ;;
+            *) fail "uso: dev/test.sh logind suspend|lock|unlock|lid on|lid off|status" ;;
+        esac
+        # O suspend responde só no fim do ciclo (até 5 s de prazo mais 1 s de sono).
+        # O status sai como o JSON puro, sem a tupla do gdbus.
+        ex "gdbus call --address $logind_bus --dest org.freedesktop.login1 --object-path /org/lucerna/Test --method org.lucerna.Test.$method" \
+            | sed -E "s/^\('(.*)',\)$/\1/"
+        ;;
     run)
         running
         [ -n "${2:-}" ] || fail "uso: dev/test.sh run 'COMANDO'"
         ex "$2"
         ;;
     *)
-        sed -n '2,41p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+        sed -n '2,52p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
         exit 2
         ;;
 esac

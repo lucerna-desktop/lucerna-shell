@@ -24,8 +24,8 @@ Variants {
 
         screen: modelData
         visible: shown > 0
-        implicitWidth: 260
-        implicitHeight: 220
+        implicitWidth: ThemeManager.px(260)
+        implicitHeight: ThemeManager.px(220)
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         mask: Region {}
@@ -35,19 +35,19 @@ Variants {
         Surface {
             anchors.fill: parent
             level: 0
-            radius: ThemeManager.radius.large + 4
+            radius: ThemeManager.radius.large + ThemeManager.px(4)
             opacity: window.shown
             scale: 0.85 + 0.15 * window.shown
 
             Column {
                 anchors.centerIn: parent
-                spacing: 2
+                spacing: ThemeManager.px(2)
 
                 Txt {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: MonitorsState.numberOf(window.modelData.name)
                     color: ThemeManager.colors.accent
-                    font.pixelSize: 110
+                    font.pixelSize: ThemeManager.px(110)
                     font.weight: Font.DemiBold
                 }
 

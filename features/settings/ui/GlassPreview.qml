@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import Quickshell.Widgets
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 
@@ -11,6 +12,9 @@ import qs.core.widgets
 ClippingRectangle {
     id: root
 
+    // A escala da janela (fracionária: 1,25), para as linhas finas (ver Pixel).
+    readonly property real dpr: Window.window?.devicePixelRatio ?? 1
+
     property bool transparency: true
     property real panelOpacity: 0.8
     property real cardOpacity: 0.55
@@ -18,7 +22,7 @@ ClippingRectangle {
     property int blurSize: 6
     property int blurPasses: 2
 
-    implicitHeight: 190
+    implicitHeight: ThemeManager.px(190)
     radius: ThemeManager.radius.large
     color: ThemeManager.colors.base
 
@@ -38,9 +42,9 @@ ClippingRectangle {
 
         Repeater {
             model: [
-                { c: ThemeManager.colors.accent, x: 0.18, s: 110, d: 9000 },
-                { c: ThemeManager.colors.success, x: 0.52, s: 80, d: 12000 },
-                { c: ThemeManager.colors.danger, x: 0.78, s: 96, d: 10000 }
+                { c: ThemeManager.colors.accent, x: 0.18, s: ThemeManager.px(110), d: 9000 },
+                { c: ThemeManager.colors.success, x: 0.52, s: ThemeManager.px(80), d: 12000 },
+                { c: ThemeManager.colors.danger, x: 0.78, s: ThemeManager.px(96), d: 10000 }
             ]
 
             delegate: Blob {
@@ -98,7 +102,7 @@ ClippingRectangle {
             anchors.fill: parent
             radius: ThemeManager.radius.large
             color: ThemeManager.alpha(ThemeManager.colors.base, root.transparency ? root.panelOpacity : 1)
-            border.width: ThemeManager.outlines ? 1 : 0
+            border.width: ThemeManager.outlines ? Pixel.hairline(root.dpr) : 0
             border.color: ThemeManager.colors.border
 
             Behavior on color { ColorAnim {} }
@@ -118,7 +122,7 @@ ClippingRectangle {
                         height: parent.height
                         radius: ThemeManager.radius.normal
                         color: ThemeManager.alpha(ThemeManager.colors.surface, root.transparency ? root.cardOpacity : 1)
-                        border.width: ThemeManager.outlines ? 1 : 0
+                        border.width: ThemeManager.outlines ? Pixel.hairline(root.dpr) : 0
                         border.color: ThemeManager.colors.border
 
                         Behavior on color { ColorAnim {} }
@@ -126,12 +130,12 @@ ClippingRectangle {
                         Column {
                             anchors.left: parent.left
                             anchors.top: parent.top
-                            anchors.margins: ThemeManager.spacing.small + 2
-                            spacing: 6
+                            anchors.margins: ThemeManager.spacing.small + ThemeManager.px(2)
+                            spacing: ThemeManager.px(6)
 
-                            Rectangle { width: 22; height: 22; radius: 11; color: ThemeManager.colors.accent; opacity: 0.9 }
-                            Rectangle { width: 54; height: 6; radius: 3; color: ThemeManager.colors.text; opacity: 0.8 }
-                            Rectangle { width: 36; height: 6; radius: 3; color: ThemeManager.colors.textMuted; opacity: 0.6 }
+                            Rectangle { width: ThemeManager.px(22); height: ThemeManager.px(22); radius: ThemeManager.px(11); color: ThemeManager.colors.accent; opacity: 0.9 }
+                            Rectangle { width: ThemeManager.px(54); height: ThemeManager.px(6); radius: ThemeManager.px(3); color: ThemeManager.colors.text; opacity: 0.8 }
+                            Rectangle { width: ThemeManager.px(36); height: ThemeManager.px(6); radius: ThemeManager.px(3); color: ThemeManager.colors.textMuted; opacity: 0.6 }
                         }
                     }
                 }

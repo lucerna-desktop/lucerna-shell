@@ -14,7 +14,7 @@ CentralPanel {
         id: headerRow
 
         width: parent.width
-        height: 36
+        height: ThemeManager.px(36)
 
         Txt {
             anchors.left: parent.left
@@ -29,8 +29,8 @@ CentralPanel {
             anchors.verticalCenter: parent.verticalCenter
             visible: InboxState.list.length > 0
             width: clearLabel.implicitWidth + ThemeManager.spacing.normal * 2
-            height: 28
-            radius: 14
+            height: ThemeManager.px(28)
+            radius: height / 2
             color: ThemeManager.alpha(ThemeManager.colors.text, 0.08)
             onClicked: InboxState.clearAll()
 
@@ -72,14 +72,14 @@ CentralPanel {
 
         add: Transition {
             ParallelAnimation {
-                Anim { property: "x"; from: 48; to: 0; type: Anim.Spatial }
+                Anim { property: "x"; from: ThemeManager.px(48); to: 0; type: Anim.Spatial }
                 Anim { property: "opacity"; from: 0; to: 1; type: Anim.Effects }
             }
         }
 
         remove: Transition {
             ParallelAnimation {
-                Anim { property: "x"; to: 96; type: Anim.EmphasizedAccel }
+                Anim { property: "x"; to: ThemeManager.px(96); type: Anim.EmphasizedAccel }
                 Anim { property: "opacity"; to: 0; type: Anim.EmphasizedAccel }
             }
         }
@@ -95,7 +95,7 @@ CentralPanel {
         anchors.centerIn: list
         visible: InboxState.list.length === 0
         icon: Icons.bellOutline
-        size: 40
+        size: ThemeManager.px(40)
         color: ThemeManager.colors.textFaint
     }
 }

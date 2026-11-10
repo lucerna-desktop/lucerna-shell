@@ -9,7 +9,10 @@ Clickable {
     property alias iconSize: glyph.size
     property alias iconWeight: glyph.weight
     property alias label: caption.text
-    property color foreground: active ? ThemeManager.colors.accentText : ThemeManager.colors.text
+    // Ativo, o ícone na cor de destaque (a 3:1 do contêiner) e o rótulo no
+    // texto do contêiner.
+    property color foreground: active ? ThemeManager.colors.onAccentContainer : ThemeManager.colors.text
+    property color iconColor: active ? ThemeManager.colors.accentIcon : foreground
 
     implicitHeight: Math.max(glyph.implicitHeight, caption.implicitHeight) + ThemeManager.spacing.small
     implicitWidth: caption.text ? row.implicitWidth + ThemeManager.spacing.normal : implicitHeight
@@ -18,13 +21,13 @@ Clickable {
         id: row
 
         anchors.centerIn: parent
-        spacing: ThemeManager.spacing.tiny + 2
+        spacing: ThemeManager.spacing.tiny + ThemeManager.px(2)
 
         Icon {
             id: glyph
 
             anchors.verticalCenter: parent.verticalCenter
-            color: root.foreground
+            color: root.iconColor
             // O ícone "se acende" (preenche) no hover e quando ativo.
             filled: root.active || root.hovered
         }

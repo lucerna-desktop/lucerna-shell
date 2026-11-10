@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.workspaces.state
@@ -31,16 +32,16 @@ Item {
         height: root.tileWidth * root.monitor.height / root.monitor.width
         radius: ThemeManager.radius.normal
         color: ThemeManager.alpha(ThemeManager.colors.base, 0.6)
-        border.width: drop.containsDrag || root.selected ? 2 : root.current ? 1 : 0
+        border.width: drop.containsDrag || root.selected ? ThemeManager.px(2) : root.current ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
         border.color: drop.containsDrag || root.selected ? ThemeManager.colors.accent : ThemeManager.alpha(ThemeManager.colors.accent, 0.5)
 
         Image {
             anchors.fill: parent
-            anchors.margins: 2
+            anchors.margins: ThemeManager.px(2)
             readonly property string path: ThemeManager.resolvePath(ThemeManager.wallpaperFor(ThemeManager.current).static ?? "")
 
             source: path ? `file://${path}` : ""
-            sourceSize: Qt.size(480, 270)
+            sourceSize: Qt.size(ThemeManager.px(480), ThemeManager.px(270))
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
             opacity: 0.55
@@ -93,13 +94,13 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: screenArea.bottom
         anchors.topMargin: ThemeManager.spacing.small
-        spacing: 6
+        spacing: ThemeManager.px(6)
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            width: root.current ? 18 : 6
-            height: 6
-            radius: 3
+            width: root.current ? ThemeManager.px(18) : ThemeManager.px(6)
+            height: ThemeManager.px(6)
+            radius: height / 2
             color: root.current ? ThemeManager.colors.accent : root.windows.length ? ThemeManager.colors.textMuted : ThemeManager.colors.border
         }
 

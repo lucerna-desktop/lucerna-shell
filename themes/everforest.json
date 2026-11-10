@@ -12,6 +12,7 @@
         "textFaint": "#7a8478",
         "accent": "#a7c080",
         "accentText": "#232a2e",
+        "accentContainer": "#445936",
         "danger": "#e67e80",
         "success": "#83c092",
         "warning": "#dbbc7f",
@@ -19,7 +20,7 @@
     },
     "font": {
         "sans": "Rubik",
-        "mono": "CaskaydiaCove Nerd Font",
+        "mono": "JetBrainsMonoNL Nerd Font Mono",
         "icon": "Material Symbols Rounded",
         "size": {
             "small": 11,

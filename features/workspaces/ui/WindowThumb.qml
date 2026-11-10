@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.workspaces.state
@@ -24,8 +25,8 @@ Item {
     }
 
     Component.onCompleted: place()
-    width: Math.max(24, win.width * factor)
-    height: Math.max(18, win.height * factor)
+    width: Math.max(ThemeManager.px(24), win.width * factor)
+    height: Math.max(ThemeManager.px(18), win.height * factor)
     z: dragging ? 100 : 0
     scale: dragging ? 0.85 : 1
 
@@ -40,9 +41,9 @@ Item {
         id: frame
 
         anchors.fill: parent
-        radius: 6
+        radius: ThemeManager.px(6)
         color: ThemeManager.colors.surface
-        border.width: mouse.containsMouse || root.dragging ? 2 : root.win.focused ? 1 : 0
+        border.width: mouse.containsMouse || root.dragging ? ThemeManager.px(2) : root.win.focused ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
         border.color: mouse.containsMouse || root.dragging ? ThemeManager.colors.accent : ThemeManager.alpha(ThemeManager.colors.accent, 0.5)
         clip: true
 
@@ -59,10 +60,10 @@ Item {
         readonly property var entry: DesktopEntries.heuristicLookup(root.win.cls)
 
         anchors.centerIn: parent
-        width: Math.min(36, parent.width * 0.4, parent.height * 0.5)
+        width: Math.min(ThemeManager.px(36), parent.width * 0.4, parent.height * 0.5)
         height: width
         source: entry?.icon ? Quickshell.iconPath(entry.icon, true) : ""
-        sourceSize: Qt.size(64, 64)
+        sourceSize: Qt.size(ThemeManager.px(64), ThemeManager.px(64))
         visible: status === Image.Ready
         opacity: 0.95
     }
@@ -71,15 +72,15 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: 22
-        visible: mouse.containsMouse && !root.dragging && parent.height > 44
+        height: ThemeManager.px(22)
+        visible: mouse.containsMouse && !root.dragging && parent.height > ThemeManager.px(44)
         color: ThemeManager.alpha(ThemeManager.colors.base, 0.85)
-        radius: 6
+        radius: ThemeManager.px(6)
 
         Txt {
             anchors.fill: parent
-            anchors.leftMargin: 6
-            anchors.rightMargin: 24
+            anchors.leftMargin: ThemeManager.px(6)
+            anchors.rightMargin: ThemeManager.px(24)
             verticalAlignment: Text.AlignVCenter
             text: root.win.title
             elide: Text.ElideRight
@@ -95,7 +96,7 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         cursorShape: root.dragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
         drag.target: root
-        drag.threshold: 8
+        drag.threshold: ThemeManager.px(8)
         onReleased: {
             if (root.dragging)
                 root.Drag.drop();
@@ -112,10 +113,10 @@ Item {
     IconButton {
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.margins: 2
-        visible: (mouse.containsMouse || hovered) && !root.dragging && parent.width > 60
+        anchors.margins: ThemeManager.px(2)
+        visible: (mouse.containsMouse || hovered) && !root.dragging && parent.width > ThemeManager.px(60)
         icon: Icons.close
-        iconSize: 14
+        iconSize: ThemeManager.px(14)
         onClicked: WorkspacesState.closeWindow(root.win)
     }
 }

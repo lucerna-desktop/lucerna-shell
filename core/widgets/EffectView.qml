@@ -35,8 +35,8 @@ ShaderEffect {
         hideSource: true
         sourceItem: Image {
             source: `file://${ThemeManager.directory}/shaders/noise.png`
-            width: 256
-            height: 256
+            width: 256 // px fixo: a textura de ruído, em pixels da imagem
+            height: 256 // px fixo: a textura de ruído, em pixels da imagem
             smooth: true
         }
     }

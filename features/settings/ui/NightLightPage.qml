@@ -46,14 +46,16 @@ Column {
             title: "Temperatura"
             description: "Mais baixa, mais quente. Ao ajustar, a tela mostra por alguns segundos"
             dimmed: !NightLightSettings.available
+            dimsControl: false
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 2500
                 to: 6000
                 stepSize: 100
                 value: Config.nightLightTemp
                 format: v => `${Math.round(v)} K`
+                enabled: NightLightSettings.available
                 onMoved: v => NightLightSettings.setTemp(v)
             }
         }

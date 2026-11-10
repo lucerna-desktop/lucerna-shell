@@ -25,11 +25,11 @@ Flow {
             readonly property color ink: current ? ThemeManager.colors.accent : ThemeManager.colors.textMuted
 
             width: root.cardWidth
-            height: 132
-            radius: ThemeManager.radius.normal + 2
+            height: ThemeManager.px(132)
+            radius: ThemeManager.radius.normal + ThemeManager.px(2)
             pressScale: 0.95
             color: current ? ThemeManager.alpha(ThemeManager.colors.accent, 0.12) : ThemeManager.alpha(ThemeManager.colors.text, 0.04)
-            border.width: current ? 2 : 0
+            border.width: current ? ThemeManager.px(2) : 0
             border.color: ThemeManager.colors.accent
             onClicked: LauncherSettings.setStyle(modelData.id)
 
@@ -37,10 +37,10 @@ Flow {
             Rectangle {
                 id: screen
 
-                x: 10
-                y: 10
-                width: parent.width - 20
-                height: 76
+                x: ThemeManager.px(10)
+                y: ThemeManager.px(10)
+                width: parent.width - ThemeManager.px(20)
+                height: ThemeManager.px(76)
                 radius: ThemeManager.radius.small
                 color: ThemeManager.colors.base
                 clip: true
@@ -52,13 +52,13 @@ Flow {
 
                     Rectangle {
                         x: parent.width * 0.25
-                        y: 12
+                        y: ThemeManager.px(12)
                         width: parent.width * 0.5
-                        height: 40
-                        radius: 4
+                        height: ThemeManager.px(40)
+                        radius: ThemeManager.px(4)
                         color: ThemeManager.colors.surface
 
-                        Rectangle { x: 4; y: 4; width: parent.width - 8; height: 7; radius: 3; color: card.ink; opacity: 0.8 }
+                        Rectangle { x: ThemeManager.px(4); y: ThemeManager.px(4); width: parent.width - ThemeManager.px(8); height: ThemeManager.px(7); radius: ThemeManager.px(3); color: card.ink; opacity: 0.8 }
 
                         Repeater {
                             model: 3
@@ -66,11 +66,11 @@ Flow {
                             delegate: Rectangle {
                                 required property int index
 
-                                x: 6
-                                y: 16 + index * 8
+                                x: ThemeManager.px(6)
+                                y: ThemeManager.px(16) + index * ThemeManager.px(8)
                                 width: parent.width * (0.7 - index * 0.12)
-                                height: 4
-                                radius: 2
+                                height: ThemeManager.px(4)
+                                radius: height / 2
                                 color: ThemeManager.colors.textFaint
                             }
                         }
@@ -84,11 +84,11 @@ Flow {
 
                     Rectangle {
                         anchors.fill: parent
-                        anchors.margins: 8
-                        radius: 4
+                        anchors.margins: ThemeManager.px(8)
+                        radius: ThemeManager.px(4)
                         color: ThemeManager.colors.surface
 
-                        Rectangle { x: 4; y: 4; width: parent.width * 0.66; height: 6; radius: 3; color: card.ink; opacity: 0.8 }
+                        Rectangle { x: ThemeManager.px(4); y: ThemeManager.px(4); width: parent.width * 0.66; height: ThemeManager.px(6); radius: ThemeManager.px(3); color: card.ink; opacity: 0.8 }
 
                         Repeater {
                             model: 4
@@ -96,28 +96,28 @@ Flow {
                             delegate: Rectangle {
                                 required property int index
 
-                                x: 4
-                                y: 15 + index * 9
+                                x: ThemeManager.px(4)
+                                y: ThemeManager.px(15) + index * ThemeManager.px(9)
                                 width: parent.width * 0.16
-                                height: 4
-                                radius: 2
+                                height: ThemeManager.px(4)
+                                radius: height / 2
                                 color: index === 0 ? card.ink : ThemeManager.colors.textFaint
                             }
                         }
 
                         Grid {
                             x: parent.width * 0.23
-                            y: 15
+                            y: ThemeManager.px(15)
                             columns: 4
-                            spacing: 3
+                            spacing: ThemeManager.px(3)
 
                             Repeater {
                                 model: 8
 
                                 delegate: Rectangle {
-                                    width: 9
-                                    height: 9
-                                    radius: 2
+                                    width: ThemeManager.px(9)
+                                    height: ThemeManager.px(9)
+                                    radius: ThemeManager.px(2)
                                     color: ThemeManager.colors.textFaint
                                     opacity: 0.7
                                 }
@@ -126,14 +126,14 @@ Flow {
 
                         Rectangle {
                             x: parent.width * 0.72
-                            y: 4
+                            y: ThemeManager.px(4)
                             width: parent.width * 0.26
-                            height: parent.height - 8
-                            radius: 3
+                            height: parent.height - ThemeManager.px(8)
+                            radius: ThemeManager.px(3)
                             color: ThemeManager.colors.raised
 
-                            Rectangle { x: 4; y: 6; width: 10; height: 10; radius: 3; color: card.ink }
-                            Rectangle { x: 4; y: 22; width: parent.width - 8; height: 5; radius: 2; color: card.ink; opacity: 0.8 }
+                            Rectangle { x: ThemeManager.px(4); y: ThemeManager.px(6); width: ThemeManager.px(10); height: ThemeManager.px(10); radius: ThemeManager.px(3); color: card.ink }
+                            Rectangle { x: ThemeManager.px(4); y: ThemeManager.px(22); width: parent.width - ThemeManager.px(8); height: ThemeManager.px(5); radius: ThemeManager.px(2); color: card.ink; opacity: 0.8 }
                         }
                     }
                 }
@@ -148,21 +148,21 @@ Flow {
                         color: ThemeManager.alpha(ThemeManager.colors.surface, 0.8)
                     }
 
-                    Rectangle { anchors.horizontalCenter: parent.horizontalCenter; y: 7; width: parent.width * 0.4; height: 6; radius: 3; color: card.ink; opacity: 0.8 }
+                    Rectangle { anchors.horizontalCenter: parent.horizontalCenter; y: ThemeManager.px(7); width: parent.width * 0.4; height: ThemeManager.px(6); radius: ThemeManager.px(3); color: card.ink; opacity: 0.8 }
 
                     Grid {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        y: 22
+                        y: ThemeManager.px(22)
                         columns: 6
-                        spacing: 6
+                        spacing: ThemeManager.px(6)
 
                         Repeater {
                             model: 12
 
                             delegate: Rectangle {
-                                width: 12
-                                height: 12
-                                radius: 3
+                                width: ThemeManager.px(12)
+                                height: ThemeManager.px(12)
+                                radius: ThemeManager.px(3)
                                 color: ThemeManager.colors.textFaint
                                 opacity: 0.7
                             }
@@ -174,7 +174,7 @@ Flow {
             Column {
                 anchors.left: parent.left
                 anchors.bottom: parent.bottom
-                anchors.margins: 10
+                anchors.margins: ThemeManager.px(10)
                 spacing: 0
 
                 Txt {

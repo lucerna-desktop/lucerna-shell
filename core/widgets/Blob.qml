@@ -28,9 +28,9 @@ Item {
     property BlobMorph driver: null
     // Pontos do contorno: menos numa bolha pequena.
     property int steps: 144
-    // Numa bolha pequena (menos de 48 px), os lobos ficam mais suaves, na
-    // proporção do tamanho; de 48 px para cima, nada muda.
-    readonly property real softness: Math.min(1, Math.min(width, height) / 48)
+    // Numa bolha pequena (menos de 48 px na escala 1), os lobos ficam mais
+    // suaves, na proporção do tamanho; de 48 px para cima, nada muda.
+    readonly property real softness: Math.min(1, Math.min(width, height) / ThemeManager.px(48))
 
     readonly property bool live: visible && active
     readonly property BlobMorph clock: root.driver ?? own
@@ -46,8 +46,8 @@ Item {
 
     Behavior on animatedPulse { Anim { type: Anim.FastEffects } }
 
-    implicitWidth: 100
-    implicitHeight: 100
+    implicitWidth: ThemeManager.px(100)
+    implicitHeight: ThemeManager.px(100)
 
     readonly property var points: {
         const extra = animatedPulse * 0.08;

@@ -5,7 +5,10 @@
 # uso de CPU do Hyprland e do qs (pelo /proc) e, se houver como ler, o da GPU
 # (intel_gpu_top, nvidia-smi ou o gpu_busy_percent da AMD). No fim (e no
 # Ctrl+C), devolve o nível que estava antes e fecha o painel. Não mexe em
-# nada além do nível do desfoque, que é do shell: nenhum hyprctl keyword/eval.
+# nada além do nível do desfoque, que é do shell: nenhum hyprctl keyword/reload.
+# BENCH_SCALE=<s>: no começo, põe o 1º monitor nessa escala (`hyprctl eval
+# 'hl.monitor({ output = ..., scale = <s> })'`); no fim e no Ctrl+C, devolve a
+# escala lida antes. Sem ela, nada muda. É a única exceção ao "nenhum hyprctl eval".
 # Olhe a fluidez a olho durante as fases.
 #   dev/bench-blur.sh [segundos]   (padrão 20 por nível)
 set -euo pipefail
@@ -25,8 +28,26 @@ qs_pid=$(pgrep -fo 'qs -c lucerna$' || pgrep -xo qs || true)
 [ -n "$qs_pid" ] || { echo "ERRO: não achei o processo do qs" >&2; exit 1; }
 hz=$(getconf CLK_TCK)
 
+bench_scale=${BENCH_SCALE:-}
+[ -z "$bench_scale" ] || [[ $bench_scale =~ ^[0-9]+([.][0-9]+)?$ ]] || { echo "ERRO: BENCH_SCALE inválida: $bench_scale" >&2; exit 2; }
+scale_before=""
+output_name=$(hyprctl -j monitors | python3 -c 'import json, sys; print(json.load(sys.stdin)[0]["name"])')
+output_geom=$(hyprctl -j monitors | python3 -c 'import json, sys; m = json.load(sys.stdin)[0]; print("%dx%d@%.2f" % (m["width"], m["height"], m["refreshRate"]))')
+output_pos=$(hyprctl -j monitors | python3 -c 'import json, sys; m = json.load(sys.stdin)[0]; print("%dx%d" % (m["x"], m["y"]))')
+
+# set_scale <escala>: põe o 1º monitor nessa escala (repetindo o modo e a posição,
+# que o hl.monitor exige) e confere que o Hyprland aplicou.
+set_scale() {
+    local got
+    hyprctl eval "hl.monitor({ output = \"$output_name\", mode = \"$output_geom\", position = \"$output_pos\", scale = $1 })" > /dev/null 2>&1 || return 1
+    sleep 2
+    got=$(hyprctl -j monitors | python3 -c 'import json, sys; print(json.load(sys.stdin)[0]["scale"])')
+    [ "$got" = "$1" ] || [ "$(awk -v a="$got" -v b="$1" 'BEGIN { print (a == b) }')" = 1 ]
+}
+
 # shellcheck disable=SC2329 # chamada pelo trap
 restore() {
+    [ -z "$scale_before" ] || set_scale "$scale_before" || true
     ipc panels close > /dev/null 2>&1 || true
     ipc blur set "$before" > /dev/null 2>&1 || true
 }
@@ -77,6 +98,11 @@ print(f"{sum(vals) / len(vals):.1f}" if vals else "-")' || echo "-"
     if [ "$n" -gt 0 ]; then echo "$((total / n))"; else echo "-"; fi
 }
 
+if [ -n "$bench_scale" ]; then
+    scale_before=$(hyprctl -j monitors | python3 -c 'import json, sys; print(json.load(sys.stdin)[0]["scale"])')
+    set_scale "$bench_scale" || { echo "ERRO: não consegui pôr a escala $bench_scale" >&2; exit 1; }
+fi
+echo "escala: $(hyprctl -j monitors | python3 -c 'import json, sys; print(json.load(sys.stdin)[0]["scale"])')"
 printf '%-12s %10s %10s %8s\n' nível "Hyprland %" "qs %" "GPU %"
 for mode in full performance off; do
     ipc blur set "$mode" > /dev/null

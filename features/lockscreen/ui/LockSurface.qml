@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Effects
+import qs.core.pixel
 import qs.core.theme
 import qs.core.widgets
 import qs.features.lockscreen.state
@@ -44,7 +45,7 @@ Item {
 
     Column {
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: -40 + (1 - root.shown) * 60
+        anchors.verticalCenterOffset: -ThemeManager.px(40) + (1 - root.shown) * ThemeManager.px(60)
         opacity: Math.min(1, root.shown)
         spacing: ThemeManager.spacing.small
 
@@ -73,11 +74,11 @@ Item {
             id: field
 
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 320
-            height: 48
+            width: ThemeManager.px(320)
+            height: ThemeManager.px(48)
             radius: height / 2
             color: ThemeManager.alpha(ThemeManager.colors.surface, 0.9)
-            border.width: LockscreenState.error || input.activeFocus ? 2 : ThemeManager.outlines ? 1 : 0
+            border.width: LockscreenState.error || input.activeFocus ? ThemeManager.px(2) : ThemeManager.outlines ? Pixel.hairline(Window.window?.devicePixelRatio ?? 1) : 0
             border.color: LockscreenState.error ? ThemeManager.colors.danger : input.activeFocus ? ThemeManager.alpha(ThemeManager.colors.accent, 0.6) : ThemeManager.colors.border
 
             Behavior on border.color { ColorAnim {} }
@@ -85,9 +86,9 @@ Item {
             SequentialAnimation {
                 id: shake
 
-                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: -10; duration: 50 }
-                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: 10; duration: 70 }
-                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: -6; duration: 70 }
+                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: -ThemeManager.px(10); duration: 50 }
+                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: ThemeManager.px(10); duration: 70 }
+                NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: -ThemeManager.px(6); duration: 70 }
                 NumberAnimation { target: field; property: "anchors.horizontalCenterOffset"; to: 0; duration: 50 }
             }
 
@@ -108,7 +109,7 @@ Item {
                 id: lockIcon
 
                 anchors.left: parent.left
-                anchors.leftMargin: ThemeManager.spacing.normal + 4
+                anchors.leftMargin: ThemeManager.spacing.normal + ThemeManager.px(4)
                 anchors.verticalCenter: parent.verticalCenter
                 icon: Icons.lock
                 color: ThemeManager.colors.accent
@@ -141,7 +142,7 @@ Item {
                 font.family: ThemeManager.font.sans
                 font.variableAxes: ThemeManager.fontAxes(Font.Normal)
                 font.pixelSize: ThemeManager.font.large
-                font.letterSpacing: 2
+                font.letterSpacing: ThemeManager.px(2)
                 clip: true
                 onAccepted: LockscreenState.submit(text)
                 Keys.onEscapePressed: text = ""

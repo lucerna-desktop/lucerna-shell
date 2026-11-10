@@ -30,9 +30,9 @@ Variants {
         visible: shown > 0
         anchors.top: true
         // Falso positivo: o margins do PanelWindow não está descrito nos qmltypes do Quickshell (ver spec).
-        margins.top: 90 // qmllint disable unqualified missing-property
-        implicitWidth: 460
-        implicitHeight: card.height + 20
+        margins.top: ThemeManager.px(90) // qmllint disable unqualified missing-property
+        implicitWidth: ThemeManager.px(460)
+        implicitHeight: card.height + ThemeManager.px(20)
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Overlay
@@ -44,13 +44,13 @@ Variants {
         Surface {
             id: card
 
-            x: 10
-            width: parent.width - 20
+            x: ThemeManager.px(10)
+            width: parent.width - ThemeManager.px(20)
             height: content.height + ThemeManager.spacing.large * 2
             level: 0
             radius: ThemeManager.radius.large
             opacity: window.shown
-            y: -(1 - window.shown) * 30
+            y: -(1 - window.shown) * ThemeManager.px(30)
 
             Column {
                 id: content
@@ -65,9 +65,9 @@ Variants {
                     spacing: ThemeManager.spacing.normal
 
                     CircularGauge {
-                        width: 44
-                        height: 44
-                        thickness: 4
+                        width: ThemeManager.px(44)
+                        height: ThemeManager.px(44)
+                        thickness: ThemeManager.px(4)
                         value: MonitorsState.countdown / MonitorsState.confirmSeconds
 
                         Txt {
@@ -79,7 +79,7 @@ Variants {
                     }
 
                     Column {
-                        width: parent.width - 44 - parent.spacing
+                        width: parent.width - ThemeManager.px(44) - parent.spacing
                         anchors.verticalCenter: parent.verticalCenter
 
                         Txt {

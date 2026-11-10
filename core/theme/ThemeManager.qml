@@ -8,10 +8,11 @@ import Quickshell.Io
 import qs.core.config
 
 // Único ponto de verdade do visual. Carrega o tema ativo de themes/<id>.json
-// e expõe os tokens; nenhum componente usa cor ou tamanho fixo. Cada grupo de
-// tokens tem um tipo declarado (ColorTokens, FontTokens...), para o qmllint
-// conhecer ThemeManager.colors.accent e os outros; os valores vêm nas
-// instâncias, logo abaixo das declarações.
+// e expõe os tokens; nenhum componente usa cor ou tamanho fixo (as medidas
+// passam pela escala interna, px). Cada grupo de tokens tem um tipo declarado
+// (ColorTokens, FontTokens...), para o qmllint conhecer
+// ThemeManager.colors.accent e os outros; os valores vêm nas instâncias, logo
+// abaixo das declarações.
 Singleton {
     id: root
 
@@ -29,6 +30,13 @@ Singleton {
         property color success
         property color warning
         property color track
+        property color accentContainer
+        property color onAccentContainer
+        property color accentIcon
+        property color accentFill
+        property color mutedFill
+        property color fillIcon
+        property color mutedFillIcon
     }
 
     component FontTokens: QtObject {
@@ -119,6 +127,21 @@ Singleton {
     // wallpaper, shader } (wallpaper é a imagem; shader, o animado, se houver).
     property var themes: []
 
+    // A escala interna do shell: o tamanho escolhido pelo usuário (Config.shellScale)
+    // e, no modo "Escala pelos apps" (o monitor fica em 1), também a escala
+    // dos apps. Toda medida do shell passa por px(): os tokens daqui já vêm
+    // multiplicados, e as medidas próprias de um componente usam
+    // ThemeManager.px(n). Não usa o QT_SCALE_FACTOR: o texto e as bordas
+    // continuam no pixel lógico inteiro. Fica entre 0,5 e 3 (clampScale): um
+    // shellScale 0 ou negativo num config.json editado à mão zeraria todas as
+    // medidas, até o campo de senha da tela de bloqueio.
+    readonly property real scale: clampScale(Config.shellScale * (Config.scaleMode === "apps" ? Config.appsScale : 1))
+
+    // A escala dentro de [0,5, 3]; um valor que não é número vira 1.
+    function clampScale(n: real): real {
+        return Number.isFinite(n) ? Math.min(3, Math.max(0.5, n)) : 1;
+    }
+
     readonly property var data: parse(activeFile.text())
     readonly property bool dark: data.dark ?? true
     // Logo do Lucerna na versão que se lê sobre o tema: estrela clara no escuro, escura no claro.
@@ -128,6 +151,11 @@ Singleton {
     readonly property string wallpaper: activeWallpaper.static
     readonly property string wallpaperShader: activeWallpaper.shader
     readonly property var hyprland: data.hyprland ?? ({})
+
+    // As cores derivadas do tema ativo, calculadas das cores de destino (não
+    // das animadas): a troca de tema anima o resultado, sem refazer a conta a
+    // cada quadro.
+    readonly property var derived: derivedColors(data)
 
     readonly property ColorTokens colors: ColorTokens {
         base: root.token("base")
@@ -142,11 +170,27 @@ Singleton {
         danger: root.token("danger")
         success: root.token("success")
         warning: root.token("warning")
-        // Trilho de medidores e barras. O tema pode definir; senão, "raised" no
-        // escuro e "border" no claro (onde "raised" some sobre o cartão).
-        track: root.data.colors?.track ?? (root.dark ? raised : border)
+        // Os derivados (derivedColors): trilho, contêiner do destaque e
+        // preenchimento das barras.
+        track: root.derived.track
+        accentContainer: root.derived.accentContainer
+        onAccentContainer: root.derived.onAccentContainer
+        accentIcon: root.derived.accentIcon
+        accentFill: root.derived.accentFill
+        // A barra de porcentagem (levelColorsOf): o preenchimento do mudo e o
+        // ícone sobre a parte cheia, normal e no mudo.
+        mutedFill: root.derived.mutedFill
+        fillIcon: root.derived.fillIcon
+        mutedFillIcon: root.derived.mutedFillIcon
 
         Behavior on track { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on accentContainer { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on onAccentContainer { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on accentIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on accentFill { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on mutedFill { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on fillIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
+        Behavior on mutedFillIcon { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
 
         Behavior on base { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
         Behavior on surface { ColorAnimation { duration: root.anim.large; easing.type: Easing.BezierSpline; easing.bezierCurve: root.anim.standard } }
@@ -166,23 +210,23 @@ Singleton {
         sans: root.data.font?.sans ?? "sans-serif"
         mono: root.data.font?.mono ?? "monospace"
         icon: root.data.font?.icon ?? "monospace"
-        small: root.data.font?.size?.small ?? 11
-        normal: root.data.font?.size?.normal ?? 13
-        large: root.data.font?.size?.large ?? 16
-        huge: root.data.font?.size?.huge ?? 44
+        small: root.px(root.data.font?.size?.small ?? 11)
+        normal: root.px(root.data.font?.size?.normal ?? 13)
+        large: root.px(root.data.font?.size?.large ?? 16)
+        huge: root.px(root.data.font?.size?.huge ?? 44)
     }
 
     readonly property RadiusTokens radius: RadiusTokens {
-        small: root.data.radius?.small ?? 6
-        normal: root.data.radius?.normal ?? 10
-        large: root.data.radius?.large ?? 16
+        small: root.px(root.data.radius?.small ?? 6)
+        normal: root.px(root.data.radius?.normal ?? 10)
+        large: root.px(root.data.radius?.large ?? 16)
     }
 
     readonly property SpacingTokens spacing: SpacingTokens {
-        tiny: root.data.spacing?.tiny ?? 4
-        small: root.data.spacing?.small ?? 8
-        normal: root.data.spacing?.normal ?? 12
-        large: root.data.spacing?.large ?? 20
+        tiny: root.px(root.data.spacing?.tiny ?? 4)
+        small: root.px(root.data.spacing?.small ?? 8)
+        normal: root.px(root.data.spacing?.normal ?? 12)
+        large: root.px(root.data.spacing?.large ?? 20)
     }
 
     // Tokens de movimento do Material 3 (as mesmas curvas do Caelestia). O tema
@@ -194,7 +238,7 @@ Singleton {
         scale: root.lightMode ? Math.min(baseScale, 0.6) : baseScale
     }
 
-    readonly property int barHeight: data.bar?.height ?? 34
+    readonly property int barHeight: px(data.bar?.height ?? 34)
 
     // Modo leve (em tempo de execução, não é salvo): sem transparência e
     // desfoque, e animações mais curtas. Ligado pela feature de energia quando
@@ -230,6 +274,12 @@ Singleton {
         size: custom.size ?? root.data.hyprland?.blurSize ?? 8
         passes: custom.passes ?? root.data.hyprland?.blurPasses ?? 2
         customized: Object.keys(custom).length > 0
+    }
+
+    // Uma medida do shell (em pixels lógicos na escala 1) na escala interna,
+    // arredondada ao pixel lógico inteiro (0 fica 0; 1 fica 1 abaixo de 1,5).
+    function px(v: real): int {
+        return Math.round(v * scale);
     }
 
     function setTransparency(key: string, value: var): void {
@@ -324,10 +374,175 @@ Singleton {
         return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
     }
 
-    // O texto sobre uma cor cheia (aviso, erro, sucesso): accentText, text
-    // ou base, o que der mais contraste com ela (no empate, o primeiro).
-    function onColor(c: color): color {
-        return [colors.accentText, colors.text, colors.base].reduce((best, x) => contrast(c, x) > contrast(c, best) ? x : best);
+    // Mistura duas cores; t é o peso de b (0 dá a, 1 dá b). Cada canal sai
+    // arredondado para 8 bits, como a tela desenha: o contraste medido sobre o
+    // resultado é o que se vê (sem isso, 4,5:1 em ponto flutuante vira 4,48:1
+    // no #rrggbb).
+    function mix(a: color, b: color, t: real): color {
+        const m = (x, y) => Math.round((x + (y - x) * t) * 255) / 255;
+        return Qt.rgba(m(a.r, b.r), m(a.g, b.g), m(a.b, b.b), m(a.a, b.a));
+    }
+
+    // O tom de contêiner de uma cor cheia (destaque, aviso, erro, sucesso): o
+    // fundo das superfícies grandes ativas, com o texto do tema por cima. É a
+    // cor misturada ao base (no escuro, um tom escuro da cor; no claro, um tom
+    // claro tingido), com o máximo de cor que ainda deixa o texto a 4,5:1:
+    // parte de 60% da cor no escuro e 50% no claro e desce de 1 em 1% rumo ao
+    // base. Sem mistura que passe, o próprio base.
+    function containerOf(c: color, base: color, text: color, dark: bool): color {
+        for (let i = dark ? 60 : 50; i > 0; i--) {
+            const r = mix(base, c, i / 100);
+            if (contrast(text, r) >= 4.5)
+                return r;
+        }
+        return base;
+    }
+
+    // O texto sobre um contêiner: o texto do tema, se passa de 4,5:1; senão, o
+    // que der mais contraste entre ele, o base, o preto e o branco.
+    function onContainerOf(bg: color, text: color, base: color): color {
+        if (contrast(text, bg) >= 4.5)
+            return text;
+        return [text, base, Qt.rgba(0, 0, 0, 1), Qt.rgba(1, 1, 1, 1)].reduce((best, x) => contrast(bg, x) > contrast(bg, best) ? x : best);
+    }
+
+    // Os atalhos com o tema ativo, para as cores de estado:
+    // ThemeManager.container(colors.danger) e onContainer(colors.danger).
+    function container(c: color): color {
+        return containerOf(c, colors.base, colors.text, dark);
+    }
+
+    function onContainer(c: color): color {
+        return onContainerOf(container(c), colors.text, colors.base);
+    }
+
+    // A cor c levada rumo a cada extremo de `aways` (o preto ou o branco), de
+    // 5 em 5% e intercalando os extremos a cada passo, até ficar a `min`:1 de
+    // bg: a primeira mistura que passa (a própria c, se já passa). Nenhuma:
+    // null. A base do iconOn, do fillOf e do nearestOn.
+    function towardContrast(c: color, bg: color, aways: var, min: real): var {
+        for (let i = 0; i <= 20; i++) {
+            for (const away of aways) {
+                const f = i === 0 ? c : mix(c, away, i / 20);
+                if (contrast(f, bg) >= min)
+                    return f;
+            }
+        }
+        return null;
+    }
+
+    // Um ícone (ou uma marca sem texto) na cor c sobre o fundo bg, a 3:1 dele:
+    // a cor pura, se passa; senão, clareada (tema escuro) ou escurecida (claro)
+    // de 5 em 5% até passar. Se nem o branco (ou o preto) passa, o outro lado,
+    // que chega lá: o melhor entre preto e branco dá pelo menos ~4,6:1.
+    function iconOn(c: color, bg: color, dark: bool): color {
+        const black = Qt.rgba(0, 0, 0, 1);
+        const white = Qt.rgba(1, 1, 1, 1);
+        const [first, second] = dark ? [white, black] : [black, white];
+        return towardContrast(c, bg, [first], 3) ?? towardContrast(c, bg, [second], 3) ?? c;
+    }
+
+    // Um ícone na cor c sobre bg, a 3:1 dele, com o mínimo de mistura: a cada
+    // passo de 5% tenta os dois extremos (primeiro o que contrasta mais com
+    // bg). Para fundos de luminância média (o preenchimento cinza do mudo),
+    // onde o iconOn clarearia o vermelho até quase o branco: aqui ele só
+    // escurece o bastante e continua vermelho.
+    function nearestOn(c: color, bg: color, min: real): color {
+        const black = Qt.rgba(0, 0, 0, 1);
+        const white = Qt.rgba(1, 1, 1, 1);
+        const aways = contrast(black, bg) >= contrast(white, bg) ? [black, white] : [white, black];
+        return towardContrast(c, bg, aways, min) ?? aways[0];
+    }
+
+    // O ícone de uma cor de estado sobre o contêiner dela, com o tema ativo:
+    // ThemeManager.containerIcon(colors.danger).
+    function containerIcon(c: color): color {
+        return iconOn(c, container(c), dark);
+    }
+
+    // O preenchimento de uma barra: a cor levemente misturada ao surface (15%),
+    // a 3:1 do trilho para a barra se ler. Se a mistura não passa, a cor pura;
+    // se nem ela passa, a cor afastada do trilho rumo ao preto ou ao branco (o
+    // que contrastar mais com ele) de 5 em 5% até passar. O extremo sempre
+    // passa: o melhor entre preto e branco dá pelo menos ~4,6:1 com qualquer
+    // trilho.
+    function fillOf(accent: color, surface: color, track: color): color {
+        const soft = mix(accent, surface, 0.15);
+        if (contrast(soft, track) >= 3)
+            return soft;
+        const black = Qt.rgba(0, 0, 0, 1);
+        const white = Qt.rgba(1, 1, 1, 1);
+        const away = contrast(black, track) > contrast(white, track) ? black : white;
+        return towardContrast(accent, track, [away], 3) ?? away;
+    }
+
+    // Um preenchimento leve: o trilho levado rumo a ink de 1 em 1% até ficar
+    // a `min`:1 dele (nenhuma mistura passa: o próprio ink). O cinza do mudo
+    // nos temas claros.
+    function softFillOf(track: color, ink: color, min: real): color {
+        for (let i = 1; i <= 100; i++) {
+            const f = mix(track, ink, i / 100);
+            if (contrast(f, track) >= min)
+                return f;
+        }
+        return ink;
+    }
+
+    // Um texto apagado que ainda se lê: fg levado rumo a bg de 5 em 5%
+    // enquanto fica a 4,5:1 dele (a última mistura que passa; fg, se nem ele
+    // passa). O rótulo da opção desativada das Configurações.
+    function dimmedOn(fg: color, bg: color): color {
+        let best = fg;
+        for (let i = 1; i <= 20; i++) {
+            const f = mix(fg, bg, i / 20);
+            if (contrast(f, bg) < 4.5)
+                break;
+            best = f;
+        }
+        return best;
+    }
+
+    // As cores da barra de porcentagem (LevelSlider) além do trilho e do
+    // preenchimento: o preenchimento do mudo e o ícone dentro da barra, que
+    // fica sempre sobre a parte cheia (ela nunca é menor que o círculo da
+    // ponta). Com valor normal, o ícone é o base ou o texto (o que contrastar
+    // mais com o preenchimento) a 3:1 dele. O mudo é um cinza: no escuro, o
+    // textFaint a 3:1 do trilho; no claro, o trilho levado rumo ao textFaint
+    // só até 1,5:1, porque o 3:1 o deixaria mais escuro que o próprio
+    // textFaint e mais pesado que a barra ativa (o mudo também se lê pelo
+    // ícone e pelo nome e valor ao lado). O ícone do mudo é o perigo pelo
+    // nearestOn (o iconOn o levaria quase ao branco em vários temas escuros),
+    // a 3,5:1 do cinza, com folga sobre o 3:1.
+    function levelColorsOf(c: var, track: color, fill: color, dark: bool): var {
+        const mutedFill = c.mutedFill ?? (dark ? fillOf(c.textFaint, c.surface, track) : softFillOf(track, c.textFaint, 1.5));
+        const ink = contrast(c.base, fill) >= contrast(c.text, fill) ? c.base : c.text;
+        return {
+            mutedFill: mutedFill,
+            fillIcon: c.fillIcon ?? iconOn(ink, fill, dark),
+            mutedFillIcon: c.mutedFillIcon ?? nearestOn(c.danger, mutedFill, 3.5)
+        };
+    }
+
+    // As cores derivadas de um tema (o data dele): o trilho e os tokens do
+    // contêiner (fundo, texto e ícone) e do preenchimento. Cada um pode vir do JSON (colors.track,
+    // colors.accentContainer...); sem ele, calculado. O trilho calculado é o
+    // raised no escuro e o border no claro (onde o raised some sobre o cartão).
+    function derivedColors(d: var): var {
+        const own = d.colors ?? {};
+        const dark = d.dark ?? true;
+        const get = name => own[name] ?? "#ff00ff";
+        const track = own.track ?? get(dark ? "raised" : "border");
+        const accentContainer = own.accentContainer ?? containerOf(get("accent"), get("base"), get("text"), dark);
+        const accentFill = own.accentFill ?? fillOf(get("accent"), get("surface"), track);
+        const named = ["base", "surface", "text", "textFaint", "danger"].reduce((o, k) => Object.assign(o, { [k]: get(k) }), {});
+        const level = levelColorsOf(Object.assign({}, own, named), track, accentFill, dark);
+        return Object.assign({
+            track: track,
+            accentContainer: accentContainer,
+            onAccentContainer: own.onAccentContainer ?? onContainerOf(accentContainer, get("text"), get("base")),
+            accentIcon: own.accentIcon ?? iconOn(get("accent"), accentContainer, dark),
+            accentFill: accentFill
+        }, level);
     }
 
     function parse(text: string): var {

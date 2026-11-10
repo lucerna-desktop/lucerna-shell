@@ -29,7 +29,7 @@ Item {
         Icon {
             anchors.horizontalCenter: parent.horizontalCenter
             icon: Icons.musicOff
-            size: 48
+            size: ThemeManager.px(48)
             color: ThemeManager.colors.textFaint
         }
 
@@ -55,27 +55,27 @@ Item {
         // Capa redonda, como um disco que gira enquanto toca, com o espectro
         // em volta (espelhado: o dobro de barras, simétrico).
         Item {
-            Layout.preferredWidth: 280
+            Layout.preferredWidth: ThemeManager.px(280)
             Layout.fillHeight: true
 
             SpectrumRing {
                 anchors.centerIn: parent
                 visible: MediaState.visualizer
-                size: 276
+                size: ThemeManager.px(276)
                 innerSize: cover.width
                 values: DashboardState.spectrum
                 bands: DashboardState.spectrumBars
                 live: MediaState.live
                 mirrored: true
-                barWidth: 4
+                barWidth: ThemeManager.px(4)
             }
 
             ClippingRectangle {
                 id: cover
 
                 anchors.centerIn: parent
-                width: 188
-                height: 188
+                width: ThemeManager.px(188)
+                height: ThemeManager.px(188)
                 radius: width / 2
                 color: ThemeManager.colors.raised
 
@@ -95,7 +95,7 @@ Item {
                         anchors.centerIn: parent
                         visible: art.status !== Image.Ready
                         icon: Icons.album
-                        size: 72
+                        size: ThemeManager.px(72)
                         color: ThemeManager.colors.textFaint
                     }
 
@@ -104,7 +104,7 @@ Item {
 
                         anchors.fill: parent
                         source: MediaState.art
-                        sourceSize: Qt.size(376, 376)
+                        sourceSize: Qt.size(ThemeManager.px(376), ThemeManager.px(376))
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                     }
@@ -146,7 +146,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: MediaState.playerCount > 1
                     icon: Icons.swap
-                    iconSize: 16
+                    iconSize: ThemeManager.px(16)
                     foreground: ThemeManager.colors.textFaint
                     onClicked: {
                         MediaState.cyclePlayer();
@@ -158,7 +158,7 @@ Item {
             Txt {
                 Layout.fillWidth: true
                 text: MediaState.title
-                font.pixelSize: ThemeManager.font.large + 6
+                font.pixelSize: ThemeManager.font.large + ThemeManager.px(6)
                 font.weight: Font.DemiBold
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
@@ -183,12 +183,12 @@ Item {
             Item {
                 Layout.fillWidth: true
                 Layout.topMargin: ThemeManager.spacing.normal
-                Layout.preferredHeight: 20
+                Layout.preferredHeight: ThemeManager.px(20)
 
                 LinearGauge {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width
-                    height: 6
+                    height: ThemeManager.px(6)
                     value: MediaState.progress
                 }
 
@@ -232,14 +232,14 @@ Item {
                 IconButton {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: Icons.previous
-                    iconSize: 28
+                    iconSize: ThemeManager.px(28)
                     onClicked: MediaState.previous()
                 }
 
                 Clickable {
-                    width: 60
-                    height: 60
-                    radius: MediaState.playing ? ThemeManager.radius.large : 30
+                    width: ThemeManager.px(60)
+                    height: ThemeManager.px(60)
+                    radius: MediaState.playing ? ThemeManager.radius.large : ThemeManager.px(30)
                     active: true
                     onClicked: MediaState.togglePlaying()
 
@@ -249,15 +249,15 @@ Item {
                         anchors.centerIn: parent
                         icon: MediaState.playing ? Icons.pause : Icons.play
                         filled: true
-                        size: 32
-                        color: ThemeManager.colors.accentText
+                        size: ThemeManager.px(32)
+                        color: ThemeManager.colors.accentIcon
                     }
                 }
 
                 IconButton {
                     anchors.verticalCenter: parent.verticalCenter
                     icon: Icons.next
-                    iconSize: 28
+                    iconSize: ThemeManager.px(28)
                     onClicked: MediaState.next()
                 }
             }
@@ -265,7 +265,7 @@ Item {
 
         // Letra
         Surface {
-            Layout.preferredWidth: 300
+            Layout.preferredWidth: ThemeManager.px(300)
             Layout.fillHeight: true
             visible: MediaState.lyricsEnabled
             clip: true
@@ -273,9 +273,9 @@ Item {
             CardTitle {
                 id: lyricsHeader
 
-                x: ThemeManager.spacing.normal + 2
-                y: ThemeManager.spacing.normal + 2
-                width: parent.width - 2 * (ThemeManager.spacing.normal + 2)
+                x: ThemeManager.spacing.normal + ThemeManager.px(2)
+                y: ThemeManager.spacing.normal + ThemeManager.px(2)
+                width: parent.width - 2 * (ThemeManager.spacing.normal + ThemeManager.px(2))
                 icon: Icons.lyrics
                 text: "Letra"
             }
@@ -290,7 +290,7 @@ Item {
                 Icon {
                     anchors.horizontalCenter: parent.horizontalCenter
                     icon: Icons.lyrics
-                    size: 32
+                    size: ThemeManager.px(32)
                     color: ThemeManager.colors.textFaint
                 }
 
@@ -317,18 +317,18 @@ Item {
                     right: parent.right
                     bottom: parent.bottom
                     topMargin: ThemeManager.spacing.small
-                    leftMargin: ThemeManager.spacing.normal + 2
-                    rightMargin: ThemeManager.spacing.normal + 2
+                    leftMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
+                    rightMargin: ThemeManager.spacing.normal + ThemeManager.px(2)
                     bottomMargin: ThemeManager.spacing.small
                 }
                 clip: true
-                spacing: ThemeManager.spacing.normal + 2
+                spacing: ThemeManager.spacing.normal + ThemeManager.px(2)
                 model: MediaState.lyrics
                 currentIndex: MediaState.currentLine
                 interactive: !MediaState.lyricsSynced
                 highlightRangeMode: MediaState.lyricsSynced ? ListView.StrictlyEnforceRange : ListView.NoHighlightRange
                 preferredHighlightBegin: height * 0.36
-                preferredHighlightEnd: height * 0.36 + 24
+                preferredHighlightEnd: height * 0.36 + ThemeManager.px(24)
                 highlightMoveDuration: ThemeManager.anim.large
                 highlightMoveVelocity: -1
                 boundsBehavior: Flickable.StopAtBounds
@@ -362,7 +362,7 @@ Item {
                     text: line.modelData.text || "♪"
                     elide: Text.ElideNone
                     wrapMode: Text.Wrap
-                    font.pixelSize: ThemeManager.font.large + 2
+                    font.pixelSize: ThemeManager.font.large + ThemeManager.px(2)
                     font.weight: Font.DemiBold
                     lineHeight: 1.15
                     opacity: ({ current: 1, next: 0.45, past: 0.3, plain: 0.85 })[line.role]

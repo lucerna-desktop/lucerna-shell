@@ -10,7 +10,7 @@ Clickable {
     property alias text: caption.text
 
     implicitWidth: row.implicitWidth + ThemeManager.spacing.large * 2
-    implicitHeight: 40
+    implicitHeight: ThemeManager.px(40)
     radius: height / 2
     pressScale: 0.96
     color: ThemeManager.alpha(ThemeManager.colors.accent, 0.16)
@@ -26,7 +26,7 @@ Clickable {
 
             anchors.verticalCenter: parent.verticalCenter
             visible: icon !== ""
-            size: 18
+            size: ThemeManager.px(18)
             filled: root.hovered
             color: ThemeManager.colors.accent
         }
