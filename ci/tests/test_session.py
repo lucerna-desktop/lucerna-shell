@@ -336,6 +336,12 @@ class SessionTest(SessionBase):
         self.assertEqual(json.loads(proc.stdout)["init"], "other")
         self.assertLess(time.monotonic() - start, 10)
 
+    def test_init_without_timeout_still_asks_systemctl(self):
+        # Sem o timeout no PATH, a pergunta vai sem prazo (e não cai em other).
+        (self.run_root / "systemd" / "system").mkdir(parents=True)
+        (self.bin / "timeout").unlink()
+        self.assertEqual(self.detect()["init"], "systemd")
+
     def test_runtime_dir_without_xdg_runtime_dir_is_run_user(self):
         # Sem o XDG_RUNTIME_DIR, o /run/user/<uid>, exportado: o shell que o
         # supervisor sobe (o config.safe.json, a marca do bloqueio) usa a mesma
