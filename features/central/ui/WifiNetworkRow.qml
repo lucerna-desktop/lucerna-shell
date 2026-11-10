@@ -17,8 +17,9 @@ Column {
     width: parent?.width ?? 0
     spacing: ThemeManager.px(4)
 
-    // A senha fica no WifiState: a linha aberta a pega ao abrir e ao nascer
-    // aberta (a lista de redes refeita recria as linhas), com o foco no campo.
+    // A senha fica no WifiState: a linha aberta a pega ao abrir, ao nascer
+    // aberta (a lista de redes refeita recria as linhas) e ao reaparecer, com o
+    // cursor onde estava e o foco no campo.
     onOpenChanged: {
         if (open)
             restore();
@@ -29,7 +30,9 @@ Column {
     }
 
     function restore(): void {
+        const cursor = WifiState.cursor;
         password.text = WifiState.password;
+        password.cursorPosition = Math.min(cursor, password.length);
         password.forceActiveFocus();
     }
 
@@ -100,6 +103,10 @@ Column {
                     if (entry.open)
                         WifiState.password = text;
                 }
+                onCursorPositionChanged: {
+                    if (entry.open)
+                        WifiState.cursor = cursorPosition;
+                }
                 onAccepted: WifiState.submitPassword(entry.modelData, text)
 
                 Txt {
@@ -120,11 +127,14 @@ Column {
             onClicked: WifiState.submitPassword(entry.modelData, password.text)
         }
 
-        // O foco de novo quando o campo aparece (a abertura o anima a partir
-        // da altura zero, invisível).
+        // A senha e o foco de novo quando o campo aparece (a abertura o anima a
+        // partir da altura zero, invisível); fechado, o campo apaga o texto
+        // quando some, no fim da animação.
         onVisibleChanged: {
             if (visible && entry.open)
-                password.forceActiveFocus();
+                entry.restore();
+            else if (!visible && !entry.open)
+                password.text = "";
         }
     }
 }

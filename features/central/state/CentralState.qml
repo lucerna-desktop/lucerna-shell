@@ -40,10 +40,19 @@ Singleton {
     // "bluetooth", "output", "input" ou "battery".
     property string page: ""
 
-    // Zera só ao abrir as Ações: na saída, o card continua na página até sumir.
+    // Zera só ao abrir as Ações: na saída, o card continua na página até sumir
+    // (só a senha do Wi-Fi sai já, sem apagar o campo que ainda aparece).
     onActionsOpenChanged: {
         if (actionsOpen)
             reset();
+        else
+            WifiState.clearPassword();
+    }
+
+    // Fora da página do Wi-Fi, o campo de senha fecha (e a senha sai).
+    onPageChanged: {
+        if (page !== "wifi")
+            WifiState.expand(null);
     }
 
     // O recurso da página aberta sumiu (o fone saiu, o adaptador some): volta
