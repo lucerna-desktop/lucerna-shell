@@ -319,7 +319,12 @@ case "$subcommand" in
         log "liberar a tela de bloqueio caída (pelo TTY)"
         hyprctl --instance 0 eval 'hl.clear_crashed_lockscreen()'
         status=$?
-        if ! qs_alive && [ -s "$runtime_dir/locked" ]; then
+        # Com o hyprctl falhando, o bloqueio caído segue no Hyprland: a marca
+        # fica (o shell que voltar bloqueia de novo) e o aviso diz para repetir.
+        if [ "$status" -ne 0 ]; then
+            log "o hyprctl falhou (código $status); a marca do bloqueio fica"
+            echo "lucerna-session: o hyprctl falhou (código $status); a tela de bloqueio caída continua: repita o lucerna-session unlock" >&2
+        elif ! qs_alive && [ -s "$runtime_dir/locked" ]; then
             : > "$runtime_dir/locked"
             log "marca do bloqueio esvaziada (o shell está parado)"
         fi

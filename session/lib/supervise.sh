@@ -241,6 +241,9 @@ cmd_supervise() {
             # A emergência já foi o aviso da queda: o shell que volta ao
             # normal não avisa de novo (nem diz "modo de segurança").
             rm -f "$crash_file"
+            # O TERM (o fim da sessão) também acorda o wait_start: aí não
+            # volta nada.
+            [ "$terminating" = 1 ] && break
             log "o shell volta ao normal (shell start)"
             safe=0 crashes=()
         else

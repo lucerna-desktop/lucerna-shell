@@ -496,6 +496,17 @@ class SessionTest(SessionBase):
         self.run_session("unlock")
         self.assertEqual(marker.read_text().strip(), "")
 
+    def test_unlock_keeps_lock_marker_when_hyprctl_fails(self):
+        # O hyprctl falhou: o bloqueio caído segue no Hyprland; a marca fica, e
+        # o aviso diz para repetir.
+        self.fake("hyprctl", "exit 3")
+        marker = self.runtime / "lucerna" / "locked"
+        self.write(marker, "locked\n")
+        proc = self.run_session("unlock", check=False)
+        self.assertEqual(proc.returncode, 3)
+        self.assertEqual(marker.read_text().strip(), "locked")
+        self.assertIn("repita", proc.stderr)
+
     def test_unlock_keeps_lock_marker_with_shell(self):
         # Com o qs vivo (o bloqueio dele está de pé), a marca fica.
         qs = self.lookalike("qs -c lucerna")
@@ -849,6 +860,20 @@ wait $s""",
         self.wait_for(lambda: "fechada" in self.emergency_lines(), what="a emergência fechada")
         # O aviso da queda já foi a emergência: o shell normal não diz "modo de segurança".
         self.assertFalse((self.runtime / "lucerna" / "crash.json").exists())
+
+    def test_term_in_emergency_does_not_say_back_to_normal(self):
+        proc = self.supervise(["1"] * 6)
+        self.wait_for(lambda: self.status() == "supervised emergency", what="o status emergency")
+        # A emergência de pé (com o pid gravado) antes do TERM: a corrida entre
+        # o pid dela e o close_emergency é outra pendência.
+        self.wait_for(lambda: self.emergency_lines(), what="a tela de emergência")
+        self.wait_for(lambda: (self.runtime / "lucerna" / "emergency.pid").exists(), what="o pid da emergência")
+        proc.terminate()
+        self.assertEqual(proc.wait(timeout=10), 0)
+        self.assertNotIn("volta ao normal", self.supervisor_log())
+        self.assertIn("o supervisor sai", self.supervisor_log())
+        self.wait_for(lambda: "fechada" in self.emergency_lines(), what="a emergência fechada")
+        self.assertEqual(len(self.start_lines()), 6, "nenhum qs sobe depois do TERM")
 
     def test_second_supervisor_exits_while_lock_is_held(self):
         # Um supervisor que acabou de pegar a trava e ainda não gravou o pid
