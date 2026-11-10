@@ -423,14 +423,14 @@ Singleton {
     }
 
     // A cor c levada rumo a cada extremo de `aways` (o preto ou o branco), de
-    // 5 em 5% e intercalando os extremos a cada passo, até ficar a 3:1 de bg:
-    // a primeira mistura que passa (a própria c, se já passa). Nenhuma: null.
-    // A base do iconOn, do fillOf e do nearestOn.
-    function towardContrast(c: color, bg: color, aways: var): var {
+    // 5 em 5% e intercalando os extremos a cada passo, até ficar a `min`:1 de
+    // bg: a primeira mistura que passa (a própria c, se já passa). Nenhuma:
+    // null. A base do iconOn, do fillOf e do nearestOn.
+    function towardContrast(c: color, bg: color, aways: var, min: real): var {
         for (let i = 0; i <= 20; i++) {
             for (const away of aways) {
                 const f = i === 0 ? c : mix(c, away, i / 20);
-                if (contrast(f, bg) >= 3)
+                if (contrast(f, bg) >= min)
                     return f;
             }
         }
@@ -445,7 +445,7 @@ Singleton {
         const black = Qt.rgba(0, 0, 0, 1);
         const white = Qt.rgba(1, 1, 1, 1);
         const [first, second] = dark ? [white, black] : [black, white];
-        return towardContrast(c, bg, [first]) ?? towardContrast(c, bg, [second]) ?? c;
+        return towardContrast(c, bg, [first], 3) ?? towardContrast(c, bg, [second], 3) ?? c;
     }
 
     // Um ícone na cor c sobre bg, a 3:1 dele, com o mínimo de mistura: a cada
@@ -453,11 +453,11 @@ Singleton {
     // bg). Para fundos de luminância média (o preenchimento cinza do mudo),
     // onde o iconOn clarearia o vermelho até quase o branco: aqui ele só
     // escurece o bastante e continua vermelho.
-    function nearestOn(c: color, bg: color): color {
+    function nearestOn(c: color, bg: color, min: real): color {
         const black = Qt.rgba(0, 0, 0, 1);
         const white = Qt.rgba(1, 1, 1, 1);
         const aways = contrast(black, bg) >= contrast(white, bg) ? [black, white] : [white, black];
-        return towardContrast(c, bg, aways) ?? aways[0];
+        return towardContrast(c, bg, aways, min) ?? aways[0];
     }
 
     // O ícone de uma cor de estado sobre o contêiner dela, com o tema ativo:
@@ -479,23 +479,53 @@ Singleton {
         const black = Qt.rgba(0, 0, 0, 1);
         const white = Qt.rgba(1, 1, 1, 1);
         const away = contrast(black, track) > contrast(white, track) ? black : white;
-        return towardContrast(accent, track, [away]) ?? away;
+        return towardContrast(accent, track, [away], 3) ?? away;
+    }
+
+    // Um preenchimento leve: o trilho levado rumo a ink de 1 em 1% até ficar
+    // a `min`:1 dele (nenhuma mistura passa: o próprio ink). O cinza do mudo
+    // nos temas claros.
+    function softFillOf(track: color, ink: color, min: real): color {
+        for (let i = 1; i <= 100; i++) {
+            const f = mix(track, ink, i / 100);
+            if (contrast(f, track) >= min)
+                return f;
+        }
+        return ink;
+    }
+
+    // Um texto apagado que ainda se lê: fg levado rumo a bg de 5 em 5%
+    // enquanto fica a 4,5:1 dele (a última mistura que passa; fg, se nem ele
+    // passa). O rótulo da opção desativada das Configurações.
+    function dimmedOn(fg: color, bg: color): color {
+        let best = fg;
+        for (let i = 1; i <= 20; i++) {
+            const f = mix(fg, bg, i / 20);
+            if (contrast(f, bg) < 4.5)
+                break;
+            best = f;
+        }
+        return best;
     }
 
     // As cores da barra de porcentagem (LevelSlider) além do trilho e do
-    // preenchimento: o preenchimento do mudo (o textFaint a 3:1 do trilho, um
-    // cinza) e o ícone dentro da barra, que fica sempre sobre a parte cheia
-    // (ela nunca é menor que o círculo da ponta), a 3:1 dela. Com valor
-    // normal, o base ou o texto (o que contrastar mais com o preenchimento);
-    // no mudo, o perigo sobre o cinza pelo nearestOn (o iconOn o levaria
-    // quase ao branco em vários temas escuros).
+    // preenchimento: o preenchimento do mudo e o ícone dentro da barra, que
+    // fica sempre sobre a parte cheia (ela nunca é menor que o círculo da
+    // ponta). Com valor normal, o ícone é o base ou o texto (o que contrastar
+    // mais com o preenchimento) a 3:1 dele. O mudo é um cinza: no escuro, o
+    // textFaint a 3:1 do trilho; no claro, o trilho levado rumo ao textFaint
+    // só até 1,5:1, porque o 3:1 o deixaria mais escuro que o próprio
+    // textFaint e mais pesado que a barra ativa (o mudo também se lê pelo
+    // ícone e pelo nome e valor ao lado). O ícone do mudo é o perigo pelo
+    // nearestOn (o iconOn o levaria quase ao branco em vários temas escuros),
+    // a 3,5:1 do cinza, com folga sobre o 3:1.
     function levelColorsOf(c: var, track: color, fill: color, dark: bool): var {
-        const mutedFill = c.mutedFill ?? fillOf(c.textFaint, c.surface, track);
+        const mutedFill = c.mutedFill ?? (dark ? fillOf(c.textFaint, c.surface, track) : softFillOf(track, c.textFaint, 1.5));
         const ink = contrast(c.base, fill) >= contrast(c.text, fill) ? c.base : c.text;
         return {
             mutedFill: mutedFill,
             fillIcon: c.fillIcon ?? iconOn(ink, fill, dark),
-            mutedFillIcon: c.mutedFillIcon ?? nearestOn(c.danger, mutedFill)
+            mutedFillIcon: c.mutedFillIcon ?? nearestOn(c.danger, mutedFill, 3.5)
         };
     }
 

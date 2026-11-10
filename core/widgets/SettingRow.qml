@@ -4,9 +4,10 @@ import qs.core.theme
 
 // Uma linha de opção: ícone, título, descrição e o controle à direita.
 // `wide` põe o controle embaixo do texto, ocupando a largura (para sliders).
-// `dimmed` marca a opção que não vale agora: o título passa ao textMuted e o
-// ícone ao textFaint, sem opacidade sobre o texto (que ficaria abaixo de
-// 4,5:1). O controle, sem um desativado próprio (Switch, SegmentedControl),
+// `dimmed` marca a opção que não vale agora: o título e a descrição passam a
+// um tom apagado que ainda fica a 4,5:1 do cartão (ThemeManager.dimmedOn do
+// textMuted sobre o raised, o fundo mais claro dos cartões nos escuros e o
+// mais escuro nos claros) e o ícone ao textFaint, sem opacidade sobre o texto. O controle, sem um desativado próprio (Switch, SegmentedControl),
 // ainda leva a opacidade; com `dimsControl: false`, ele mostra o próprio
 // estado (a LevelSlider com `enabled: false`, cujo nome e valor são texto).
 Item {
@@ -20,6 +21,7 @@ Item {
     property bool dimsControl: true
     property bool separator: true
     default property alias control: slot.data
+    readonly property color dimColor: ThemeManager.dimmedOn(ThemeManager.colors.textMuted, ThemeManager.colors.raised)
 
     width: parent?.width ?? 0
     implicitHeight: (wide ? labels.height + slot.childrenRect.height + ThemeManager.spacing.normal : Math.max(labels.height, slot.childrenRect.height)) + ThemeManager.spacing.large * 1.4
@@ -61,7 +63,7 @@ Item {
         Txt {
             width: parent.width
             text: root.title
-            muted: root.dimmed
+            color: root.dimmed ? root.dimColor : ThemeManager.colors.text
             font.weight: Font.Medium
         }
 
@@ -69,7 +71,7 @@ Item {
             width: parent.width
             visible: root.description !== ""
             text: root.description
-            muted: true
+            color: root.dimmed ? root.dimColor : ThemeManager.colors.textMuted
             wrapMode: Text.Wrap
             font.pixelSize: ThemeManager.font.small + 1
         }
