@@ -144,6 +144,15 @@ Singleton {
         Clipboard.more();
     }
 
+    // O painel no fim da lista (`atEnd`, o atYEnd dela) pede a página
+    // seguinte. Ele chama também quando a altura do conteúdo muda: a página
+    // somada que ainda cabe inteira não muda o atYEnd, e o "mais" ficaria só
+    // pelas setas.
+    function reachedEnd(atEnd: bool): void {
+        if (atEnd)
+            more();
+    }
+
     // Circular só com tudo carregado; no fim de uma lista que tem mais, pede a
     // página seguinte e fica no último.
     function move(step: int): void {

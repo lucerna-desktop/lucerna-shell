@@ -139,6 +139,22 @@ function run(t) {
         t.eq(S.selected, 1);
     });
 
+    // O painel chama reachedEnd() quando o atYEnd muda e quando a altura do
+    // conteúdo muda: a página somada que ainda cabe inteira não muda o atYEnd.
+    scenario("clipboardstate: a lista no fim pede mais, também quando ainda cabe", c => {
+        C.items = texts(3);
+        C.total = 10;
+        c.pending = {};
+        S.reachedEnd(false);
+        t.eq(lastList(c), null, "longe do fim, nada");
+        S.reachedEnd(true);
+        t.eq(lastList(c).params, { offset: 3, limit: C.pageSize }, "no fim, a página seguinte");
+        c.receive(ok(lastList(c).id, { items: texts(5).slice(3), total: 10 }));
+        t.eq(C.items.length, 5);
+        S.reachedEnd(true);
+        t.eq(lastList(c).params, { offset: 5, limit: C.pageSize }, "a página somada coube: pede a outra sem o atYEnd mudar");
+    });
+
     scenario("clipboardstate: a lista vazia não move", () => {
         C.items = [];
         S.selected = 0;
