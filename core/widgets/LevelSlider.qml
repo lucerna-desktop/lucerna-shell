@@ -184,15 +184,18 @@ Item {
     }
 
     // O ícone silencia: fica por cima do arrasto. O alvo é maior que a
-    // barra (pelo menos 32 px, centrado no ícone, na altura do arrasto),
-    // transparente: um véu desse tamanho sairia da barra.
+    // barra (pelo menos 32 px, na altura do arrasto), transparente: um véu
+    // desse tamanho sairia da barra. Ele acaba no fim do círculo do ícone e
+    // sobra para a esquerda (Level.iconTargetX), sem cobrir o começo da
+    // barra. Desativada, a barra não silencia.
     MouseArea {
         id: iconTarget
 
         readonly property real side: Math.max(ThemeManager.px(32), bar.height)
 
         visible: root.icon !== "" && root.iconClickable
-        x: bar.height / 2 - width / 2
+        enabled: root.enabled
+        x: Level.iconTargetX(bar.height, side)
         y: mouse.y
         width: side
         height: Math.max(side, mouse.height)
