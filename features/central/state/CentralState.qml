@@ -93,7 +93,7 @@ Singleton {
 
     // Fecha o campo de senha e apaga o erro do Wi-Fi.
     function clearWifi(): void {
-        WifiState.expanded = null;
+        WifiState.expand(null);
         WifiState.error = "";
     }
 

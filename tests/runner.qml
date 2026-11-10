@@ -25,6 +25,7 @@ import qs.core.time
 import qs.core.widgets
 import qs.features.bar.state
 import qs.features.central.state
+import qs.features.central.ui
 import qs.features.clipboard.state
 import qs.features.dashboard.state
 import qs.features.idle.state
@@ -87,6 +88,7 @@ import "wallpaper.test.js" as WallpaperTest
 import "web.test.js" as WebTest
 import "weather.test.js" as WeatherTest
 import "weatherstate.test.js" as WeatherStateTest
+import "wifistate.test.js" as WifiStateTest
 import "credits.test.js" as CreditsTest
 
 ShellRoot {
@@ -144,6 +146,7 @@ ShellRoot {
         ["lucernasession", LucernaSessionTest],
         ["weather", WeatherTest],
         ["weatherstate", WeatherStateTest],
+        ["wifistate", WifiStateTest],
         ["credits", CreditsTest],
         ["web", WebTest],
         ["gamemode", GameModeTest],
@@ -205,6 +208,12 @@ ShellRoot {
     // iniciais, como o delegate dos popups o cria; para o prazo do popup.
     function card(props: var): var {
         return notificationCard.createObject(root, props);
+    }
+
+    // As linhas de redes da página do Wi-Fi (WifiNetworkRow num Repeater), com
+    // a lista de redes em `model`: um item de WifiState.networks por rede.
+    function wifiRows(): var {
+        return wifiRowsComponent.createObject(root);
     }
 
     // Um cliente do protocolo solto (app "teste", sem socketPath: nunca conecta).
@@ -315,6 +324,8 @@ ShellRoot {
             get SettingsState() { return SettingsState; },
             get GameModeState() { return GameModeState; },
             get WeatherState() { return WeatherState; },
+            get WifiState() { return WifiState; },
+            wifiRows: root.wifiRows,
             weatherSample: root.weatherSample,
             get ThemeSwitcherState() { return ThemeSwitcherState; },
             get WallpaperState() { return WallpaperState; }
@@ -333,6 +344,22 @@ ShellRoot {
         LucernaClient {
             app: "teste"
             socketPath: ""
+        }
+    }
+
+    Component {
+        id: wifiRowsComponent
+
+        Column {
+            property alias model: rows.model
+
+            width: 400
+
+            Repeater {
+                id: rows
+
+                delegate: WifiNetworkRow {}
+            }
         }
     }
 

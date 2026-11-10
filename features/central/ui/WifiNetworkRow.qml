@@ -17,6 +17,22 @@ Column {
     width: parent?.width ?? 0
     spacing: ThemeManager.px(4)
 
+    // A senha fica no WifiState: a linha aberta a pega ao abrir e ao nascer
+    // aberta (a lista de redes refeita recria as linhas), com o foco no campo.
+    onOpenChanged: {
+        if (open)
+            restore();
+    }
+    Component.onCompleted: {
+        if (open)
+            restore();
+    }
+
+    function restore(): void {
+        password.text = WifiState.password;
+        password.forceActiveFocus();
+    }
+
     ListRow {
         id: row
 
@@ -80,6 +96,10 @@ Column {
                 font.variableAxes: ThemeManager.fontAxes(Font.Normal)
                 font.pixelSize: ThemeManager.font.normal
                 clip: true
+                onTextChanged: {
+                    if (entry.open)
+                        WifiState.password = text;
+                }
                 onAccepted: WifiState.submitPassword(entry.modelData, text)
 
                 Txt {
@@ -100,11 +120,11 @@ Column {
             onClicked: WifiState.submitPassword(entry.modelData, password.text)
         }
 
+        // O foco de novo quando o campo aparece (a abertura o anima a partir
+        // da altura zero, invisível).
         onVisibleChanged: {
-            if (visible) {
-                password.text = "";
+            if (visible && entry.open)
                 password.forceActiveFocus();
-            }
         }
     }
 }

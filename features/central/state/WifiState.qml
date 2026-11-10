@@ -30,8 +30,12 @@ Singleton {
         icon: Icons.level(Icons.wifi, n.signalStrength)
     }))
 
-    // Rede com o campo de senha aberto.
+    // Rede com o campo de senha aberto e a senha digitada nele. Ficam aqui, e
+    // não na linha, porque a lista acima é refeita a cada mudança das redes (o
+    // sinal, uma rede nova) e o Repeater recria as linhas: a linha nova da
+    // rede aberta pega a senha daqui. Mude as duas pela expand().
     property var expanded: null
+    property string password: ""
     property string error: ""
 
     Connections {
@@ -46,13 +50,19 @@ Singleton {
         Network.setWifiEnabled(on);
     }
 
+    // Abre o campo de senha da rede (null fecha), sempre sem senha.
+    function expand(network: var): void {
+        password = "";
+        expanded = network;
+    }
+
     // Clique numa rede: desconecta a atual, pede senha ou conecta direto.
     function activate(item: var): void {
         error = "";
         if (item.connected) {
             Network.disconnect(item.network);
         } else if (item.needsPassword) {
-            expanded = expanded === item.network ? null : item.network;
+            expand(expanded === item.network ? null : item.network);
         } else {
             Network.connect(item.network, "");
         }
@@ -62,7 +72,7 @@ Singleton {
         if (!password)
             return;
         Network.connect(item.network, password);
-        expanded = null;
+        expand(null);
     }
 
     function forget(item: var): void {
