@@ -523,12 +523,45 @@ class SessionTest(SessionBase):
 
     def test_open_terminal_runs_command(self):
         self.fake("foot")
+        self.fake("less")
         self.run_session("open", "terminal", "less", "+G", "/tmp/x.log")
         self.assertEqual(self.calls_log()[-1], "foot less +G /tmp/x.log")
         self.fake("alacritty")
         self.write(self.home / ".config" / "lucerna" / "apps.conf", "terminal=alacritty\n")
         self.run_session("open", "terminal", "less", "/tmp/x.log")
         self.assertEqual(self.calls_log()[-1], "alacritty -e less /tmp/x.log")
+
+    # open_less(PAGER): o "open terminal less +G /tmp/x.log" sem o less
+    # instalado, com o PAGER dado (None: sem a variável); devolve a chamada.
+    def open_less(self, pager=None):
+        self.fake("foot")
+        env = self.env()
+        if pager is not None:
+            env["PAGER"] = pager
+        subprocess.run(
+            [str(SCRIPT), "open", "terminal", "less", "+G", "/tmp/x.log"],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        )
+        return self.calls_log()[-1]
+
+    def test_open_terminal_less_falls_back_to_tail(self):
+        # Sem o less e sem o PAGER: o tail do arquivo todo, seguindo o fim (as
+        # opções do less ficam de fora).
+        self.assertEqual(self.open_less(), "foot tail -n +1 -f -- /tmp/x.log")
+
+    def test_open_terminal_less_falls_back_to_pager(self):
+        # O PAGER, com as palavras dele, quando está instalado.
+        self.fake("more")
+        self.assertEqual(self.open_less("more -d"), "foot more -d /tmp/x.log")
+
+    def test_open_terminal_less_pager_missing_or_less(self):
+        # Um PAGER que não está instalado (ou é o próprio less) cai no tail.
+        self.assertEqual(self.open_less("most"), "foot tail -n +1 -f -- /tmp/x.log")
+        self.assertEqual(self.open_less("less -R"), "foot tail -n +1 -f -- /tmp/x.log")
 
     def test_session_term_stops_supervisor(self):
         # A sessão derrubada de fora (TERM/HUP) ainda para o shell.
