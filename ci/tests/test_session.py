@@ -340,14 +340,13 @@ class SessionTest(SessionBase):
         # Sem o XDG_RUNTIME_DIR, o /run/user/<uid>, exportado: o shell que o
         # supervisor sobe (o config.safe.json, a marca do bloqueio) usa a mesma
         # pasta que o lucerna-session.
-        self.fake("id", 'echo 4242')
+        self.fake("id", "echo 4242")
         env = self.env()
         del env["XDG_RUNTIME_DIR"]
         common = ROOT / "session" / "lib" / "common.sh"
-        out = subprocess.run(
-            ["bash", "-c", f'. "{common}"; echo "$runtime_dir"; bash -c \'echo "$XDG_RUNTIME_DIR"\''],
-            env=env, capture_output=True, text=True, timeout=10, check=True,
-        ).stdout.split()
+        script = f'. "{common}"; echo "$runtime_dir"; bash -c \'echo "$XDG_RUNTIME_DIR"\''
+        out = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, timeout=10, check=True)
+        out = out.stdout.split()
         self.assertEqual(out, ["/run/user/4242/lucerna", "/run/user/4242"])
 
     def test_init_with_systemd(self):
