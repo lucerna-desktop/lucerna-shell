@@ -163,6 +163,9 @@ THEMES = {
             "textFaint": "#7a8478",
             "accent": "#a7c080",
             "accentText": "#232a2e",
+            # O contêiner calculado sai quase cinza (o destaque é pouco
+            # saturado): um verde mais vivo, ainda a 4,5:1 do texto.
+            "accentContainer": "#445936",
             "danger": "#e67e80",
             "success": "#83c092",
             "warning": "#dbbc7f",
