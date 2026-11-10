@@ -6,9 +6,11 @@ import qs.core.config
 import qs.services
 
 // O modo jogo, vindo do módulo game do lucernad (dono "game"): o estado
-// (game.state), se o módulo está de pé (game.status) e a configuração
+// (game.state), se o módulo está de pé (game.status), a configuração
 // (game.configure), que só este singleton manda, inteira, a cada conexão e a
-// cada mudança das preferências. O lucernad é a fonte da verdade: as features
+// cada mudança das preferências, e a lista "nunca" de fábrica (game.defaults,
+// lida a cada conexão). A exceção dos serviços que só leem o Config: a
+// migração da cópia antiga do gameNever, que roda sem a página aberta. O lucernad é a fonte da verdade: as features
 // só derivam o comportamento delas de `active` (nada do modo jogo é gravado no
 // Config além das preferências game*). Sem o daemon, `available` fica falso, e
 // a conexão que cai desliga a parte do shell na hora, em silêncio.
@@ -54,7 +56,9 @@ Singleton {
     property bool autoFullscreen: true
     property bool autoGames: true
     property var always: []
-    property var never: []
+    // null: a lista do usuário não existe e vale a de fábrica do daemon (o
+    // configure vai sem `never`, e o daemon usa a dele).
+    property var never: null
     property bool effectsOn: true
     property bool vrr: true
     property bool tearing: false
@@ -64,6 +68,15 @@ Singleton {
 
     readonly property int maxClasses: 100
     readonly property int maxClassLength: 128
+
+    // A lista "nunca" de fábrica do daemon (o game.defaults), limpa; null
+    // enquanto não veio ou com um lucernad sem o método. Não zera quando a
+    // conexão cai: a de fábrica só muda com outra versão do daemon, e a próxima
+    // conexão lê de novo.
+    property var factoryNever: null
+    // A lista "nunca" que vale: a do usuário ou, sem ela, a de fábrica (vazia
+    // se ainda não veio).
+    readonly property var effectiveNever: never ?? factoryNever ?? []
 
     function offEffects(): var {
         const out = {};
@@ -95,26 +108,43 @@ Singleton {
         return out;
     }
 
-    // O game.configure inteiro (o Formato do lucernad).
+    // Duas listas limpas com as mesmas classes, em qualquer ordem.
+    function sameClasses(a: var, b: var): bool {
+        const x = cleanClasses(a);
+        const y = cleanClasses(b);
+        return x.length === y.length && x.every(c => y.includes(c));
+    }
+
+    // A lista "nunca" como o Config guarda: null (a de fábrica) quando ela tem
+    // as mesmas classes da de fábrica, senão a própria lista.
+    function storedNever(list: var): var {
+        return factoryNever !== null && sameClasses(list, factoryNever) ? null : list;
+    }
+
+    // O game.configure inteiro (o Formato do lucernad); sem a lista do usuário,
+    // sem o `never` (o campo ausente é a de fábrica, também num lucernad sem o
+    // game.defaults).
     function configureParams(): var {
-        return {
+        const params = {
             auto: {
                 fullscreen: autoFullscreen,
                 games: autoGames
             },
-            always: cleanClasses(always),
-            never: cleanClasses(never),
-            compositor: {
-                effects: effectsOn,
-                vrr: vrr,
-                tearing: tearing
-            },
-            system: {
-                profile: profile,
-                gamemode: gamemode,
-                light: light
-            }
+            always: cleanClasses(always)
         };
+        if (never !== null && never !== undefined)
+            params.never = cleanClasses(never);
+        params.compositor = {
+            effects: effectsOn,
+            vrr: vrr,
+            tearing: tearing
+        };
+        params.system = {
+            profile: profile,
+            gamemode: gamemode,
+            light: light
+        };
+        return params;
     }
 
     // Uma mudança das preferências: as do mesmo turno (a página grava uma
@@ -138,6 +168,26 @@ Singleton {
     function configure(): void {
         if (client.connected)
             client.call("game.configure", configureParams(), null);
+    }
+
+    function readDefaults(): void {
+        if (client.connected)
+            client.call("game.defaults", {}, response => root.applyDefaults(response));
+    }
+
+    // A resposta do game.defaults. Um erro do daemon (um lucernad sem o método)
+    // deixa a de fábrica desconhecida; a falta de conexão (-1) não muda nada. A
+    // lista do Config igual à de fábrica (a cópia que o shell trazia antes do
+    // game.defaults) volta a null, para acompanhar a do daemon.
+    function applyDefaults(response: var): void {
+        const list = response?.result?.never;
+        if (Array.isArray(list)) {
+            factoryNever = cleanClasses(list);
+            if ((Config.gameNever ?? null) !== null && storedNever(Config.gameNever) === null)
+                Config.gameNever = null;
+        } else if (response?.error && response.error.code !== -1) {
+            factoryNever = null;
+        }
     }
 
     // Um estado recebido do daemon; `null` e tópico desconhecido não mudam nada.
@@ -189,8 +239,10 @@ Singleton {
             effects = offEffects();
         }
         sync();
-        if (connected)
+        if (connected) {
             configure();
+            readDefaults();
+        }
     }
 
     function set(on: bool): void {

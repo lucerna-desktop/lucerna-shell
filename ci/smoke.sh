@@ -36,7 +36,9 @@
 # deixar o desfoque, as sombras e as animações do falso desligados e o `ipc
 # call game get` do shell começando com "ligado" (5 s, com a captura do aviso e
 # do ícone na barra); o `lucernad jogo desligar`, as cinco opções iguais às do
-# começo e o `game get` em "desligado" (5 s). Depois do modo jogo, a fase "rede": a busca de cidade
+# começo e o `game get` em "desligado" (5 s); e a lista "nunca" de fábrica do
+# `ipc call game defaults` igual à do `game.defaults` do lucernad, pedida no
+# socket (5 s). Depois do modo jogo, a fase "rede": a busca de cidade
 # "Cacau" pelo IPC weather (o servidor falso responde três cidades) e a escolha
 # da primeira, que precisa ser "Cacaulândia, Rondônia, BR" (5 s); com a aba
 # Clima aberta, o web.weather do `lucernad --json status` precisa chegar a
@@ -78,8 +80,9 @@
 # teste no log, a tela falsa que não aparece em 50% em 5 s, a tecla que não
 # leva o arquivo a 550 ou a rajada que não chega a 1000, cada uma em 2 s), o
 # modo jogo (o Hyprland falso sem socket em 10 s, os efeitos que não desligam
-# ou não voltam ao estado do começo, ou o `game get` que não acompanha, cada
-# um em 5 s), a rede
+# ou não voltam ao estado do começo, o `game get` que não acompanha, ou a lista
+# "nunca" de fábrica do shell diferente da do `game.defaults`, cada um em 5 s),
+# a rede
 # (o servidor falso que não grava o porto em 10 s, o lucernad sem o aviso "a rede é
 # de teste" no log, a cidade escolhida diferente de "Cacaulândia, Rondônia, BR",
 # a previsão que não chega a ready com 7 dias, a letra que não chega a found da
@@ -821,6 +824,38 @@ wait_game desligado "igual ao começo" || true
 row "modo jogo" "desligar: as cinco opções como no começo e o game get desligado em 5 s" "$hypr; ${game:-(sem resposta)}"
 [ "$hypr" = "igual ao começo" ] || fail "depois do lucernad jogo desligar, o Hyprland falso não voltou ao estado do começo em 5 s (começo: $hypr_before; veio: $hypr)"
 [ "$game" = desligado ] || fail "depois do lucernad jogo desligar, o ipc call game get não voltou a \"desligado\" em 5 s (veio \"$game\")"
+# A lista "nunca" de fábrica: a que o shell leu (`ipc call game defaults`)
+# precisa ser a do `game.defaults` do lucernad, pedida direto no socket (5 s).
+# daemon_never: a do daemon, separada por espaços (vazia se não responder).
+daemon_never() {
+    timeout "$CMD_TIMEOUT" python3 -I -c '
+import json, socket, sys
+s = socket.socket(socket.AF_UNIX)
+s.connect(sys.argv[1])
+f = s.makefile("rw")
+def call(i, method, params):
+    f.write(json.dumps({"jsonrpc": "2.0", "id": i, "method": method, "params": params}) + "\n")
+    f.flush()
+    for line in f:
+        m = json.loads(line)
+        if m.get("id") == i:
+            return m
+call(1, "lucerna.hello", {"protocol": "1.0", "client": "fumaca", "app": "lucernad"})
+r = call(2, "game.defaults", {})
+print(" ".join(r["result"]["never"]) if "result" in r else "erro: " + json.dumps(r.get("error")))
+' "$lucernad_sock" 2> /dev/null || true
+}
+want_never=$(daemon_never)
+for _ in $(seq 25); do
+    shell_never=$(ipc game defaults 2> /dev/null || true)
+    [ -n "$want_never" ] && [ "$shell_never" = "$want_never" ] && break
+    sleep 0.2
+done
+row "modo jogo" "a nunca de fábrica lida pelo shell igual à do game.defaults em 5 s" "${shell_never:-(vazia)}"
+if [ -z "$want_never" ] || [[ $want_never == erro:* ]]; then
+    fail "o game.defaults do lucernad não respondeu com a lista \"nunca\" (veio \"$want_never\"; veja lucernad.log)"
+fi
+[ "$shell_never" = "$want_never" ] || fail "a lista \"nunca\" de fábrica do ipc call game defaults não é a do game.defaults em 5 s (shell: \"$shell_never\"; lucernad: \"$want_never\")"
 alive || fail "o shell caiu na fase do modo jogo"
 
 # Fase "rede". web_state <tópico>: o resumo do web.weather ("<state> <dias>

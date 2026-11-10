@@ -8,16 +8,17 @@ function run(t) {
 
     function withConfig(name, body) {
         t.test(name, () => {
-            const was = { always: C.gameAlways, never: C.gameNever, tearing: C.gameTearing, bar: C.gameBar };
+            const was = { always: C.gameAlways, never: C.gameNever, tearing: C.gameTearing, bar: C.gameBar, factory: G.factoryNever };
             try {
                 body();
             } finally {
+                G.factoryNever = was.factory;
                 C.gameAlways = was.always;
                 C.gameNever = was.never;
                 C.gameTearing = was.tearing;
                 C.gameBar = was.bar;
             }
-            t.eq([C.gameAlways, C.gameNever, C.gameTearing, C.gameBar], [was.always, was.never, was.tearing, was.bar], "estado original restaurado");
+            t.eq([C.gameAlways, C.gameNever, C.gameTearing, C.gameBar, G.factoryNever], [was.always, was.never, was.tearing, was.bar, was.factory], "estado original restaurado");
         });
     }
 
@@ -72,6 +73,44 @@ function run(t) {
         S.removeClass("never", "mpv");
         t.eq(C.gameNever, ["vlc"]);
         t.eq(S.never, ["vlc"], "a página acompanha");
+    });
+
+    withConfig("gamemodestate: a nunca de fábrica até a primeira mudança", () => {
+        G.factoryNever = ["mpv", "vlc"];
+        C.gameAlways = [];
+        C.gameNever = null;
+        t.eq(S.never, ["mpv", "vlc"], "a página mostra a de fábrica");
+        S.addClass("never", "Steam");
+        t.eq(C.gameNever, ["mpv", "vlc", "steam"], "a mudança grava a lista inteira");
+        S.removeClass("never", "steam");
+        t.eq(C.gameNever, null, "igual à de fábrica, volta a acompanhá-la");
+        S.addClass("always", "mpv");
+        t.eq([C.gameAlways, C.gameNever], [["mpv"], ["vlc"]], "tirar da de fábrica também grava");
+        S.removeClass("never", "outro");
+        t.eq(C.gameNever, ["vlc"], "remover o que não está não muda nada");
+        S.addClass("never", "mpv");
+        t.eq([C.gameAlways, C.gameNever], [[], null]);
+    });
+
+    withConfig("gamemodestate: sem a de fábrica, a nunca de fábrica fica", () => {
+        G.factoryNever = null;
+        C.gameAlways = [];
+        C.gameNever = null;
+        t.eq(S.never, [], "não há o que mostrar");
+        t.eq(S.neverKnown, false);
+        t.eq(S.emptyText("never", S.neverKnown), "A de fábrica do lucernad (players e navegadores); atualize o lucernad para ver e editar", "a página diz por quê");
+        t.eq(S.emptyText("always", false), "Nenhum app");
+        t.eq(S.emptyText("never", true), "Nenhum app");
+        S.addClass("never", "steam");
+        t.eq(C.gameNever, null, "não grava uma lista sem as de fábrica");
+        S.addClass("always", "mpv");
+        t.eq([C.gameAlways, C.gameNever], [["mpv"], null], "a sempre muda");
+        S.removeClass("never", "mpv");
+        t.eq(C.gameNever, null);
+        C.gameNever = ["vlc"];
+        S.addClass("never", "mpv");
+        t.eq([C.gameAlways, C.gameNever], [[], ["vlc", "mpv"]], "com a lista do usuário, edita normal");
+        t.eq(S.neverKnown, true);
     });
 
     withConfig("gamemodestate: as preferências vão ao Config", () => {

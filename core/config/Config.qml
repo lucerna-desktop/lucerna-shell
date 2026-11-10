@@ -340,10 +340,10 @@ Singleton {
             property bool gameAutoFullscreen: true
             property bool gameAutoGames: true
             // Classes (do Hyprland) que sempre ligam e que nunca contam; a
-            // "nunca" de fábrica é cópia do config::DEFAULT_NEVER do lucernad
-            // (crates/lucernad-game/src/config.rs, na rev f320647): mudar junto.
+            // "nunca" null é a de fábrica do lucernad (o GameMode lê pelo
+            // game.defaults), e a primeira mudança na página grava a lista.
             property var gameAlways: []
-            property var gameNever: ["mpv", "vlc", "io.github.celluloid_player.celluloid", "org.gnome.totem", "org.kde.haruna", "smplayer", "firefox", "firefox-esr", "librewolf", "floorp", "zen", "zen-browser", "chromium", "google-chrome", "brave-browser", "vivaldi-stable", "microsoft-edge", "opera"]
+            property var gameNever: null
             // Compositor: desfoque, sombras e animações; VRR em tela cheia; tearing.
             property bool gameEffects: true
             property bool gameVrr: true

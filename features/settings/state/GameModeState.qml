@@ -16,7 +16,10 @@ Singleton {
     readonly property string statusLine: statusLineOf(GameMode.available, GameMode.active, GameMode.since, GameMode.reasons, GameMode.unavailableNote)
     readonly property var effectRows: effectRowsOf(GameMode.effects)
     readonly property var always: Config.gameAlways ?? []
-    readonly property var never: Config.gameNever ?? []
+    // A "nunca" que vale: a do usuário ou a de fábrica do lucernad.
+    readonly property var never: GameMode.effectiveNever
+    // Se a "nunca" que vale é conhecida: a do usuário ou a de fábrica já lida.
+    readonly property bool neverKnown: (Config.gameNever ?? null) !== null || GameMode.factoryNever !== null
     // As classes das janelas abertas que ainda não estão em nenhuma lista.
     readonly property var openClasses: openClassesOf(Hypr.toplevels, always, never)
 
@@ -88,26 +91,49 @@ Singleton {
         return list === "always" ? "gameAlways" : "gameNever";
     }
 
+    // A lista que vale ("always" ou "never"), lida do Config na hora.
+    function listOf(list: string): var {
+        return Array.from(list === "always" ? Config.gameAlways ?? [] : Config.gameNever ?? GameMode.factoryNever ?? []);
+    }
+
+    // A "nunca" sem a lista do usuário e sem a de fábrica (sem conexão ou um
+    // lucernad sem o game.defaults): mexer nela gravaria uma lista sem as
+    // classes de fábrica, então fica como está.
+    function neverUnknown(): bool {
+        return !neverKnown;
+    }
+
+    // O texto da lista vazia: sem a de fábrica, a "nunca" não está vazia no
+    // daemon, só não veio.
+    function emptyText(list: string, known: bool): string {
+        return list === "never" && !known ? "A de fábrica do lucernad (players e navegadores); atualize o lucernad para ver e editar" : "Nenhum app";
+    }
+
+    // Grava a lista; a "nunca" igual à de fábrica volta a null.
+    function store(list: string, value: var): void {
+        Config[configKey(list)] = list === "always" ? value : GameMode.storedNever(value);
+    }
+
     // Acrescenta a classe à lista ("always" ou "never"), tirando-a da outra;
     // limpa como o daemon aceita (vazia, longa ou além de 100 não entra).
     function addClass(list: string, cls: string): void {
         const clean = GameMode.cleanClasses([cls]);
-        if (clean.length === 0)
+        if (clean.length === 0 || (list === "never" && neverUnknown()))
             return;
         const c = clean[0];
-        const other = configKey(list === "always" ? "never" : "always");
-        const target = configKey(list);
-        const otherList = Array.from(Config[other] ?? []);
+        const other = list === "always" ? "never" : "always";
+        const otherList = listOf(other);
         if (otherList.includes(c))
-            Config[other] = otherList.filter(x => x !== c);
-        const current = GameMode.cleanClasses(Config[target]);
+            store(other, otherList.filter(x => x !== c));
+        const current = GameMode.cleanClasses(listOf(list));
         if (!current.includes(c) && current.length < GameMode.maxClasses)
-            Config[target] = current.concat([c]);
+            store(list, current.concat([c]));
     }
 
     function removeClass(list: string, cls: string): void {
-        const target = configKey(list);
-        Config[target] = Array.from(Config[target] ?? []).filter(x => x !== cls);
+        const current = listOf(list);
+        if (current.includes(cls))
+            store(list, current.filter(x => x !== cls));
     }
 
     // Uma preferência game* da página (outra chave não muda nada).

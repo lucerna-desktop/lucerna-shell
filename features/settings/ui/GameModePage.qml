@@ -47,7 +47,7 @@ Column {
 
             Txt {
                 visible: classRow.classes.length === 0
-                text: "Nenhum app"
+                text: GameModeState.emptyText(classRow.list, GameModeState.neverKnown)
                 faint: true
             }
 

@@ -287,7 +287,9 @@ Singleton {
         }
     }
 
-    // O modo jogo pelo terminal: `qs -c lucerna ipc call game toggle|on|off|get`.
+    // O modo jogo pelo terminal: `qs -c lucerna ipc call game
+    // toggle|on|off|get|defaults` (o defaults: a lista "nunca" de fábrica lida
+    // do lucernad, separada por espaços, vazia se não veio; para a fumaça).
     IpcHandler {
         target: "game"
 
@@ -305,6 +307,10 @@ Singleton {
 
         function get(): string {
             return GameMode.statusText(GameMode.available, GameMode.active, GameMode.reasons);
+        }
+
+        function defaults(): string {
+            return Array.from(GameMode.factoryNever ?? []).join(" ");
         }
     }
 
