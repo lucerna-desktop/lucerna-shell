@@ -8,6 +8,7 @@ os apps). Nada do host é lido nem chamado: nem o /sys, nem o /etc, nem o
 D-Bus, nem um terminal instalado de verdade.
 """
 
+import fcntl
 import json
 import os
 import re
@@ -24,7 +25,7 @@ SCRIPT = ROOT / "session" / "bin" / "lucerna-session"
 # As ferramentas que o script usa, ligadas às do sistema no PATH falso.
 TOOLS = (
     "bash sh env cat mkdir realpath dirname basename sed grep tr head cut "
-    "readlink date mv rm sort ls setsid kill sleep printf touch tail wc seq timeout"
+    "readlink date mv rm sort ls setsid kill sleep printf touch tail wc seq timeout flock"
 ).split()
 
 
@@ -791,6 +792,41 @@ wait $s""",
         self.wait_for(lambda: "fechada" in self.emergency_lines(), what="a emergência fechada")
         # O aviso da queda já foi a emergência: o shell normal não diz "modo de segurança".
         self.assertFalse((self.runtime / "lucerna" / "crash.json").exists())
+
+    def test_second_supervisor_exits_while_lock_is_held(self):
+        # Um supervisor que acabou de pegar a trava e ainda não gravou o pid
+        # (a corrida de dois ao mesmo tempo): o segundo sai sem subir um qs.
+        pid_file = self.runtime / "lucerna" / "supervisor.pid"
+        pid_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(pid_file, "a+") as held:
+            fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            proc = self.supervise()
+            self.assertEqual(proc.wait(timeout=10), 0)
+        self.assertEqual(self.start_lines(), [])
+        self.assertIn("já há um supervisor", self.supervisor_log())
+
+    def test_two_supervisors_at_once_start_one_shell(self):
+        first = self.supervise()
+        second = self.supervise()
+        self.wait_for(lambda: first.poll() is not None or second.poll() is not None, what="um dos dois sair")
+        self.starts_at_least(1)
+        time.sleep(0.5)
+        self.assertEqual(len(self.start_lines()), 1, self.start_lines())
+
+    def test_shell_does_not_inherit_the_supervisor_lock(self):
+        # O qs e a pausa não herdam a trava: com o supervisor morto à força,
+        # o próximo sobe (e o qs que sobrou não o barra).
+        self.supervise()
+        self.starts_at_least(1)
+        qs_pid = int((self.runtime / "lucerna" / "qs.pid").read_text())
+        pid_file = str((self.runtime / "lucerna" / "supervisor.pid").resolve())
+        links = []
+        for fd in os.listdir(f"/proc/{qs_pid}/fd"):
+            try:
+                links.append(os.readlink(f"/proc/{qs_pid}/fd/{fd}"))
+            except OSError:
+                pass
+        self.assertNotIn(pid_file, links)
 
     def test_compositor_gone_stops_without_restart(self):
         self.gone.touch()
