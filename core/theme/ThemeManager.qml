@@ -374,12 +374,6 @@ Singleton {
         return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
     }
 
-    // O texto sobre uma cor cheia (aviso, erro, sucesso): accentText, text
-    // ou base, o que der mais contraste com ela (no empate, o primeiro).
-    function onColor(c: color): color {
-        return [colors.accentText, colors.text, colors.base].reduce((best, x) => contrast(c, x) > contrast(c, best) ? x : best);
-    }
-
     // Mistura duas cores; t é o peso de b (0 dá a, 1 dá b). Cada canal sai
     // arredondado para 8 bits, como a tela desenha: o contraste medido sobre o
     // resultado é o que se vê (sem isso, 4,5:1 em ponto flutuante vira 4,48:1

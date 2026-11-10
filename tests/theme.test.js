@@ -67,10 +67,6 @@ function run(t) {
         // mínimo para texto grande).
         t.near(T.contrast("#df8e1d", "#eff1f5"), 2.32, 0.01, "aviso do latte com o texto claro");
         t.near(T.contrast("#df8e1d", "#4c4f69"), 3.05, 0.01, "aviso do latte com o texto escuro");
-        // No mocha: accentText #11111b, text #cdd6f4, base #1e1e2e.
-        t.eq(String(T.onColor(T.colors.warning)), "#11111b", "aviso do mocha: o accentText");
-        t.eq(String(T.onColor(Qt.rgba(1, 1, 1, 1))), "#11111b", "branco: o mais escuro");
-        t.eq(String(T.onColor(Qt.rgba(0, 0, 0, 1))), "#cdd6f4", "preto: o texto claro");
     });
 
     // As cores que importam aqui, copiadas dos 12 themes/*.json (o runner não

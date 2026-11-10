@@ -43,7 +43,8 @@ Clickable {
         height: ThemeManager.px(38)
         radius: width / 2
         // Ligado, um toque do base (como o véu do hover): só afasta o fundo do
-        // ícone, que fica a 3:1 do contêiner.
+        // ícone. O teste garante o ícone a 3:1 desse círculo (o contêiner com
+        // o base a 10% por cima), não só do contêiner.
         color: root.checked ? ThemeManager.alpha(ThemeManager.colors.base, 0.1) : ThemeManager.alpha(ThemeManager.colors.text, 0.07)
 
         Behavior on color { ColorAnim {} }

@@ -7,7 +7,8 @@ import qs.core.theme
 // `dimmed` marca a opção que não vale agora: o título e a descrição passam a
 // um tom apagado que ainda fica a 4,5:1 do cartão (ThemeManager.dimmedOn do
 // textMuted sobre o raised, o fundo mais claro dos cartões nos escuros e o
-// mais escuro nos claros) e o ícone ao textFaint, sem opacidade sobre o texto. O controle, sem um desativado próprio (Switch, SegmentedControl),
+// mais escuro nos claros) e o ícone ao textFaint, sem opacidade sobre o
+// texto. O controle, sem um desativado próprio (Switch, SegmentedControl),
 // ainda leva a opacidade; com `dimsControl: false`, ele mostra o próprio
 // estado (a LevelSlider com `enabled: false`, cujo nome e valor são texto).
 Item {
