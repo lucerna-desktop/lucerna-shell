@@ -67,6 +67,46 @@ function run(t) {
         t.eq(L.guarded("", argv), argv, "sem setpriv (ou sem a opção): o comando puro");
     });
 
+    t.test("logind: a resposta do CanHibernate", () => {
+        t.eq(L.parseCanReply("('yes',)\n"), "yes", "pode");
+        t.eq(L.parseCanReply("('na',)"), "na", "sem swap (ou sem suporte)");
+        t.eq(L.parseCanReply("('challenge',)"), "challenge", "com senha");
+        t.eq(L.parseCanReply(""), "", "sem resposta");
+        t.eq(L.parseCanReply("Error: GDBus.Error:org.freedesktop.DBus.Error.UnknownMethod: ..."), "", "erro");
+    });
+
+    t.test("logind: hibernar só com o CanHibernate yes ou challenge", () => {
+        t.check(L.canHibernateFrom("yes"), "yes");
+        t.check(L.canHibernateFrom("challenge"), "challenge (o polkit pede a senha)");
+        t.check(!L.canHibernateFrom("na"), "na");
+        t.check(!L.canHibernateFrom("no"), "no");
+        t.check(L.canHibernateFrom(""), "sem resposta: fica como antes (o botão aparece)");
+    });
+
+    t.test("logind: a opção Hibernar some quando o logind diz que não dá", () => {
+        const S = t.SettingsState;
+        const C = t.Config;
+        const before = { can: L.canHibernate, action: C.batteryCriticalAction };
+        const has = () => S.criticalActions.some(a => a.value === "hibernate");
+        C.batteryCriticalAction = "none";
+        L.canHibernate = true;
+        t.check(has(), "com o CanHibernate, aparece");
+        L.canHibernate = false;
+        t.check(!has(), "sem ele, some");
+        t.eq(S.criticalActions.map(a => a.value), ["none", "suspend", "poweroff"], "as outras ficam");
+        C.batteryCriticalAction = "hibernate";
+        t.check(has(), "a já escolhida continua à vista (para poder trocar)");
+        C.batteryCriticalAction = before.action;
+        L.canHibernate = before.can;
+    });
+
+    t.test("logind: a espera da volta (monitor, inibidor e GetSession)", () => {
+        t.eq(L.backoff(1000, 0), { wait: 1000, next: 2000 }, "a primeira");
+        t.eq(L.backoff(8000, 200), { wait: 8000, next: 16000 }, "uma queda logo depois dobra");
+        t.eq(L.backoff(30000, 5000), { wait: 30000, next: 30000 }, "até 30 s");
+        t.eq(L.backoff(16000, 30001), { wait: 1000, next: 2000 }, "um processo que durou 30 s recomeça do 1 s");
+    });
+
     t.test("logind: segurar e soltar o inibidor (desligado: só o estado)", () => {
         const before = L.holding;
         L.releaseSleep();

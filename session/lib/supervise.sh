@@ -89,7 +89,7 @@ write_crash() {
 
 # pause SEGUNDOS: espera, mas acorda com o TERM e o SIGUSR1.
 pause() {
-    sleep "$1" &
+    sleep "$1" 9>&- &
     sleep_pid=$!
     wait "$sleep_pid" 2> /dev/null
     kill "$sleep_pid" 2> /dev/null
@@ -119,7 +119,7 @@ wait_hold() {
 # por ela: segue para o wait_start.
 emergency() {
     log "o shell caiu de novo no modo de segurança: emergência"
-    setsid -f env LUCERNA_EMERGENCY_LOG="$qs_log" "$self" emergency --mode crashed > /dev/null 2>&1 < /dev/null
+    setsid -f env LUCERNA_EMERGENCY_LOG="$qs_log" "$self" emergency --mode crashed > /dev/null 2>&1 < /dev/null 9>&-
 }
 
 # shellcheck disable=SC2329 # chamada pelo trap
@@ -147,7 +147,7 @@ run_qs() {
     [ "$safe" = 1 ] && safe_env=(LUCERNA_SAFE_MODE=1)
     new_log
     log "o shell sobe (${LUCERNA_SHELL_CONFIG:-lucerna}${safe_env[*]:+, modo de segurança}; registro em $qs_log)"
-    env -u QT_SCALE_FACTOR -u LUCERNA_SAFE_MODE QS_DISABLE_CRASH_HANDLER=1 LUCERNA_SUPERVISED=1 "${safe_env[@]}" qs -c "${LUCERNA_SHELL_CONFIG:-lucerna}" >> "$qs_log" 2>&1 < /dev/null &
+    env -u QT_SCALE_FACTOR -u LUCERNA_SAFE_MODE QS_DISABLE_CRASH_HANDLER=1 LUCERNA_SUPERVISED=1 "${safe_env[@]}" qs -c "${LUCERNA_SHELL_CONFIG:-lucerna}" >> "$qs_log" 2>&1 < /dev/null 9>&- &
     qs_pid=$!
     write_file "$qs_pid_file" "$qs_pid"
     # O wait volta antes do fim quando chega um sinal (o SIGUSR1); o qs segue.
@@ -163,10 +163,27 @@ run_qs() {
     rm -f "$qs_pid_file"
 }
 
+# Um supervisor por vez: a trava (flock) no supervisor.pid, no fd 9, que fica
+# aberto enquanto o supervisor vive (o qs, a pausa e a emergência não o
+# herdam: um qs que sobrou de um supervisor morto à força não barra o
+# próximo). Dois que sobem juntos não passam os dois pelo supervisor_alive
+# antes de um gravar o pid. O arquivo nunca é apagado, só esvaziado no fim:
+# assim, a trava é sempre a do mesmo arquivo. Sem o flock, fica só o
+# supervisor_alive.
+lock_supervisor() {
+    have flock || return 0
+    exec 9<> "$supervisor_pid_file" || return 0
+    flock -n 9
+}
+
 cmd_supervise() {
     local now n delay
     local -a crashes=() recent=()
     mkdir -p "$runtime_dir"
+    if ! lock_supervisor; then
+        log "já há um supervisor (a trava do supervisor.pid); saio"
+        exit 0
+    fi
     if supervisor_alive && [ "$pid" != "$$" ]; then
         log "já há um supervisor ($pid); saio"
         exit 0
@@ -224,6 +241,9 @@ cmd_supervise() {
             # A emergência já foi o aviso da queda: o shell que volta ao
             # normal não avisa de novo (nem diz "modo de segurança").
             rm -f "$crash_file"
+            # O TERM (o fim da sessão) também acorda o wait_start: aí não
+            # volta nada.
+            [ "$terminating" = 1 ] && break
             log "o shell volta ao normal (shell start)"
             safe=0 crashes=()
         else
@@ -234,7 +254,8 @@ cmd_supervise() {
         fi
     done
     [ -n "$qs_pid" ] && wait "$qs_pid" 2> /dev/null
-    rm -f "$supervisor_pid_file" "$supervisor_state_file" "$qs_pid_file"
+    : > "$supervisor_pid_file"
+    rm -f "$supervisor_state_file" "$qs_pid_file"
     log "o supervisor sai"
     exit 0
 }

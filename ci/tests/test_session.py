@@ -8,6 +8,7 @@ os apps). Nada do host é lido nem chamado: nem o /sys, nem o /etc, nem o
 D-Bus, nem um terminal instalado de verdade.
 """
 
+import fcntl
 import json
 import os
 import re
@@ -24,7 +25,7 @@ SCRIPT = ROOT / "session" / "bin" / "lucerna-session"
 # As ferramentas que o script usa, ligadas às do sistema no PATH falso.
 TOOLS = (
     "bash sh env cat mkdir realpath dirname basename sed grep tr head cut "
-    "readlink date mv rm sort ls setsid kill sleep printf touch tail wc seq timeout"
+    "readlink date mv rm sort ls setsid kill sleep printf touch tail wc seq timeout flock"
 ).split()
 
 
@@ -323,6 +324,37 @@ class SessionTest(SessionBase):
         self.fake("systemctl", "exit 1")
         self.assertEqual(self.detect()["init"], "other")
 
+    def test_init_with_systemctl_hanging_is_other(self):
+        # Um gerente do usuário que não responde não prende a detecção (o
+        # timeout; LUCERNA_SYSTEMD_TIMEOUT só nos testes).
+        (self.run_root / "systemd" / "system").mkdir(parents=True)
+        self.fake("systemctl", '[ "$2" = show-environment ] && exec sleep 30\nexit 0')
+        start = time.monotonic()
+        env = self.env()
+        env["LUCERNA_SYSTEMD_TIMEOUT"] = "0.5"
+        proc = subprocess.run([str(SCRIPT), "detect"], env=env, capture_output=True, text=True, timeout=20, check=True)
+        self.assertEqual(json.loads(proc.stdout)["init"], "other")
+        self.assertLess(time.monotonic() - start, 10)
+
+    def test_init_without_timeout_still_asks_systemctl(self):
+        # Sem o timeout no PATH, a pergunta vai sem prazo (e não cai em other).
+        (self.run_root / "systemd" / "system").mkdir(parents=True)
+        (self.bin / "timeout").unlink()
+        self.assertEqual(self.detect()["init"], "systemd")
+
+    def test_runtime_dir_without_xdg_runtime_dir_is_run_user(self):
+        # Sem o XDG_RUNTIME_DIR, o /run/user/<uid>, exportado: o shell que o
+        # supervisor sobe (o config.safe.json, a marca do bloqueio) usa a mesma
+        # pasta que o lucerna-session.
+        self.fake("id", "echo 4242")
+        env = self.env()
+        del env["XDG_RUNTIME_DIR"]
+        common = ROOT / "session" / "lib" / "common.sh"
+        script = f'. "{common}"; echo "$runtime_dir"; bash -c \'echo "$XDG_RUNTIME_DIR"\''
+        out = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, timeout=10, check=True)
+        out = out.stdout.split()
+        self.assertEqual(out, ["/run/user/4242/lucerna", "/run/user/4242"])
+
     def test_init_with_systemd(self):
         (self.run_root / "systemd" / "system").mkdir(parents=True)
         self.assertEqual(self.detect()["init"], "systemd")
@@ -372,6 +404,28 @@ class SessionTest(SessionBase):
         self.assertEqual(env["SUB"], f"$(touch {marker})", "o valor entra como texto, sem rodar")
         self.assertFalse(marker.exists(), "nada do arquivo é executado")
 
+    def test_session_env_quotes_around_the_value_are_dropped(self):
+        # Como no environment.d: um par de aspas em volta do valor sai; o
+        # AppsScale grava sem aspas, e esses valores ficam como estão.
+        self.write(
+            self.home / ".config" / "lucerna" / "session.env",
+            'DOUBLE="com espaço"\n'
+            "SINGLE='simples'\n"
+            "PLAIN=1.25\n"
+            'HALF="aberta\n'
+            "MIXED=\"a'\n"
+            'INSIDE=a"b"c\n'
+            "LAST=sem quebra no fim",
+        )
+        env = self.session_env()
+        self.assertEqual(env["DOUBLE"], "com espaço")
+        self.assertEqual(env["SINGLE"], "simples")
+        self.assertEqual(env["PLAIN"], "1.25")
+        self.assertEqual(env["HALF"], '"aberta')
+        self.assertEqual(env["MIXED"], "\"a'")
+        self.assertEqual(env["INSIDE"], 'a"b"c')
+        self.assertEqual(env["LAST"], "sem quebra no fim")
+
     def test_ready_without_systemd_starts_supervisor(self):
         started = self.tmp / "qs.txt"
         self.fake("qs", f'echo "$*" > "{started}"')
@@ -405,6 +459,15 @@ class SessionTest(SessionBase):
         self.run_session("open", "terminal")
         self.assertEqual(self.calls_log()[-1], "kitty ")
 
+    def test_open_ignores_shell_functions_and_builtins(self):
+        # O have só acha programas do PATH: um apps.conf com o nome de uma
+        # função do script (log) ou de um builtin (echo) não é "instalado".
+        self.fake("kitty")
+        for name in ("log", "echo"):
+            self.write(self.home / ".config" / "lucerna" / "apps.conf", f"terminal={name}\n")
+            self.run_session("open", "terminal")
+            self.assertEqual(self.calls_log()[-1], "kitty ")
+
     def test_open_without_any_notifies(self):
         proc = self.run_session("open", "browser", check=False)
         self.assertEqual(proc.returncode, 1)
@@ -437,6 +500,17 @@ class SessionTest(SessionBase):
         self.write(marker, "locked\n")
         self.run_session("unlock")
         self.assertEqual(marker.read_text().strip(), "")
+
+    def test_unlock_keeps_lock_marker_when_hyprctl_fails(self):
+        # O hyprctl falhou: o bloqueio caído segue no Hyprland; a marca fica, e
+        # o aviso diz para repetir.
+        self.fake("hyprctl", "exit 3")
+        marker = self.runtime / "lucerna" / "locked"
+        self.write(marker, "locked\n")
+        proc = self.run_session("unlock", check=False)
+        self.assertEqual(proc.returncode, 3)
+        self.assertEqual(marker.read_text().strip(), "locked")
+        self.assertIn("repita", proc.stderr)
 
     def test_unlock_keeps_lock_marker_with_shell(self):
         # Com o qs vivo (o bloqueio dele está de pé), a marca fica.
@@ -791,6 +865,55 @@ wait $s""",
         self.wait_for(lambda: "fechada" in self.emergency_lines(), what="a emergência fechada")
         # O aviso da queda já foi a emergência: o shell normal não diz "modo de segurança".
         self.assertFalse((self.runtime / "lucerna" / "crash.json").exists())
+
+    def test_term_in_emergency_does_not_say_back_to_normal(self):
+        proc = self.supervise(["1"] * 6)
+        self.wait_for(lambda: self.status() == "supervised emergency", what="o status emergency")
+        # A emergência de pé (com o pid gravado) antes do TERM: a corrida entre
+        # o pid dela e o close_emergency é outra pendência.
+        self.wait_for(lambda: self.emergency_lines(), what="a tela de emergência")
+        self.wait_for(lambda: (self.runtime / "lucerna" / "emergency.pid").exists(), what="o pid da emergência")
+        proc.terminate()
+        self.assertEqual(proc.wait(timeout=10), 0)
+        self.assertNotIn("volta ao normal", self.supervisor_log())
+        self.assertIn("o supervisor sai", self.supervisor_log())
+        self.wait_for(lambda: "fechada" in self.emergency_lines(), what="a emergência fechada")
+        self.assertEqual(len(self.start_lines()), 6, "nenhum qs sobe depois do TERM")
+
+    def test_second_supervisor_exits_while_lock_is_held(self):
+        # Um supervisor que acabou de pegar a trava e ainda não gravou o pid
+        # (a corrida de dois ao mesmo tempo): o segundo sai sem subir um qs.
+        pid_file = self.runtime / "lucerna" / "supervisor.pid"
+        pid_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(pid_file, "a+") as held:
+            fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            proc = self.supervise()
+            self.assertEqual(proc.wait(timeout=10), 0)
+        self.assertEqual(self.start_lines(), [])
+        self.assertIn("já há um supervisor", self.supervisor_log())
+
+    def test_two_supervisors_at_once_start_one_shell(self):
+        first = self.supervise()
+        second = self.supervise()
+        self.wait_for(lambda: first.poll() is not None or second.poll() is not None, what="um dos dois sair")
+        self.starts_at_least(1)
+        time.sleep(0.5)
+        self.assertEqual(len(self.start_lines()), 1, self.start_lines())
+
+    def test_shell_does_not_inherit_the_supervisor_lock(self):
+        # O qs e a pausa não herdam a trava: com o supervisor morto à força,
+        # o próximo sobe (e o qs que sobrou não o barra).
+        self.supervise()
+        self.starts_at_least(1)
+        qs_pid = int((self.runtime / "lucerna" / "qs.pid").read_text())
+        pid_file = str((self.runtime / "lucerna" / "supervisor.pid").resolve())
+        links = []
+        for fd in os.listdir(f"/proc/{qs_pid}/fd"):
+            try:
+                links.append(os.readlink(f"/proc/{qs_pid}/fd/{fd}"))
+            except OSError:
+                pass
+        self.assertNotIn(pid_file, links)
 
     def test_compositor_gone_stops_without_restart(self):
         self.gone.touch()

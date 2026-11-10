@@ -81,6 +81,30 @@ function run(t) {
         t.eq(M.lidPlan(true, [], true), none);
     });
 
+    t.test("monitors: o mesmo plano da tampa não vai duas vezes (lastLidPlan)", () => {
+        const off = { disable: ["eDP-1"], enable: [], lock: false };
+        const first = M.lidStep(off, "", false);
+        t.eq(first, { send: true, last: '[["eDP-1"],[]]' }, "o primeiro vai");
+        t.eq(M.lidStep(off, first.last, false), { send: false, last: first.last }, "o mesmo de novo não");
+        t.eq(M.lidStep(off, first.last, true), { send: true, last: first.last }, "na virada da tampa (com o bloqueio) vai sempre");
+        const on = { disable: [], enable: ["eDP-1"], lock: false };
+        t.eq(M.lidStep(on, first.last, false), { send: true, last: '[[],["eDP-1"]]' }, "outro plano vai");
+        const none = { disable: [], enable: [], lock: false };
+        t.eq(M.lidStep(none, first.last, false), { send: true, last: "" }, "o vazio zera o último");
+        t.eq(M.lidStep(off, "", false).send, true, "depois do vazio, o mesmo plano vai de novo");
+    });
+
+    t.test("monitors: o restore com a tampa fechada deixa o interno desligado", () => {
+        const at = (name, enabled) => ({ name: name, enabled: enabled, width: 1920, height: 1080, refresh: 60, x: 0, y: 0, scale: 1, transform: 0, vrr: 0, tenBit: false, mirror: "" });
+        const specs = [at("eDP-1", true), at("HDMI-A-1", true)];
+        const closed = M.withLid(specs, true);
+        t.eq(closed.map(s => [s.name, s.enabled]), [["eDP-1", false], ["HDMI-A-1", true]], "fechada com externo: o interno forçado a desligado");
+        t.eq(closed[0].width, 1920, "o resto do arranjo do interno fica");
+        t.check(specs[0].enabled, "o arranjo salvo não é mudado");
+        t.eq(M.withLid(specs, false), specs, "aberta: como está");
+        t.eq(M.withLid([at("eDP-1", true), at("HDMI-A-1", false)], true).map(s => s.enabled), [true, false], "fechada sem externo ativo: o interno fica");
+    });
+
     // O modo "Escala pelos apps": os monitores em 1, com o arranjo guardado à parte.
     t.test("monitors: o arranjo do modo pelos apps tem chave própria", () => {
         t.eq(M.setupKey("A | B", false), "A | B");

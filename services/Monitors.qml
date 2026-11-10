@@ -164,6 +164,26 @@ Singleton {
         return plan;
     }
 
+    // Um passo da tampa (DisplaysState.followLid): { send, last }. `last` é o
+    // último plano mandado (o texto, ou "" depois de um plano vazio). Sem o
+    // bloqueio, o mesmo plano de novo não vai: o Hyprland que recusa a mudança
+    // não vira laço a cada leitura dos monitores. Com ele (a virada da tampa),
+    // vai sempre.
+    function lidStep(plan: var, last: string, withLock: bool): var {
+        const text = JSON.stringify([plan.disable, plan.enable]);
+        if (!withLock && text === last)
+            return { send: false, last: last };
+        return { send: true, last: plan.disable.length || plan.enable.length ? text : "" };
+    }
+
+    // O arranjo que o restore aplica: com a tampa fechada e um externo ativo
+    // no arranjo, o interno vai desligado (senão acenderia e apagaria a cada
+    // monitor que entra); senão, o arranjo como está.
+    function withLid(specs: var, lidClosed: bool): var {
+        const off = lidPlan(lidClosed, specs, false).disable;
+        return specs.map(s => off.includes(s.name) ? Object.assign({}, s, { enabled: false }) : s);
+    }
+
     // Liga ou desliga um monitor só pelo "disabled" (o Hyprland mescla as
     // regras: o resto do monitor fica como estava). Quem liga reaplica o
     // arranjo salvo depois (DisplaysState.restore).

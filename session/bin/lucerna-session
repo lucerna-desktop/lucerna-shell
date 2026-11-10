@@ -100,11 +100,20 @@ write_session_json() {
 # session_env_lines: as linhas NOME=valor do ~/.config/lucerna/session.env.
 # Só as que começam por um nome em maiúsculas; o resto (comentários,
 # comandos, `export X=1; y`) é ignorado. Nada é executado: o valor entra como
-# texto.
+# texto. Como no environment.d, um par de aspas (duplas ou simples) em volta
+# do valor inteiro sai (sem escapes dentro); o AppsScale grava sem aspas.
 session_env_lines() {
-    local file="$config_dir/session.env"
+    local file="$config_dir/session.env" line name value
+    local double='^"(.*)"$' single="^'(.*)'\$"
     [ -r "$file" ] || return 0
-    grep -E '^[A-Z_][A-Z0-9_]*=' "$file" || true
+    while IFS= read -r line || [ -n "$line" ]; do
+        [[ $line =~ ^[A-Z_][A-Z0-9_]*= ]] || continue
+        name=${line%%=*} value=${line#*=}
+        if [[ $value =~ $double || $value =~ $single ]]; then
+            value=${BASH_REMATCH[1]}
+        fi
+        printf '%s=%s\n' "$name" "$value"
+    done < "$file"
 }
 
 cmd_detect() {
@@ -310,7 +319,12 @@ case "$subcommand" in
         log "liberar a tela de bloqueio caída (pelo TTY)"
         hyprctl --instance 0 eval 'hl.clear_crashed_lockscreen()'
         status=$?
-        if ! qs_alive && [ -s "$runtime_dir/locked" ]; then
+        # Com o hyprctl falhando, o bloqueio caído segue no Hyprland: a marca
+        # fica (o shell que voltar bloqueia de novo) e o aviso diz para repetir.
+        if [ "$status" -ne 0 ]; then
+            log "o hyprctl falhou (código $status); a marca do bloqueio fica"
+            echo "lucerna-session: o hyprctl falhou (código $status); a tela de bloqueio caída continua: repita o lucerna-session unlock" >&2
+        elif ! qs_alive && [ -s "$runtime_dir/locked" ]; then
             : > "$runtime_dir/locked"
             log "marca do bloqueio esvaziada (o shell está parado)"
         fi

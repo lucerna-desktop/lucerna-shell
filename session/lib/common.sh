@@ -13,8 +13,12 @@ run_root=${LUCERNA_RUN:-/run}
 # com o caminho /dev/dri no session.json e no AQ_DRM_DEVICES.
 devfs=${LUCERNA_DEVFS:-/dev}
 
-# As pastas do usuário: o estado da execução, o log e a configuração.
-runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/lucerna"
+# As pastas do usuário: o estado da execução, o log e a configuração. Sem o
+# XDG_RUNTIME_DIR (um login sem o pam_systemd), o /run/user/<uid>, exportado:
+# o Hyprland e o shell que sobem daqui (o config.safe.json do modo de
+# segurança, a marca do bloqueio) usam a mesma pasta.
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+runtime_dir="$XDG_RUNTIME_DIR/lucerna"
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/lucerna"
 config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/lucerna"
 log_file="$state_dir/session.log"
@@ -26,9 +30,10 @@ log() {
     printf '%s [%s] %s\n' "$(date '+%F %T')" "${subcommand:-session}" "$*" >> "$log_file" 2> /dev/null || true
 }
 
-# have PROGRAMA: está no PATH.
+# have PROGRAMA: está no PATH (um programa: uma função deste script ou um
+# builtin com o mesmo nome não contam, como contariam no command -v).
 have() {
-    command -v "$1" > /dev/null 2>&1
+    type -P "$1" > /dev/null 2>&1
 }
 
 # json_str TEXTO: o texto como string JSON (aspas, barra invertida e

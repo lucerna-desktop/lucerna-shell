@@ -357,10 +357,12 @@ Singleton {
         { label: Battery.profileNames[1], value: 1 },
         ...(Battery.hasPerformance ? [{ label: Battery.profileNames[2], value: 2 }] : [])
     ]
+    // Hibernar só quando o logind deixa (CanHibernate; sem swap, não), ou
+    // quando já é a escolhida: fica à vista para poder trocar.
     readonly property var criticalActions: [
         { label: "Nada", value: "none" },
         { label: "Suspender", value: "suspend" },
-        { label: "Hibernar", value: "hibernate" },
+        ...(Logind.canHibernate || Config.batteryCriticalAction === "hibernate" ? [{ label: "Hibernar", value: "hibernate" }] : []),
         { label: "Desligar", value: "poweroff" }
     ]
 
