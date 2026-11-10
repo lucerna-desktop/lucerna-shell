@@ -200,6 +200,20 @@ function run(t) {
         t.eq([B.screens[0].error, B.screens[0].value], ["", 0.3], "sucesso não muda nada");
     });
 
+    withClient("brilho: o power.list de antes de uma publicação não a desfaz", c => {
+        send(c, "power.screens", daemon([panel, lg]));
+        B.applyStatus({ available: false, error: "x" });
+        c.pending = {};
+        send(c, "power.status", { available: true, error: null });
+        const list = last(c, "power.list");
+        send(c, "power.screens", daemon([Object.assign({}, panel, { percent: 80 }), lg]));
+        c.receive(ok(list.id, daemon([panel])));
+        t.eq([B.screens.length, B.screens[0].value], [2, 0.8], "a publicação que chegou antes da resposta vale");
+        B.reload();
+        c.receive(ok(last(c, "power.list").id, daemon([panel])));
+        t.eq(B.screens.map(s => s.value), [0.5], "sem publicação no meio, vale a resposta");
+    });
+
     withClient("brilho: a publicação dentro do hold vale quando ele acaba", c => {
         send(c, "power.screens", daemon([panel, lg]));
         B.setScreen("ddc:HDMI-A-1", 0.4);
