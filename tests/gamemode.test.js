@@ -1,6 +1,7 @@
 // Testes de services/GameMode: o adaptador do módulo game do lucernad (os
 // tópicos game.state e game.status, o game.configure a cada conexão e a cada
-// mudança, o game.set e o game.toggle). A decisão em si ficou no daemon, com
+// mudança, a lista "nunca" de fábrica pelo game.defaults, o game.set e o
+// game.toggle). A decisão em si ficou no daemon, com
 // os testes em Rust. Cada caso usa um cliente da fábrica t.lucernaClient()
 // posto em G.client (o socket nunca abre), e os dados chegam pelo caminho real
 // (a resposta pelo receive() e o sinal received).
@@ -8,7 +9,7 @@ function run(t) {
     const G = t.GameMode;
 
     const fields = ["client", "error", "active", "manual", "reasons", "windows", "since", "lastSince", "effects", "seenState",
-        "autoFullscreen", "autoGames", "always", "never", "effectsOn", "vrr", "tearing", "profile", "gamemode", "light"];
+        "autoFullscreen", "autoGames", "always", "never", "effectsOn", "vrr", "tearing", "profile", "gamemode", "light", "factoryNever"];
     const original = {};
     for (const f of fields)
         original[f] = G[f];
@@ -92,7 +93,7 @@ function run(t) {
         G.flushConfigure();
         const after = last(c, "game.configure");
         t.check(after !== null, "a mudança configura de novo");
-        t.eq(Object.keys(after.params), ["auto", "always", "never", "compositor", "system"], "o objeto inteiro");
+        t.eq(Object.keys(after.params), ["auto", "always", "compositor", "system"], "o objeto inteiro, sem a nunca do usuário");
         t.eq(after.params.compositor.tearing, G.tearing);
         c.pending = {};
         G.autoFullscreen = false;
@@ -103,6 +104,81 @@ function run(t) {
         t.eq(idsOf(c, "game.configure").length, 1, "três mudanças no mesmo turno, um configure");
         const p = last(c, "game.configure").params;
         t.eq([p.auto.fullscreen, p.system.light, p.never], [false, false, ["x"]]);
+        t.eq(Object.keys(p), ["auto", "always", "never", "compositor", "system"], "com a nunca do usuário, o objeto inteiro");
+    });
+
+    withClient("gamemode: a nunca de fábrica pelo game.defaults", c => {
+        const asked = last(c, "game.defaults");
+        t.check(asked !== null, "a conexão pede a de fábrica");
+        t.eq(asked.params, {});
+        G.never = null;
+        t.eq([G.factoryNever, G.effectiveNever], [null, []], "antes da resposta, vazia");
+        c.receive(ok(asked.id, { auto: { fullscreen: true, games: true }, always: [], never: [" MPV ", "vlc", "mpv"], compositor: {}, system: {} }));
+        t.eq([G.factoryNever, G.effectiveNever], [["mpv", "vlc"], ["mpv", "vlc"]], "limpa");
+        G.never = ["steam"];
+        t.eq(G.effectiveNever, ["steam"], "a do usuário vence");
+        c.lost();
+        t.eq(G.factoryNever, ["mpv", "vlc"], "a conexão que cai não esquece");
+        c.opened();
+        c.receive(ok(idsOf(c, "lucerna.hello")[0], hello(["game.state", "game.status"])));
+        t.check(last(c, "game.defaults").id !== asked.id, "a conexão nova lê de novo");
+    });
+
+    withClient("gamemode: um lucernad sem o game.defaults", c => {
+        G.factoryNever = ["mpv"];
+        c.receive(JSON.stringify({ jsonrpc: "2.0", id: last(c, "game.defaults").id, error: { code: -32601, message: "método desconhecido" } }));
+        t.eq(G.factoryNever, null, "a de fábrica fica desconhecida");
+        G.factoryNever = ["mpv"];
+        G.applyDefaults({ error: { code: -1, message: "Sem conexão com o lucernad." } });
+        t.eq(G.factoryNever, ["mpv"], "sem conexão não muda nada");
+        G.applyDefaults(null);
+        t.eq(G.factoryNever, ["mpv"]);
+        c.pending = {};
+        G.never = null;
+        G.flushConfigure();
+        G.configure();
+        t.eq(Object.keys(last(c, "game.configure").params).includes("never"), false, "o configure sem a nunca: o daemon usa a dele");
+        c.lost();
+        c.pending = {};
+        G.readDefaults();
+        t.eq(last(c, "game.defaults"), null, "sem conexão não pede");
+    });
+
+    withClient("gamemode: a nunca do Config igual à de fábrica volta a null", c => {
+        const C = t.Config;
+        const was = C.gameNever;
+        try {
+            C.gameNever = ["vlc", "MPV"];
+            G.applyDefaults({ result: { never: ["mpv", "vlc"] } });
+            t.eq(C.gameNever, null, "a cópia antiga passa a acompanhar o daemon");
+            C.gameNever = ["vlc"];
+            G.applyDefaults({ result: { never: ["mpv", "vlc"] } });
+            t.eq(C.gameNever, ["vlc"], "a lista personalizada fica");
+            C.gameNever = null;
+            G.applyDefaults({ result: { never: ["mpv", "vlc"] } });
+            t.eq(C.gameNever, null);
+        } finally {
+            C.gameNever = was;
+        }
+        t.eq(C.gameNever, was, "Config restaurado");
+    });
+
+    t.test("gamemode: as mesmas classes e a nunca guardada", () => {
+        const was = G.factoryNever;
+        try {
+            t.check(G.sameClasses(["MPV", "vlc"], ["vlc", "mpv", "mpv"]), "a ordem, maiúsculas e repetidas não contam");
+            t.check(!G.sameClasses(["mpv"], ["mpv", "vlc"]), "falta uma");
+            t.check(!G.sameClasses(["mpv", "x"], ["mpv", "vlc"]), "outra classe");
+            G.factoryNever = null;
+            t.eq(G.storedNever(["mpv"]), ["mpv"], "sem a de fábrica, a própria lista");
+            G.factoryNever = ["mpv", "vlc"];
+            t.eq(G.storedNever(["vlc", "mpv"]), null);
+            t.eq(G.storedNever(["vlc"]), ["vlc"]);
+            t.eq(G.storedNever([]), [], "a vazia é do usuário");
+        } finally {
+            G.factoryNever = was;
+        }
+        t.eq(G.factoryNever, was, "estado original restaurado");
     });
 
     withClient("gamemode: as listas vão limpas", c => {
