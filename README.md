@@ -269,7 +269,7 @@ Tudo pode ser chamado de fora com `qs -c lucerna ipc call <alvo> <função> [arg
 | `clipboard` | `toggle`, `open`, `clear` (menos os fixados), `count` |
 | `nightlight` | `enable <true\|false>` (liga ou desliga a função), `toggle` (agora, até a próxima virada do horário), `temperature <K>`, `status` |
 | `idle` | `inhibit <true\|false>` (não apagar a tela), `toggle`, `status` |
-| `game` | O modo jogo: `toggle`, `on`, `off`, `get` (`ligado (tela cheia, jogo)`, `desligado` ou `indisponível`). Pelo terminal, também `lucernad jogo [ligar\|desligar\|alternar]` |
+| `game` | O modo jogo: `toggle`, `on`, `off`, `get` (`ligado (tela cheia, jogo)`, `desligado` ou `indisponível`), `defaults` (a lista "nunca" de fábrica lida do `lucernad`, separada por espaços; vazia sem ela). Pelo terminal, também `lucernad jogo [ligar\|desligar\|alternar]` |
 | `wallpaper` | `mode <auto\|animated\|static\|toggle>`, `modeFor <monitor> <modo>` (`default` volta ao geral), `get` |
 | `action` | `run <id>`: as mesmas ações dos botões e teclas mapeados (`launcher`, `play-pause`, `volume-up`, `lock`…; a lista está em [`core/input/InputActions.qml`](core/input/InputActions.qml)) |
 | `battery` | `simulate <0-100> <true\|false>` e `real`, só no ambiente de desenvolvimento |
