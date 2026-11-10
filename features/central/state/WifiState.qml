@@ -30,8 +30,14 @@ Singleton {
         icon: Icons.level(Icons.wifi, n.signalStrength)
     }))
 
-    // Rede com o campo de senha aberto.
+    // Rede com o campo de senha aberto e a senha digitada nele. Ficam aqui, e
+    // não na linha, porque a lista acima é refeita a cada mudança das redes (o
+    // sinal, uma rede nova) e o Repeater recria as linhas: a linha nova da
+    // rede aberta pega a senha daqui (e a posição do cursor). Mude as duas
+    // pela expand(); a central zera a senha ao sair da página e ao fechar.
     property var expanded: null
+    property string password: ""
+    property int cursor: 0
     property string error: ""
 
     Connections {
@@ -42,8 +48,28 @@ Singleton {
         }
     }
 
+    // A rede aberta saiu da lista (fora de alcance, o Wi-Fi desligou): fecha.
+    onNetworksChanged: dropMissing(networks)
+
     function setEnabled(on: bool): void {
         Network.setWifiEnabled(on);
+    }
+
+    // Abre o campo de senha da rede (null fecha), sempre sem senha.
+    function expand(network: var): void {
+        clearPassword();
+        expanded = network;
+    }
+
+    function clearPassword(): void {
+        password = "";
+        cursor = 0;
+    }
+
+    // Fecha o campo se a rede aberta não está em `list` (itens de networks).
+    function dropMissing(list: var): void {
+        if (expanded !== null && !list.some(n => n.network === expanded))
+            expand(null);
     }
 
     // Clique numa rede: desconecta a atual, pede senha ou conecta direto.
@@ -52,17 +78,17 @@ Singleton {
         if (item.connected) {
             Network.disconnect(item.network);
         } else if (item.needsPassword) {
-            expanded = expanded === item.network ? null : item.network;
+            expand(expanded === item.network ? null : item.network);
         } else {
             Network.connect(item.network, "");
         }
     }
 
-    function submitPassword(item: var, password: string): void {
-        if (!password)
+    function submitPassword(item: var, secret: string): void {
+        if (!secret)
             return;
-        Network.connect(item.network, password);
-        expanded = null;
+        Network.connect(item.network, secret);
+        expand(null);
     }
 
     function forget(item: var): void {
