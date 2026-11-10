@@ -20,10 +20,12 @@
 #                                  suspend emite PrepareForSleep(true), espera os
 #                                  inibidores delay (até 5 s), 1 s depois o false;
 #                                  o hibernate muda o CanHibernate (começa em na,
-#                                  sem swap; o shell lê no próximo reload);
+#                                  sem swap; o shell lê na partida, num reload e
+#                                  a cada volta do gdbus monitor);
 #                                  o status dá o JSON (delayHeld, lockedHint, lid,
-#                                  lastSleep). O shell recebe o endereço privado
-#                                  dele em LUCERNA_LOGIND_BUS; para um cliente do
+#                                  lastSleep, canHibernateAsked). O shell recebe
+#                                  o endereço privado dele em LUCERNA_LOGIND_BUS;
+#                                  para um cliente do
 #                                  sd-bus (systemd-inhibit), DBUS_SYSTEM_BUS_ADDRESS
 #                                  só no ambiente dele, nunca o barramento do host.
 # LUCERNA_TEST_OUT: pasta das capturas (padrão /tmp/lucerna-test).
