@@ -12,6 +12,8 @@ Pega o nome org.freedesktop.login1 e serve:
 
 - /org/freedesktop/login1, org.freedesktop.login1.Manager:
   - GetSession(s) → o: sempre /org/freedesktop/login1/session/_31;
+  - CanHibernate() → s: "na" (o container não tem swap), ou o que o
+    SetCanHibernate pôs;
   - Inhibit(ssss) → h: guarda o fd (a ponta de leitura de um pipe; a de
     escrita vai para quem pediu) e o mode; o inibidor some quando quem pediu
     fecha a ponta dele (POLLHUP);
@@ -28,7 +30,9 @@ Pega o nome org.freedesktop.login1 e serve:
     PrepareForSleep(false). Responde só no fim do ciclo;
   - LockSession(), UnlockSession(): emitem Lock e Unlock na sessão;
   - SetLid(b): muda o LidClosed;
-  - Status() → s: JSON com delayHeld, lockedHint, lid e lastSleep.
+  - SetCanHibernate(s): a resposta dos CanHibernate seguintes;
+  - Status() → s: JSON com delayHeld, lockedHint, lid, lastSleep e
+    canHibernateAsked (quantos CanHibernate vieram).
 
 Cada pedido e cada mudança vão numa linha para stderr (o log do falso).
 """
@@ -64,6 +68,9 @@ XML = """
       <arg name="session_id" type="s" direction="in"/>
       <arg name="object_path" type="o" direction="out"/>
     </method>
+    <method name="CanHibernate">
+      <arg name="result" type="s" direction="out"/>
+    </method>
     <method name="Inhibit">
       <arg name="what" type="s" direction="in"/>
       <arg name="who" type="s" direction="in"/>
@@ -93,6 +100,9 @@ XML = """
     <method name="SetLid">
       <arg name="closed" type="b" direction="in"/>
     </method>
+    <method name="SetCanHibernate">
+      <arg name="result" type="s" direction="in"/>
+    </method>
     <method name="Status">
       <arg name="status" type="s" direction="out"/>
     </method>
@@ -110,6 +120,9 @@ class Fake:
         self.conn = conn
         self.lid = False
         self.locked_hint = False
+        # A resposta do CanHibernate: sem swap no container, "na".
+        self.can_hibernate = "na"
+        self.can_hibernate_asked = 0
         # fd da ponta de leitura → (what, who, why, mode, id do watch)
         self.inhibitors = {}
         self.last_sleep = None
@@ -129,6 +142,7 @@ class Fake:
                 "lockedHint": self.locked_hint,
                 "lid": self.lid,
                 "lastSleep": self.last_sleep,
+                "canHibernateAsked": self.can_hibernate_asked,
             }
         )
 
@@ -212,6 +226,9 @@ class Fake:
         log(f"{iface}.{method}{args} de {sender}")
         if iface == MANAGER and method == "GetSession":
             invocation.return_value(GLib.Variant("(o)", (SESSION_PATH,)))
+        elif iface == MANAGER and method == "CanHibernate":
+            self.can_hibernate_asked += 1
+            invocation.return_value(GLib.Variant("(s)", (self.can_hibernate,)))
         elif iface == MANAGER and method == "Inhibit":
             self.inhibit(*args, invocation)
         elif iface == SESSION and method == "SetLockedHint":
@@ -227,6 +244,9 @@ class Fake:
         elif iface == TEST and method == "SetLid":
             self.lid = args[0]
             self.changed(MANAGER_PATH, MANAGER, "LidClosed", GLib.Variant("b", self.lid))
+            invocation.return_value(None)
+        elif iface == TEST and method == "SetCanHibernate":
+            self.can_hibernate = args[0]
             invocation.return_value(None)
         elif iface == TEST and method == "Status":
             invocation.return_value(GLib.Variant("(s)", (self.status(),)))

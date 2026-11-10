@@ -17,7 +17,7 @@
         "services/GameMode.qml": ["offEffects", "wantedTopics", "sync", "cleanClasses", "configureParams", "requestConfigure", "flushConfigure", "configure", "apply", "applyState", "applyStatus", "connectionChanged", "set", "toggle", "reasonsText", "statusText"],
         "services/HyprFile.qml": ["compose", "parse", "isLegacyGenerated"],
         "services/Input.qml": ["option", "luaString", "luaValue", "nest", "optionsLua", "deviceLua", "layoutLua", "keymapFileLua", "unbindLua", "bindLua", "bindsLua", "parseKeymap", "keyBlock", "patchKeymap"],
-        "services/Logind.qml": ["parseLine", "parseObjectPath", "parseLidReply", "holdSleep", "releaseSleep", "guarded"],
+        "services/Logind.qml": ["parseLine", "parseObjectPath", "parseLidReply", "parseCanReply", "canHibernateFrom", "holdSleep", "releaseSleep", "guarded"],
         "services/LucernaSession.qml": ["notices", "parseApps", "appsConf"],
         "services/lucerna/LucernaClient.qml": ["backoff", "encode", "helloParams", "parse", "accept", "store", "receive", "send", "request", "handshake", "greeted", "offeredTopics", "subscribable", "setTopics", "union", "want", "subscribeNow", "unsubscribeNow", "subscribed", "settled", "resubscribe", "call", "open", "opened", "lost", "failed", "nextDelay", "nobodyListening", "spawnDelay", "failPending"],
         "services/lucerna/ServeLauncher.qml": ["logPath", "serveArgs", "launch", "release"],

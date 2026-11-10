@@ -15,10 +15,12 @@
 #   dev/test.sh headless on|off    liga/desliga a saída headless HEADLESS-T (veja abaixo)
 #   dev/test.sh see PREFIXO ARGS...  ipc call ARGS, 1 s, captura PREFIXO-ARGS.png, fecha
 #   dev/test.sh run 'COMANDO'      roda um comando na sessão (notify-send, hyprctl...)
-#   dev/test.sh logind suspend|lock|unlock|lid on|lid off|status
+#   dev/test.sh logind suspend|lock|unlock|lid on|lid off|hibernate yes|hibernate na|status
 #                                  comanda o logind falso (ci/logind-fake.py): o
 #                                  suspend emite PrepareForSleep(true), espera os
 #                                  inibidores delay (até 5 s), 1 s depois o false;
+#                                  o hibernate muda o CanHibernate (começa em na,
+#                                  sem swap; o shell lê no próximo reload);
 #                                  o status dá o JSON (delayHeld, lockedHint, lid,
 #                                  lastSleep). O shell recebe o endereço privado
 #                                  dele em LUCERNA_LOGIND_BUS; para um cliente do
@@ -450,8 +452,10 @@ case "${1:-}" in
             "unlock ") method=UnlockSession ;;
             "lid on") method="SetLid true" ;;
             "lid off") method="SetLid false" ;;
+            "hibernate yes") method="SetCanHibernate yes" ;;
+            "hibernate na") method="SetCanHibernate na" ;;
             "status ") method=Status ;;
-            *) fail "uso: dev/test.sh logind suspend|lock|unlock|lid on|lid off|status" ;;
+            *) fail "uso: dev/test.sh logind suspend|lock|unlock|lid on|lid off|hibernate yes|hibernate na|status" ;;
         esac
         # O suspend responde só no fim do ciclo (até 5 s de prazo mais 1 s de sono).
         # O status sai como o JSON puro, sem a tupla do gdbus.

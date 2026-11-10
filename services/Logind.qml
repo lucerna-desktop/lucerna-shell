@@ -44,6 +44,10 @@ Singleton {
     property int monitorDelay: 1000
     property int inhibitorDelay: 1000
     property real inhibitorStartedAt: 0
+    // O logind deixa hibernar (CanHibernate "yes" ou "challenge"). Sem
+    // resposta (o serviço desligado, um logind que não responde), fica true:
+    // a opção aparece, como antes.
+    property bool canHibernate: true
     // O LockedHint pedido enquanto outro pedido ainda corre (null: nenhum).
     property var pendingHint: null
 
@@ -86,14 +90,27 @@ Singleton {
         return m ? m[1] : "";
     }
 
-    // Pega o inibidor delay de sono (de novo, ao acordar). Sem nenhuma
-    // ferramenta, segue sem ele (o aviso sai uma vez, na busca).
     // A resposta do Properties.Get do LidClosed: "(<true>,)" → true; outra coisa → null.
     function parseLidReply(text: string): var {
         const m = /\(<(true|false)>,\)/.exec(text ?? "");
         return m ? m[1] === "true" : null;
     }
 
+    // A resposta de um Can* do Manager: "('yes',)" → "yes"; outra coisa → "".
+    function parseCanReply(text: string): string {
+        const m = /\('([a-z-]+)',\)/.exec(text ?? "");
+        return m ? m[1] : "";
+    }
+
+    // Hibernar pela resposta do CanHibernate: "yes", ou "challenge" (o polkit
+    // pede a senha); "no" e "na" (sem swap que caiba a memória) não. Sem
+    // resposta, como antes: pode.
+    function canHibernateFrom(reply: string): bool {
+        return reply === "" || reply === "yes" || reply === "challenge";
+    }
+
+    // Pega o inibidor delay de sono (de novo, ao acordar). Sem nenhuma
+    // ferramenta, segue sem ele (o aviso sai uma vez, na busca).
     function holdSleep(): void {
         if (holding)
             return;
@@ -149,6 +166,7 @@ Singleton {
         // A tampa pode estar fechada desde antes (o shell reiniciado com ela
         // fechada) ou ter mudado enquanto o monitor estava fora.
         lid.running = true;
+        canHibernateCall.running = true;
     }
 
     function handle(event: var): void {
@@ -210,6 +228,23 @@ Singleton {
                     root.sessionPath = path;
                 else
                     console.warn(`Logind: a sessão "${root.sessionId}" não foi achada; o Lock e o Unlock do logind ficam de fora até a próxima tentativa`);
+            }
+        }
+    }
+
+    // O CanHibernate do Manager: sem swap (ou sem suporte), a opção de
+    // hibernar some. Lido na partida e a cada volta do monitor.
+    Process {
+        id: canHibernateCall
+
+        command: ["gdbus", "call"].concat(root.busArgs, ["--dest", "org.freedesktop.login1", "--object-path", "/org/freedesktop/login1", "--method", "org.freedesktop.login1.Manager.CanHibernate"])
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const reply = root.parseCanReply(text);
+                if (reply === "")
+                    console.warn("Logind: o CanHibernate não foi lido; a opção de hibernar fica como está");
+                else
+                    root.canHibernate = root.canHibernateFrom(reply);
             }
         }
     }
