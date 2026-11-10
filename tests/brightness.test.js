@@ -214,6 +214,29 @@ function run(t) {
         t.eq(B.screens.map(s => s.value), [0.5], "sem publicação no meio, vale a resposta");
     });
 
+    // O slider da central: o resto de um arrasto fica na tela em que ele
+    // começou, mesmo que um 1003 a tire do foco.
+    withClient("brilho: o arrasto que leva 1003 não passa à próxima tela", c => {
+        const K = t.ControlsState;
+        send(c, "power.screens", daemon([panel, lg]));
+        c.pending = {};
+        K.setBrightness(0.4, true);
+        const failing = last(c, "power.set");
+        t.eq(failing.params, { id: "backlight", percent: 40 });
+        c.receive(JSON.stringify({ jsonrpc: "2.0", id: failing.id, error: { code: 1003, message: noAccess } }));
+        t.eq(K.screenBrightness?.id, "ddc:HDMI-A-1", "a integrada sai do foco");
+        c.pending = {};
+        K.setBrightness(0.3, true);
+        t.eq(last(c, "power.set"), null, "o resto do arrasto não mexe no LG");
+        K.dropBrightness();
+        K.setBrightness(0.3, true);
+        t.eq(last(c, "power.set").params, { id: "ddc:HDMI-A-1", percent: 30 }, "um arrasto novo vai à tela em foco");
+        K.dropBrightness();
+        c.pending = {};
+        K.setBrightness(0.2, false);
+        t.eq(last(c, "power.set").params, { id: "ddc:HDMI-A-1", percent: 20 }, "teclado e roda: a tela em foco");
+    });
+
     withClient("brilho: a publicação dentro do hold vale quando ele acaba", c => {
         send(c, "power.screens", daemon([panel, lg]));
         B.setScreen("ddc:HDMI-A-1", 0.4);

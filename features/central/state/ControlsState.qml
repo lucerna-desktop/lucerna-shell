@@ -19,9 +19,24 @@ Singleton {
     readonly property bool hasBrightness: screenBrightness !== null
     readonly property real brightness: screenBrightness?.value ?? 0
 
-    function setBrightness(value: real): void {
-        if (screenBrightness)
-            Brightness.setScreen(screenBrightness.id, value);
+    // A tela em que o arrasto do slider começou ("" fora dele). Um 1003 no
+    // meio do arrasto tira a tela do foco: o resto dele não passa para a
+    // próxima tela, que o usuário não escolheu.
+    property string dragged: ""
+
+    // `dragging`: o valor vem do arrasto (o teclado e a roda vão sempre à
+    // tela em foco).
+    function setBrightness(value: real, dragging: bool): void {
+        const id = screenBrightness?.id ?? "";
+        if (dragging && dragged === "")
+            dragged = id;
+        if (id !== "" && (!dragging || dragged === id))
+            Brightness.setScreen(id, value);
+    }
+
+    // O arrasto acabou.
+    function dropBrightness(): void {
+        dragged = "";
     }
 
     // Os tiles do que existe agora, na ordem do grid.
