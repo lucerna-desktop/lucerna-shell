@@ -368,6 +368,62 @@ def py_segments(text):
     return out
 
 
+LUA_LONG = re.compile(r"\[(=*)\[")
+
+
+def lua_segments(text):
+    """(linha, trecho) dos comentários e strings de um .lua: -- até o fim da
+    linha, os longos --[[ ]] e [[ ]] (com os níveis [==[ ]==]) e as strings
+    entre aspas, com as escapadas."""
+    out, i, n, line = [], 0, len(text), 1
+
+    # long(j): a partir de um [[ ou [=*[ em j, o trecho até o fechamento do
+    # mesmo nível; devolve (trecho, índice depois do fechamento) ou None.
+    def long(j):
+        match = LUA_LONG.match(text, j)
+        if not match:
+            return None
+        close = "]" + match.group(1) + "]"
+        end = text.find(close, match.end())
+        end = n if end < 0 else end
+        return text[match.end() : end], end + len(close)
+
+    while i < n:
+        c = text[i]
+        if c == "\n":
+            line += 1
+            i += 1
+            continue
+        if text.startswith("--", i):
+            found = long(i + 2)
+            if found:
+                chunk, i = found
+            else:
+                j = text.find("\n", i)
+                j = n if j < 0 else j
+                chunk, i = text[i + 2 : j], j
+            out += split_chunk(line, chunk)
+            line += chunk.count("\n")
+            continue
+        if c == "[":
+            found = long(i)
+            if found:
+                chunk, i = found
+                out += split_chunk(line, chunk)
+                line += chunk.count("\n")
+                continue
+        if c in "\"'":
+            j = i + 1
+            while j < n and text[j] != c and text[j] != "\n":
+                j += 2 if text[j] == "\\" else 1
+            out.append((line, text[i + 1 : j]))
+            # Sem fechar até a quebra de linha: o "\n" fica para o laço contar.
+            i = j if j < n and text[j] == "\n" else j + 1
+            continue
+        i += 1
+    return out
+
+
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 INLINE_CODE = re.compile(r"(`+)(.+?)\1")
 LINK_TARGET = re.compile(r"\]\([^)]*\)")
@@ -470,12 +526,19 @@ WORD = re.compile(r"(?<![\w./\\-])(" + "|".join(sorted(WORDS, key=len, reverse=T
 # Arquivos que contêm a lista (ou exemplos dela) de propósito.
 SELF = {"ci/rules.py", "ci/tests/test_rules.py"}
 
-SEGMENTS = {".qml": js_segments, ".js": js_segments, ".sh": sh_segments, ".py": py_segments, ".md": md_segments}
+SEGMENTS = {
+    ".qml": js_segments,
+    ".js": js_segments,
+    ".sh": sh_segments,
+    ".py": py_segments,
+    ".lua": lua_segments,
+    ".md": md_segments,
+}
 
 
 def check_accents(root):
     """Palavras comuns sem acento em strings e comentários (.qml, .js, .sh,
-    .py) e no texto dos .md, fora de código."""
+    .py, .lua) e no texto dos .md, fora de código."""
     out = []
     for rel in repo_files(root):
         where = rel.as_posix()
