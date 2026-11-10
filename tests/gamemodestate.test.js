@@ -97,6 +97,10 @@ function run(t) {
         C.gameAlways = [];
         C.gameNever = null;
         t.eq(S.never, [], "não há o que mostrar");
+        t.eq(S.neverKnown, false);
+        t.eq(S.emptyText("never", S.neverKnown), "A de fábrica do lucernad (players e navegadores); atualize o lucernad para ver e editar", "a página diz por quê");
+        t.eq(S.emptyText("always", false), "Nenhum app");
+        t.eq(S.emptyText("never", true), "Nenhum app");
         S.addClass("never", "steam");
         t.eq(C.gameNever, null, "não grava uma lista sem as de fábrica");
         S.addClass("always", "mpv");
@@ -106,6 +110,7 @@ function run(t) {
         C.gameNever = ["vlc"];
         S.addClass("never", "mpv");
         t.eq([C.gameAlways, C.gameNever], [[], ["vlc", "mpv"]], "com a lista do usuário, edita normal");
+        t.eq(S.neverKnown, true);
     });
 
     withConfig("gamemodestate: as preferências vão ao Config", () => {

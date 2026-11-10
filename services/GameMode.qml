@@ -9,7 +9,8 @@ import qs.services
 // (game.state), se o módulo está de pé (game.status), a configuração
 // (game.configure), que só este singleton manda, inteira, a cada conexão e a
 // cada mudança das preferências, e a lista "nunca" de fábrica (game.defaults,
-// lida a cada conexão). O lucernad é a fonte da verdade: as features
+// lida a cada conexão). A exceção dos serviços que só leem o Config: a
+// migração da cópia antiga do gameNever, que roda sem a página aberta. O lucernad é a fonte da verdade: as features
 // só derivam o comportamento delas de `active` (nada do modo jogo é gravado no
 // Config além das preferências game*). Sem o daemon, `available` fica falso, e
 // a conexão que cai desliga a parte do shell na hora, em silêncio.

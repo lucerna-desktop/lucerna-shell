@@ -18,6 +18,8 @@ Singleton {
     readonly property var always: Config.gameAlways ?? []
     // A "nunca" que vale: a do usuário ou a de fábrica do lucernad.
     readonly property var never: GameMode.effectiveNever
+    // Se a "nunca" que vale é conhecida: a do usuário ou a de fábrica já lida.
+    readonly property bool neverKnown: (Config.gameNever ?? null) !== null || GameMode.factoryNever !== null
     // As classes das janelas abertas que ainda não estão em nenhuma lista.
     readonly property var openClasses: openClassesOf(Hypr.toplevels, always, never)
 
@@ -98,7 +100,13 @@ Singleton {
     // lucernad sem o game.defaults): mexer nela gravaria uma lista sem as
     // classes de fábrica, então fica como está.
     function neverUnknown(): bool {
-        return (Config.gameNever ?? null) === null && GameMode.factoryNever === null;
+        return !neverKnown;
+    }
+
+    // O texto da lista vazia: sem a de fábrica, a "nunca" não está vazia no
+    // daemon, só não veio.
+    function emptyText(list: string, known: bool): string {
+        return list === "never" && !known ? "A de fábrica do lucernad (players e navegadores); atualize o lucernad para ver e editar" : "Nenhum app";
     }
 
     // Grava a lista; a "nunca" igual à de fábrica volta a null.
