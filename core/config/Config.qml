@@ -9,7 +9,10 @@ import Quickshell.Io
 // No modo de segurança (o supervisor sobe o shell com LUCERNA_SAFE_MODE=1
 // depois de quedas seguidas), vale o arquivo $XDG_RUNTIME_DIR/lucerna/config.safe.json,
 // que o supervisor apaga ao entrar no modo: o shell sobe com os padrões e a
-// config da pessoa não é lida nem gravada.
+// config da pessoa não é lida nem gravada. O lucerna-session exporta o
+// XDG_RUNTIME_DIR (o /run/user/<uid>, se faltar) para o shell que sobe: a
+// pasta é a mesma do supervisor. O /tmp só vale para um qs com
+// LUCERNA_SAFE_MODE=1 rodado à mão sem ele.
 Singleton {
     id: root
 

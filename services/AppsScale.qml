@@ -64,7 +64,8 @@ Singleton {
     }
 
     // O ~/.config/lucerna/session.env: um NOME=valor por linha, sem aspas (o
-    // lucerna-session guarda o valor como texto, aspas inclusive).
+    // lucerna-session lê o valor como texto; um par de aspas em volta dele
+    // sairia, e os valores daqui não precisam delas).
     function sessionEnvText(env: var): string {
         const lines = [`# ${generated}. É reescrito; ao voltar para a escala do monitor, volta ao que era.`];
         for (const name of Object.keys(env))

@@ -181,9 +181,11 @@ detect_keyboard() {
 }
 
 # detect_init: systemd quando o sistema subiu por ele e o systemctl --user
-# responde (há um gerente do usuário); senão other.
+# responde (há um gerente do usuário) em 5 s (LUCERNA_SYSTEMD_TIMEOUT só nos
+# testes); senão other. Um gerente travado não prende a sessão.
 detect_init() {
-    if [ -d "$run_root/systemd/system" ] && have systemctl && systemctl --user show-environment > /dev/null 2>&1; then
+    if [ -d "$run_root/systemd/system" ] && have systemctl \
+        && timeout "${LUCERNA_SYSTEMD_TIMEOUT:-5}" systemctl --user show-environment > /dev/null 2>&1; then
         init=systemd
     else
         init=other

@@ -28,7 +28,7 @@ function run(t) {
         const lines = text.split("\n");
         t.check(lines[0].startsWith("# Gerado pelo Lucerna"), lines[0]);
         t.check(lines.includes("QT_SCALE_FACTOR=1.5") && lines.includes("GDK_DPI_SCALE=1.5") && lines.includes("XCURSOR_SIZE=36"), text);
-        t.check(!text.includes('"'), "o lucerna-session guarda as aspas no valor: sem elas");
+        t.check(!text.includes('"'), "sem aspas: o valor vai como está");
         t.check(text.endsWith("\n"), "termina com uma quebra de linha");
     });
 

@@ -324,6 +324,32 @@ class SessionTest(SessionBase):
         self.fake("systemctl", "exit 1")
         self.assertEqual(self.detect()["init"], "other")
 
+    def test_init_with_systemctl_hanging_is_other(self):
+        # Um gerente do usuário que não responde não prende a detecção (o
+        # timeout; LUCERNA_SYSTEMD_TIMEOUT só nos testes).
+        (self.run_root / "systemd" / "system").mkdir(parents=True)
+        self.fake("systemctl", '[ "$2" = show-environment ] && exec sleep 30\nexit 0')
+        start = time.monotonic()
+        env = self.env()
+        env["LUCERNA_SYSTEMD_TIMEOUT"] = "0.5"
+        proc = subprocess.run([str(SCRIPT), "detect"], env=env, capture_output=True, text=True, timeout=20, check=True)
+        self.assertEqual(json.loads(proc.stdout)["init"], "other")
+        self.assertLess(time.monotonic() - start, 10)
+
+    def test_runtime_dir_without_xdg_runtime_dir_is_run_user(self):
+        # Sem o XDG_RUNTIME_DIR, o /run/user/<uid>, exportado: o shell que o
+        # supervisor sobe (o config.safe.json, a marca do bloqueio) usa a mesma
+        # pasta que o lucerna-session.
+        self.fake("id", 'echo 4242')
+        env = self.env()
+        del env["XDG_RUNTIME_DIR"]
+        common = ROOT / "session" / "lib" / "common.sh"
+        out = subprocess.run(
+            ["bash", "-c", f'. "{common}"; echo "$runtime_dir"; bash -c \'echo "$XDG_RUNTIME_DIR"\''],
+            env=env, capture_output=True, text=True, timeout=10, check=True,
+        ).stdout.split()
+        self.assertEqual(out, ["/run/user/4242/lucerna", "/run/user/4242"])
+
     def test_init_with_systemd(self):
         (self.run_root / "systemd" / "system").mkdir(parents=True)
         self.assertEqual(self.detect()["init"], "systemd")
@@ -373,6 +399,28 @@ class SessionTest(SessionBase):
         self.assertEqual(env["SUB"], f"$(touch {marker})", "o valor entra como texto, sem rodar")
         self.assertFalse(marker.exists(), "nada do arquivo é executado")
 
+    def test_session_env_quotes_around_the_value_are_dropped(self):
+        # Como no environment.d: um par de aspas em volta do valor sai; o
+        # AppsScale grava sem aspas, e esses valores ficam como estão.
+        self.write(
+            self.home / ".config" / "lucerna" / "session.env",
+            'DOUBLE="com espaço"\n'
+            "SINGLE='simples'\n"
+            "PLAIN=1.25\n"
+            'HALF="aberta\n'
+            "MIXED=\"a'\n"
+            'INSIDE=a"b"c\n'
+            "LAST=sem quebra no fim",
+        )
+        env = self.session_env()
+        self.assertEqual(env["DOUBLE"], "com espaço")
+        self.assertEqual(env["SINGLE"], "simples")
+        self.assertEqual(env["PLAIN"], "1.25")
+        self.assertEqual(env["HALF"], '"aberta')
+        self.assertEqual(env["MIXED"], "\"a'")
+        self.assertEqual(env["INSIDE"], 'a"b"c')
+        self.assertEqual(env["LAST"], "sem quebra no fim")
+
     def test_ready_without_systemd_starts_supervisor(self):
         started = self.tmp / "qs.txt"
         self.fake("qs", f'echo "$*" > "{started}"')
@@ -405,6 +453,15 @@ class SessionTest(SessionBase):
         self.write(self.home / ".config" / "lucerna" / "apps.conf", "terminal=wezterm\n")
         self.run_session("open", "terminal")
         self.assertEqual(self.calls_log()[-1], "kitty ")
+
+    def test_open_ignores_shell_functions_and_builtins(self):
+        # O have só acha programas do PATH: um apps.conf com o nome de uma
+        # função do script (log) ou de um builtin (echo) não é "instalado".
+        self.fake("kitty")
+        for name in ("log", "echo"):
+            self.write(self.home / ".config" / "lucerna" / "apps.conf", f"terminal={name}\n")
+            self.run_session("open", "terminal")
+            self.assertEqual(self.calls_log()[-1], "kitty ")
 
     def test_open_without_any_notifies(self):
         proc = self.run_session("open", "browser", check=False)
