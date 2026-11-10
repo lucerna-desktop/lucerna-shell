@@ -460,12 +460,6 @@ Singleton {
         return towardContrast(c, bg, aways) ?? aways[0];
     }
 
-    // O trilho de uma barra dentro de um contêiner: o fundo levado 25% rumo
-    // ao texto dele (o cartão da bateria).
-    function trackOn(bg: color, ink: color): color {
-        return mix(bg, ink, 0.25);
-    }
-
     // O ícone de uma cor de estado sobre o contêiner dela, com o tema ativo:
     // ThemeManager.containerIcon(colors.danger).
     function containerIcon(c: color): color {

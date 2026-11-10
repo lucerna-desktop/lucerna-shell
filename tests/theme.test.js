@@ -120,7 +120,7 @@ function run(t) {
         }
     });
 
-    t.test("theme: ícone, hover e barra de nível sobre o contêiner", () => {
+    t.test("theme: ícone e hover sobre o contêiner", () => {
         for (const [id, x] of Object.entries(themes)) {
             const d = T.derivedColors({ dark: x.dark, colors: x });
             const where = `${id}: ${d.accentIcon} / ${d.accentContainer}`;
@@ -140,13 +140,20 @@ function run(t) {
                     const lit = T.mix(c, x.base, veil);
                     t.check(T.contrast(String(on), String(lit)) >= 4.5, `${at}: texto com o véu ${veil} ${T.contrast(String(on), String(lit)).toFixed(2)}`);
                 }
-                // O cartão da bateria: trilho no contêiner, preenchimento a
-                // 3:1 do trilho; o raio (no preenchimento) a 3:1 do contêiner.
-                const track = T.trackOn(c, on);
-                const fill = T.iconOn(x[name], track, x.dark);
-                t.check(T.contrast(String(fill), String(track)) >= 3, `${at}: barra ${fill} / ${track} ${T.contrast(String(fill), String(track)).toFixed(2)}`);
-                t.check(T.contrast(String(fill), String(c)) >= 3, `${at}: raio ${T.contrast(String(fill), String(c)).toFixed(2)}`);
-                t.check(T.contrast(String(on), String(c)) >= 4.5, `${at}: texto no card`);
+                t.check(T.contrast(String(on), String(c)) >= 4.5, `${at}: texto no contêiner`);
+            }
+        }
+    });
+
+    t.test("theme: o cartão da bateria preenchido na cor do estado", () => {
+        for (const [id, x] of Object.entries(themes)) {
+            const d = T.derivedColors({ dark: x.dark, colors: x });
+            // O cartão é o trilho; o preenchimento, a cor do estado pelo
+            // fillOf (o destaque é o accentFill), a 3:1 do trilho.
+            for (const name of ["accent", "danger", "success", "warning"]) {
+                const fill = name === "accent" ? d.accentFill : T.fillOf(x[name], x.surface, d.track);
+                const at = `${id} ${name}: ${fill} / ${d.track}`;
+                t.check(T.contrast(String(fill), String(d.track)) >= 3, `${at} ${T.contrast(String(fill), String(d.track)).toFixed(2)}`);
             }
         }
     });
@@ -159,7 +166,6 @@ function run(t) {
         t.check(T.luminance(darker) < T.luminance("#dddddd") && T.contrast(darker, "#eeeeee") >= 3, `no claro, escurece: ${darker}`);
         const other = T.iconOn("#d0d0d0", "#e0e0e0", true);
         t.check(T.luminance(other) < T.luminance("#d0d0d0") && T.contrast(other, "#e0e0e0") >= 3, `sem o branco passar, o outro lado: ${other}`);
-        t.eq(String(T.trackOn("#000000", "#ffffff")), String(T.mix("#000000", "#ffffff", 0.25)));
     });
 
     t.test("theme: o texto sobre o contêiner", () => {

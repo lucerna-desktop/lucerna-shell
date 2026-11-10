@@ -1,15 +1,16 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell.Widgets
 import qs.core.format
 import qs.core.theme
 import qs.core.widgets
 import qs.features.central.state
 
-// Página da bateria no painel de ações da central: voltar e o título; o card
-// em forma de bateria, no tom de contêiner da cor dela (destaque, aviso, erro
-// ou, carregando, verde), com a porcentagem, o tempo (ou "Carregando"/
-// "Carregada") e a barra de nível; o perfil de energia em botões de texto (o
+// Página da bateria no painel de ações da central: voltar e o título; a
+// porcentagem e o tempo (ou "Carregando"/"Carregada") numa linha, e embaixo o
+// card em forma de bateria, preenchido pela carga na cor dela (destaque,
+// aviso, erro ou, carregando, verde), sem texto por cima; o perfil de energia em botões de texto (o
 // atual cheio); o consumo da última hora num gráfico; e a bateria dos dispositivos
 // Bluetooth conectados. Sem bateria, sem perfil ou sem dispositivos, o bloco
 // some.
@@ -24,19 +25,57 @@ Column {
         onBack: CentralState.setPage("")
     }
 
+    // A porcentagem (com o raio, carregando) e o tempo, numa linha acima do
+    // desenho, no texto da página: o desenho fica sem texto por cima.
+    Item {
+        visible: PowerState.hasBattery
+        width: parent.width
+        height: percentLabel.implicitHeight
+
+        Row {
+            x: ThemeManager.px(2)
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: ThemeManager.px(2)
+
+            Icon {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: PowerState.charging
+                icon: Icons.bolt
+                size: ThemeManager.px(24)
+                filled: true
+                color: ThemeManager.colors.text
+            }
+
+            Txt {
+                id: percentLabel
+
+                text: Format.percent(PowerState.percentage)
+                mono: true
+                font.pixelSize: ThemeManager.font.huge - ThemeManager.px(10)
+                font.weight: Font.DemiBold
+            }
+        }
+
+        Txt {
+            anchors.right: parent.right
+            anchors.rightMargin: ThemeManager.px(2)
+            anchors.verticalCenter: parent.verticalCenter
+            text: PowerState.batteryNote
+            muted: true
+            font.weight: Font.Medium
+        }
+    }
+
+    // O desenho da bateria, preenchido pela carga: o corpo é o trilho, e a
+    // parte cheia, a cor do estado (destaque, aviso, erro ou, carregando,
+    // verde) ajustada a 3:1 do trilho pelo fillOf (o destaque é o accentFill).
     Item {
         id: card
 
-        // A cor do estado (sem estado, o destaque). O card é o contêiner dela,
-        // com o texto dele por cima; dentro, a barra de nível: o trilho é o
-        // contêiner levado 25% rumo ao texto, e o preenchimento, a cor do
-        // estado a 3:1 do trilho.
         readonly property color hue: PowerState.cardBand === "success" ? ThemeManager.colors.success : PowerState.cardBand === "danger" ? ThemeManager.colors.danger : PowerState.cardBand === "warning" ? ThemeManager.colors.warning : ThemeManager.colors.accent
         readonly property bool band: PowerState.cardBand === "success" || PowerState.cardBand === "danger" || PowerState.cardBand === "warning"
-        readonly property color bg: band ? ThemeManager.container(hue) : ThemeManager.colors.accentContainer
-        readonly property color ink: band ? ThemeManager.onContainer(hue) : ThemeManager.colors.onAccentContainer
-        readonly property color empty: ThemeManager.trackOn(bg, ink)
-        readonly property color fill: ThemeManager.iconOn(hue, empty, ThemeManager.dark)
+        readonly property color empty: ThemeManager.colors.track
+        readonly property color fill: band ? ThemeManager.fillOf(hue, ThemeManager.colors.surface, empty) : ThemeManager.colors.accentFill
         // A carga mostrada anima até a nova.
         property real shown: PowerState.percentage
 
@@ -46,83 +85,25 @@ Column {
         width: parent.width
         height: ThemeManager.px(76)
 
-        Rectangle {
+        // O corpo recorta o preenchimento no formato do card.
+        ClippingRectangle {
             id: body
 
             width: parent.width - pole.width - ThemeManager.px(3)
             height: parent.height
             radius: ThemeManager.radius.normal
-            color: card.bg
+            color: card.empty
 
-            Behavior on color { ColorAnim {} }
-
-            // A porcentagem (com o raio, carregando) à esquerda e o tempo à
-            // direita, acima da barra.
-            Item {
-                id: labels
-
-                x: ThemeManager.spacing.normal + ThemeManager.px(2)
-                width: parent.width - x * 2
-                height: level.y
-
-                Row {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: ThemeManager.px(2)
-
-                    Icon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: PowerState.charging
-                        icon: Icons.bolt
-                        size: ThemeManager.px(24)
-                        filled: true
-                        color: card.fill
-                    }
-
-                    Txt {
-                        text: Format.percent(PowerState.percentage)
-                        mono: true
-                        color: card.ink
-                        font.pixelSize: ThemeManager.font.huge - ThemeManager.px(10)
-                        font.weight: Font.DemiBold
-                    }
-                }
-
-                Txt {
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: PowerState.batteryNote
-                    color: card.ink
-                    font.weight: Font.Medium
-                }
-            }
-
-            // A barra de nível, embaixo.
             Rectangle {
-                id: level
-
-                x: labels.x
-                y: parent.height - height - ThemeManager.spacing.normal
-                width: labels.width
-                height: ThemeManager.px(8)
-                radius: height / 2
-                color: card.empty
+                width: body.width * Math.max(0, Math.min(1, card.shown))
+                height: body.height
+                color: card.fill
 
                 Behavior on color { ColorAnim {} }
-
-                Rectangle {
-                    width: Math.max(height, parent.width * Math.max(0, Math.min(1, card.shown)))
-                    height: parent.height
-                    radius: parent.radius
-                    visible: card.shown > 0
-                    color: card.fill
-
-                    Behavior on color { ColorAnim {} }
-                }
             }
         }
 
-        // O polo, à direita, no contêiner; com a bateria cheia, no
-        // preenchimento.
+        // O polo, à direita: cheio só com a bateria cheia.
         Rectangle {
             id: pole
 
@@ -132,7 +113,7 @@ Column {
             height: parent.height * 0.36
             topRightRadius: ThemeManager.px(3)
             bottomRightRadius: ThemeManager.px(3)
-            color: card.shown >= 0.995 ? card.fill : card.bg
+            color: card.shown >= 0.995 ? card.fill : card.empty
 
             Behavior on color { ColorAnim {} }
         }
