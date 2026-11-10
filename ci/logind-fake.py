@@ -15,8 +15,9 @@ Pega o nome org.freedesktop.login1 e serve:
   - CanHibernate() → s: "na" (o container não tem swap), ou o que o
     SetCanHibernate pôs;
   - Inhibit(ssss) → h: guarda o fd (a ponta de leitura de um pipe; a de
-    escrita vai para quem pediu) e o mode; o inibidor some quando quem pediu
-    fecha a ponta dele (POLLHUP);
+    escrita vai para quem pediu) e o mode (block, delay, block-weak ou
+    delay-weak; os delay de sleep, com sleep entre os itens do what, seguram o
+    Suspend); o inibidor some quando quem pediu fecha a ponta dele (POLLHUP);
   - as propriedades LidClosed (b, com PropertiesChanged), Docked (b) e
     InhibitDelayMaxUSec (t, 5 s);
   - o sinal PrepareForSleep(b).
@@ -57,6 +58,10 @@ SESSION = "org.freedesktop.login1.Session"
 TEST = "org.lucerna.Test"
 PROPERTIES = "org.freedesktop.DBus.Properties"
 DELAY_MAX_USEC = 5_000_000
+# Os modos do Inhibit (o block-weak e o delay-weak, do systemd 257); os delay
+# seguram o sono.
+MODES = ("block", "delay", "block-weak", "delay-weak")
+DELAY_MODES = ("delay", "delay-weak")
 SLEEP_MS = 1000
 # Os caminhos do barramento do sistema: o falso nunca fala neles.
 SYSTEM_SOCKETS = ("/run/dbus/system_bus_socket", "/var/run/dbus/system_bus_socket")
@@ -133,7 +138,12 @@ class Fake:
     # Estado
 
     def delay_held(self):
-        return sum(1 for what, _who, _why, mode, _w in self.inhibitors.values() if mode == "delay" and "sleep" in what)
+        # O what é uma lista separada por ":" (shutdown:sleep): o item sleep.
+        return sum(
+            1
+            for what, _who, _why, mode, _w in self.inhibitors.values()
+            if mode in DELAY_MODES and "sleep" in what.split(":")
+        )
 
     def status(self):
         return json.dumps(
@@ -154,7 +164,7 @@ class Fake:
     # Inibidores
 
     def inhibit(self, what, who, why, mode, invocation):
-        if mode not in ("block", "delay"):
+        if mode not in MODES:
             invocation.return_dbus_error("org.freedesktop.DBus.Error.InvalidArgs", f"mode inválido: {mode}")
             return
         rfd, wfd = os.pipe()

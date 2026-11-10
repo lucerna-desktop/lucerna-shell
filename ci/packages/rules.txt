@@ -3,3 +3,6 @@
 python
 qt6-shadertools
 lua
+# O logind falso (ci/tests/test_logind_fake.py): o Gio e um dbus-daemon privado.
+python-gobject
+dbus

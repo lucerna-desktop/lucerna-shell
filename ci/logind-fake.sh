@@ -38,11 +38,26 @@ owned() {
             --method org.freedesktop.DBus.NameHasOwner org.freedesktop.login1 2> /dev/null | grep -q true
 }
 
+# ours <pid>: o processo é do falso (o dbus-daemon ou o python do
+# logind-fake.py), e não outro que reusou o pid depois de o falso cair.
+ours() {
+    local cmdline
+    [[ $1 =~ ^[0-9]+$ ]] || return 1
+    cmdline=$(tr '\0' ' ' < "/proc/$1/cmdline" 2> /dev/null) || return 1
+    case "$(cat "/proc/$1/comm" 2> /dev/null)" in
+        dbus-daemon) [[ $cmdline == *"--address=$address "* ]] ;;
+        python*) [[ $cmdline == *logind-fake.py*"--address $address"* ]] ;;
+        *) return 1 ;;
+    esac
+}
+
 stop() {
     local pid
     if [ -f "$pids" ]; then
         while read -r pid; do
-            [ -z "$pid" ] || kill "$pid" 2> /dev/null || true
+            if ours "$pid"; then
+                kill "$pid" 2> /dev/null || true
+            fi
         done < "$pids"
         rm -f "$pids"
     fi
