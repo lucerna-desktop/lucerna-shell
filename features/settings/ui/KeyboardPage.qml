@@ -106,7 +106,7 @@ Column {
             title: "Espera até repetir"
             description: "Quanto tempo segurar uma tecla até ela começar a se repetir"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 150
                 to: 1000
@@ -122,7 +122,7 @@ Column {
             icon: Icons.repeat
             title: "Velocidade da repetição"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 10
                 to: 80

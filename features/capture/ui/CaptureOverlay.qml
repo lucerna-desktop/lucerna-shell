@@ -83,7 +83,7 @@ OverlayPanel {
                 radius: panel.target === "window" ? ThemeManager.px(6) : 0
             }
 
-            // Tamanho (área) ou título (janela)
+            // Tamanho (área) ou título (janela), no tom de contêiner
             Rectangle {
                 readonly property bool above: parent.h.y > 40
                 x: Math.max(ThemeManager.px(8), Math.min(parent.width - width - ThemeManager.px(8), parent.h.x))
@@ -91,14 +91,14 @@ OverlayPanel {
                 width: sizeText.implicitWidth + ThemeManager.px(16)
                 height: ThemeManager.px(26)
                 radius: height / 2
-                color: ThemeManager.colors.accent
+                color: ThemeManager.colors.accentContainer
 
                 Txt {
                     id: sizeText
 
                     anchors.centerIn: parent
                     text: panel.target === "window" ? (panel.hovered?.title || panel.hovered?.cls || "Janela") : `${Math.round(panel.local.width)} × ${Math.round(panel.local.height)}`
-                    color: ThemeManager.colors.accentText
+                    color: ThemeManager.colors.onAccentContainer
                     font.pixelSize: ThemeManager.font.small + 1
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight

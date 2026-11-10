@@ -122,7 +122,9 @@ CentralPanel {
                 height: ThemeManager.spacing.tiny
             }
 
-            PillSlider {
+            LevelSlider {
+                width: parent.width
+                wheelEnabled: true
                 visible: SoundState.available
                 icon: SoundState.volumeIcon
                 label: "Volume"
@@ -134,7 +136,9 @@ CentralPanel {
             }
 
             // A tela não apaga: o mínimo é 1%.
-            PillSlider {
+            LevelSlider {
+                width: parent.width
+                wheelEnabled: true
                 visible: ControlsState.hasBrightness
                 icon: Icons.brightnessMedium
                 label: "Brilho"

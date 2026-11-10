@@ -97,7 +97,9 @@ Surface {
                 width: ThemeManager.px(60)
                 height: ThemeManager.px(60)
                 radius: width / 2
-                color: root.recordMode ? ThemeManager.colors.danger : ThemeManager.colors.accent
+                // O tom de contêiner (do erro, gravando), com o ícone na cor cheia.
+                color: root.recordMode ? ThemeManager.container(ThemeManager.colors.danger) : ThemeManager.colors.accentContainer
+                layerColor: ThemeManager.colors.base
                 pressScale: 0.92
                 onClicked: root.capture()
 
@@ -106,7 +108,7 @@ Surface {
                     icon: root.recordMode ? "radio_button_checked" : "photo_camera"
                     filled: true
                     size: ThemeManager.px(28)
-                    color: ThemeManager.colors.accentText
+                    color: root.recordMode ? ThemeManager.containerIcon(ThemeManager.colors.danger) : ThemeManager.colors.accentIcon
                 }
             }
 

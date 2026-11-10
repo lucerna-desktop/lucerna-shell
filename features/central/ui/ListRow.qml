@@ -3,7 +3,8 @@ import qs.core.theme
 import qs.core.widgets
 
 // Item de lista clicável: ícone num ladrilho, título, detalhe e controles à direita.
-// `lit` acende o ladrilho (rede conectada, dispositivo em uso, saída atual).
+// `lit` acende o ladrilho (rede conectada, dispositivo em uso, saída atual): o
+// tom de contêiner, com o ícone na cor de acento.
 Clickable {
     id: root
 
@@ -26,7 +27,7 @@ Clickable {
         width: ThemeManager.px(40)
         height: ThemeManager.px(40)
         radius: root.lit ? ThemeManager.px(20) : ThemeManager.radius.normal
-        color: root.lit ? ThemeManager.colors.accent : ThemeManager.alpha(ThemeManager.colors.text, 0.06)
+        color: root.lit ? ThemeManager.colors.accentContainer : ThemeManager.alpha(ThemeManager.colors.text, 0.06)
 
         Behavior on radius { Anim { type: Anim.FastSpatial } }
         Behavior on color { ColorAnim {} }
@@ -38,7 +39,7 @@ Clickable {
             icon: root.icon
             size: ThemeManager.px(20)
             filled: root.lit || root.hovered
-            color: root.lit ? ThemeManager.colors.accentText : ThemeManager.colors.textMuted
+            color: root.lit ? ThemeManager.colors.accentIcon : ThemeManager.colors.textMuted
 
             // Gira enquanto conecta/pareia.
             RotationAnimation on rotation {

@@ -89,7 +89,8 @@ Item {
                     width: chipText.implicitWidth + ThemeManager.spacing.large * 2
                     height: ThemeManager.px(34)
                     radius: height / 2
-                    color: current ? ThemeManager.colors.accent : ThemeManager.alpha(ThemeManager.colors.text, 0.08)
+                    color: current ? ThemeManager.colors.accentContainer : ThemeManager.alpha(ThemeManager.colors.text, 0.08)
+                    layerColor: current ? ThemeManager.colors.base : ThemeManager.colors.text
                     onClicked: {
                         LauncherState.appCategory = chip.modelData.id;
                         search.focusInput();
@@ -102,7 +103,7 @@ Item {
 
                         anchors.centerIn: parent
                         text: chip.modelData.label
-                        color: chip.current ? ThemeManager.colors.accentText : ThemeManager.colors.text
+                        color: chip.current ? ThemeManager.colors.onAccentContainer : ThemeManager.colors.text
                         font.weight: chip.current ? Font.DemiBold : Font.Normal
                     }
                 }

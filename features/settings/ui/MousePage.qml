@@ -16,7 +16,7 @@ Column {
             icon: Icons.pointerSpeed
             title: "Velocidade"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: -1
                 to: 1
@@ -91,7 +91,7 @@ Column {
             icon: Icons.pointerSpeed
             title: "Velocidade da rolagem"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 0.2
                 to: 3
@@ -145,7 +145,7 @@ Column {
             icon: Icons.pointerSpeed
             title: "Velocidade da rolagem"
 
-            Slider {
+            LevelSlider {
                 width: parent.width
                 from: 0.2
                 to: 3
@@ -237,7 +237,7 @@ Column {
                         onToggled: on => on ? MouseState.setDeviceSpeed(device.modelData.name, MouseState.sensitivity) : MouseState.clearDevice(device.modelData.name)
                     }
 
-                    Slider {
+                    LevelSlider {
                         visible: device.own
                         width: parent.width
                         from: -1

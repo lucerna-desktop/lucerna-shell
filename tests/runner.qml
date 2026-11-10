@@ -15,6 +15,7 @@ import qs.core.format
 import qs.core.frame
 import qs.core.input
 import qs.core.launcher
+import qs.core.level
 import qs.core.nightlight
 import qs.core.panels
 import qs.core.pixel
@@ -57,6 +58,7 @@ import "frame.test.js" as FrameTest
 import "hyprfile.test.js" as HyprFileTest
 import "input.test.js" as InputTest
 import "inputactions.test.js" as InputActionsTest
+import "level.test.js" as LevelTest
 import "lucernaclient.test.js" as LucernaClientTest
 import "logind.test.js" as LogindTest
 import "lucernasession.test.js" as LucernaSessionTest
@@ -109,6 +111,7 @@ ShellRoot {
         ["theme", ThemeTest],
         ["panels", PanelsTest],
         ["pixel", PixelTest],
+        ["level", LevelTest],
         ["frame", FrameTest],
         ["bar", BarTest],
         ["central", CentralTest],
@@ -264,6 +267,7 @@ ShellRoot {
             get NightSchedule() { return NightSchedule; },
             get Panels() { return Panels; },
             get Pixel() { return Pixel; },
+            get Level() { return Level; },
             get ServeLauncher() { return ServeLauncher; },
             get Frame() { return Frame; },
             get BarState() { return BarState; },
