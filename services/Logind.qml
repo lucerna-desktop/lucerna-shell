@@ -40,9 +40,12 @@ Singleton {
     // morto (queda, kill do supervisor), eles morrem junto. Sem isso, o
     // inibidor de um shell antigo seguraria cada suspensão até o prazo.
     property string setpriv: ""
-    // As esperas da volta do monitor e do inibidor: 1 s, dobrando até 30 s.
+    // As esperas da volta do monitor, do inibidor e do GetSession: 1 s,
+    // dobrando até 30 s (backoff).
     property int monitorDelay: 1000
     property int inhibitorDelay: 1000
+    property int sessionDelay: 1000
+    property real monitorStartedAt: 0
     property real inhibitorStartedAt: 0
     // O logind deixa hibernar (CanHibernate "yes" ou "challenge"). Sem
     // resposta (o serviço desligado, um logind que não responde), fica true:
@@ -107,6 +110,15 @@ Singleton {
     // resposta, como antes: pode.
     function canHibernateFrom(reply: string): bool {
         return reply === "" || reply === "yes" || reply === "challenge";
+    }
+
+    // A espera antes de tentar de novo e a seguinte: um processo que durou
+    // mais de 30 s é uma queda nova (recomeça do 1 s); senão, a espera
+    // dobra, até 30 s. As linhas de cabeçalho do gdbus monitor não contam:
+    // um monitor que imprime o cabeçalho e cai continua dobrando.
+    function backoff(delay: int, ranMs: real): var {
+        const wait = ranMs > 30000 ? 1000 : delay;
+        return { wait: wait, next: Math.min(wait * 2, 30000) };
     }
 
     // Pega o inibidor delay de sono (de novo, ao acordar). Sem nenhuma
@@ -224,11 +236,28 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 const path = root.parseObjectPath(text);
-                if (path !== "")
+                if (path !== "") {
                     root.sessionPath = path;
-                else
+                    root.sessionDelay = 1000;
+                    return;
+                }
+                // Tenta de novo sozinho, sem esperar o monitor cair.
+                if (root.sessionDelay === 1000)
                     console.warn(`Logind: a sessão "${root.sessionId}" não foi achada; o Lock e o Unlock do logind ficam de fora até a próxima tentativa`);
+                const next = root.backoff(root.sessionDelay, 0);
+                retrySession.interval = next.wait;
+                root.sessionDelay = next.next;
+                retrySession.start();
             }
+        }
+    }
+
+    Timer {
+        id: retrySession
+
+        onTriggered: {
+            if (root.enabled && root.sessionPath === "" && !session.running)
+                session.running = true;
         }
     }
 
@@ -272,15 +301,14 @@ Singleton {
 
         command: root.guarded(root.setpriv, ["gdbus", "monitor"].concat(root.busArgs, ["--dest", "org.freedesktop.login1"]))
         stdout: SplitParser {
-            onRead: line => {
-                root.monitorDelay = 1000;
-                root.handle(root.parseLine(line, root.sessionPath));
-            }
+            onRead: line => root.handle(root.parseLine(line, root.sessionPath))
         }
+        onStarted: root.monitorStartedAt = Date.now()
         onExited: code => {
-            console.warn(`Logind: o gdbus monitor saiu (código ${code}); de volta em ${root.monitorDelay / 1000} s`);
-            retryMonitor.interval = root.monitorDelay;
-            root.monitorDelay = Math.min(root.monitorDelay * 2, 30000);
+            const next = root.backoff(root.monitorDelay, Date.now() - root.monitorStartedAt);
+            console.warn(`Logind: o gdbus monitor saiu (código ${code}); de volta em ${next.wait / 1000} s`);
+            retryMonitor.interval = next.wait;
+            root.monitorDelay = next.next;
             retryMonitor.start();
         }
     }
@@ -301,12 +329,11 @@ Singleton {
             if (!root.holding)
                 return;
             // Um inibidor que durou é uma queda nova: a espera recomeça.
-            if (Date.now() - root.inhibitorStartedAt > 30000)
-                root.inhibitorDelay = 1000;
-            if (root.inhibitorDelay === 1000)
+            const next = root.backoff(root.inhibitorDelay, Date.now() - root.inhibitorStartedAt);
+            if (next.wait === 1000)
                 console.warn(`Logind: o inibidor saiu (código ${code}); tentando de novo`);
-            retryInhibitor.interval = root.inhibitorDelay;
-            root.inhibitorDelay = Math.min(root.inhibitorDelay * 2, 30000);
+            retryInhibitor.interval = next.wait;
+            root.inhibitorDelay = next.next;
             retryInhibitor.start();
         }
     }

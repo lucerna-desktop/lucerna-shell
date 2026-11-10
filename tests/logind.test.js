@@ -100,6 +100,13 @@ function run(t) {
         L.canHibernate = before.can;
     });
 
+    t.test("logind: a espera da volta (monitor, inibidor e GetSession)", () => {
+        t.eq(L.backoff(1000, 0), { wait: 1000, next: 2000 }, "a primeira");
+        t.eq(L.backoff(8000, 200), { wait: 8000, next: 16000 }, "uma queda logo depois dobra");
+        t.eq(L.backoff(30000, 5000), { wait: 30000, next: 30000 }, "até 30 s");
+        t.eq(L.backoff(16000, 30001), { wait: 1000, next: 2000 }, "um processo que durou 30 s recomeça do 1 s");
+    });
+
     t.test("logind: segurar e soltar o inibidor (desligado: só o estado)", () => {
         const before = L.holding;
         L.releaseSleep();
