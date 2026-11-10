@@ -23,6 +23,10 @@ Singleton {
     // de novo não é mandado (o Hyprland que recusa a mudança não vira laço a
     // cada leitura dos monitores).
     property string lastLidPlan: ""
+    // A tampa foi lida antes dos monitores (a lista ainda vazia, na partida):
+    // o plano vale na primeira lista que chegar, com a tampa aberta também
+    // (a eDP deixada desligada por um shell que caiu enquanto a tampa abria).
+    property bool lidWaitsMonitors: false
 
     onSetupChanged: {
         restore();
@@ -75,28 +79,33 @@ Singleton {
         }
 
         function onLidRead() {
+            root.lidWaitsMonitors = Monitors.monitors.length === 0;
             root.followLid(false);
         }
     }
 
     // Com a tampa fechada, um monitor que entra ou sai muda o plano (o externo
     // ligado depois de fechar; o externo que sai religa o interno). Com ela
-    // aberta, não: um interno desligado nas Configurações fica desligado.
+    // aberta, não: um interno desligado nas Configurações fica desligado. A
+    // exceção é a primeira lista depois de uma leitura da tampa sem monitores.
     Connections {
         target: Monitors
 
         function onMonitorsChanged() {
-            if (Logind.lidClosed)
+            const waited = root.lidWaitsMonitors;
+            if (Monitors.monitors.length)
+                root.lidWaitsMonitors = false;
+            if (Logind.lidClosed || waited)
                 root.followLid(false);
         }
     }
 
     function followLid(withLock: bool): void {
         const plan = Monitors.lidPlan(Logind.lidClosed, Monitors.monitors, Config.lockOnLidDocked);
-        const text = JSON.stringify([plan.disable, plan.enable]);
-        if (!withLock && text === lastLidPlan)
+        const step = Monitors.lidStep(plan, lastLidPlan, withLock);
+        if (!step.send)
             return;
-        lastLidPlan = plan.disable.length || plan.enable.length ? text : "";
+        lastLidPlan = step.last;
         for (const name of plan.disable)
             Monitors.setEnabled(name, false);
         for (const name of plan.enable)
@@ -181,8 +190,7 @@ Singleton {
         if (!specs)
             return;
         // Com a tampa fechada e um externo ativo no arranjo, o interno fica
-        // desligado (senão acenderia e apagaria a cada monitor que entra).
-        const off = Monitors.lidPlan(Logind.lidClosed, specs, false).disable;
-        Monitors.apply(specs.map(s => off.includes(s.name) ? Object.assign({}, s, { enabled: false }) : s));
+        // desligado (Monitors.withLid).
+        Monitors.apply(Monitors.withLid(specs, Logind.lidClosed));
     }
 }
