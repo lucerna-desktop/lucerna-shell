@@ -285,7 +285,7 @@ Cada arquivo em `themes/*.json` é um tema, e o nome do arquivo é o id. Os tema
 - `fonts`: fontes que o tema traz em `themes/fonts/`, carregadas pelo shell sem instalar nada no sistema. Todos os temas embutidos trazem a Rubik, sob licença OFL.
 - `surfaces.outline`: contorno fino nos cartões. O padrão é sem contorno; os cartões se destacam pelo tom.
 - `colors.track`: cor opcional dos trilhos de medidores e sliders.
-- `colors.accentContainer`, `onAccentContainer`, `accentIcon` e `accentFill`: opcionais. São o fundo das superfícies grandes ativas (blocos ligados, botões primários, itens selecionados), o texto e o ícone sobre ele e o preenchimento das barras. Sem eles, saem calculados do destaque, com o texto a 4,5:1 e o ícone e o preenchimento a 3:1.
+- `colors.accentContainer`, `onAccentContainer`, `accentIcon`, `accentFill`, `mutedFill`, `fillIcon` e `mutedFillIcon`: opcionais. São o fundo das superfícies grandes ativas (blocos ligados, botões primários, itens selecionados), o texto e o ícone sobre ele, o preenchimento das barras, o cinza do mudo e os ícones dentro da barra (normal e mudo). Sem eles, saem calculados do destaque, com o texto a 4,5:1 e o ícone e o preenchimento a 3:1.
 
 Transparência, desfoque, contorno e velocidade das animações também se ajustam nas configurações, por cima de qualquer tema. "Restaurar padrões do tema" desfaz.
 
