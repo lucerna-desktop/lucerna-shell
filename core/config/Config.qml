@@ -5,7 +5,8 @@ import Quickshell
 import Quickshell.Io
 
 // Preferências do usuário, persistidas em ~/.local/state/quickshell/.../config.json.
-// Qualquer alteração numa propriedade é gravada no disco automaticamente.
+// Qualquer alteração numa propriedade é gravada no disco automaticamente,
+// uns 200 ms depois da última (writeDelay).
 // No modo de segurança (o supervisor sobe o shell com LUCERNA_SAFE_MODE=1
 // depois de quedas seguidas), vale o arquivo $XDG_RUNTIME_DIR/lucerna/config.safe.json,
 // que o supervisor apaga ao entrar no modo: o shell sobe com os padrões e a
@@ -134,7 +135,40 @@ Singleton {
     property alias gameIdle: adapter.gameIdle
     property alias gameNotices: adapter.gameNotices
 
+    // A gravação adiada: um slider arrastado muda a Config a cada movimento,
+    // e gravar o arquivo a cada um engasga o arrasto num disco lento. A
+    // mudança espera writeDelay ms parada para ir ao disco; enquanto espera, o
+    // reload do watcher fica suspenso (leria o arquivo velho e desfaria a
+    // mudança; a gravação que vem sobrescreve o que mudou por fora), e o
+    // flush grava na hora (ao sair: o recarregamento do shell destrói a
+    // Config).
+    readonly property int writeDelay: 200
+    readonly property bool writePending: writeTimer.running
+
+    function flush(): void {
+        if (!writeTimer.running)
+            return;
+        writeTimer.stop();
+        view.writeAdapter();
+    }
+
+    function diskChanged(): void {
+        if (!writeTimer.running)
+            view.reload();
+    }
+
+    Timer {
+        id: writeTimer
+
+        interval: root.writeDelay
+        onTriggered: view.writeAdapter()
+    }
+
+    Component.onDestruction: flush()
+
     FileView {
+        id: view
+
         path: root.filePath
         blockLoading: true
         // Grava de forma síncrona: a gravação precisa terminar antes de o
@@ -143,8 +177,8 @@ Singleton {
         blockWrites: true
         printErrors: false
         watchChanges: true
-        onFileChanged: reload()
-        onAdapterUpdated: writeAdapter()
+        onFileChanged: root.diskChanged()
+        onAdapterUpdated: writeTimer.restart()
         onLoadFailed: error => {
             if (error === FileViewError.FileNotFound)
                 writeAdapter();
