@@ -11,6 +11,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -96,11 +97,19 @@ class LogindFakeTest(unittest.TestCase):
         self.addCleanup(other.wait)
         self.addCleanup(other.kill)
         pids = self.dir / "lucerna-fake-system.pids"
+        fake = [int(p) for p in pids.read_text(encoding="utf-8").split()]
+        self.assertEqual(len(fake), 2, "o dbus-daemon e o python do falso")
         with pids.open("a", encoding="utf-8") as f:
             f.write(f"{other.pid}\n")
         self.script("stop")
         self.assertIsNone(other.poll(), "o stop matou um processo que não era do falso")
         self.assertFalse((self.dir / "lucerna-fake-system").exists())
+        # Os dois do falso morrem (o kill é assíncrono: espera até 5 s).
+        end = time.monotonic() + 5
+        while any(Path(f"/proc/{pid}").exists() for pid in fake) and time.monotonic() < end:
+            time.sleep(0.05)
+        alive = [pid for pid in fake if Path(f"/proc/{pid}").exists()]
+        self.assertEqual(alive, [], "o stop deixou processos do falso de pé")
 
 
 if __name__ == "__main__":
