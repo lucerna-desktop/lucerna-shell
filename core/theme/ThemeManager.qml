@@ -403,7 +403,7 @@ Singleton {
     function onContainerOf(bg: color, text: color, base: color): color {
         if (contrast(text, bg) >= 4.5)
             return text;
-        return [text, base, Qt.rgba(0, 0, 0, 1), Qt.rgba(1, 1, 1, 1)].reduce((best, x) => contrast(bg, x) > contrast(bg, best) ? x : best);
+        return [text, base, black, white].reduce((best, x) => contrast(bg, x) > contrast(bg, best) ? x : best);
     }
 
     // Os atalhos com o tema ativo, para as cores de estado:
@@ -414,6 +414,16 @@ Singleton {
 
     function onContainer(c: color): color {
         return onContainerOf(container(c), colors.text, colors.base);
+    }
+
+    // Os extremos para onde uma cor vai quando precisa de contraste.
+    readonly property color black: Qt.rgba(0, 0, 0, 1)
+    readonly property color white: Qt.rgba(1, 1, 1, 1)
+
+    // O preto e o branco, o que contrasta mais com bg primeiro (no empate, o
+    // preto). O lado de fuga do fillOf e do nearestOn.
+    function extremes(bg: color): var {
+        return contrast(black, bg) >= contrast(white, bg) ? [black, white] : [white, black];
     }
 
     // A cor c levada rumo a cada extremo de `aways` (o preto ou o branco), de
@@ -436,8 +446,6 @@ Singleton {
     // de 5 em 5% até passar. Se nem o branco (ou o preto) passa, o outro lado,
     // que chega lá: o melhor entre preto e branco dá pelo menos ~4,6:1.
     function iconOn(c: color, bg: color, dark: bool): color {
-        const black = Qt.rgba(0, 0, 0, 1);
-        const white = Qt.rgba(1, 1, 1, 1);
         const [first, second] = dark ? [white, black] : [black, white];
         return towardContrast(c, bg, [first], 3) ?? towardContrast(c, bg, [second], 3) ?? c;
     }
@@ -448,9 +456,7 @@ Singleton {
     // onde o iconOn clarearia o vermelho até quase o branco: aqui ele só
     // escurece o bastante e continua vermelho.
     function nearestOn(c: color, bg: color, min: real): color {
-        const black = Qt.rgba(0, 0, 0, 1);
-        const white = Qt.rgba(1, 1, 1, 1);
-        const aways = contrast(black, bg) >= contrast(white, bg) ? [black, white] : [white, black];
+        const aways = extremes(bg);
         return towardContrast(c, bg, aways, min) ?? aways[0];
     }
 
@@ -470,10 +476,23 @@ Singleton {
         const soft = mix(accent, surface, 0.15);
         if (contrast(soft, track) >= 3)
             return soft;
-        const black = Qt.rgba(0, 0, 0, 1);
-        const white = Qt.rgba(1, 1, 1, 1);
-        const away = contrast(black, track) > contrast(white, track) ? black : white;
+        const away = extremes(track)[0];
         return towardContrast(accent, track, [away], 3) ?? away;
+    }
+
+    // O preenchimento na cor de um estado ("accent", "success", "warning" ou
+    // "danger") sobre o trilho, com as cores de c (as do tema e as
+    // derivadas): o destaque é o accentFill; as outras, pelo fillOf. Estado
+    // desconhecido vale o destaque. O cartão da bateria.
+    function stateFillOf(name: string, c: var): color {
+        if (!["success", "warning", "danger"].includes(name))
+            return c.accentFill;
+        return fillOf(c[name], c.surface, c.track);
+    }
+
+    // O mesmo com o tema ativo: ThemeManager.stateFill(PowerState.cardBand).
+    function stateFill(name: string): color {
+        return stateFillOf(name, colors);
     }
 
     // Um preenchimento leve: o trilho levado rumo a ink de 1 em 1% até ficar

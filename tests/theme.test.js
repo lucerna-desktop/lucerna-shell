@@ -151,9 +151,9 @@ function run(t) {
         for (const [id, x] of Object.entries(themes)) {
             const d = T.derivedColors({ dark: x.dark, colors: x });
             // O cartão é o trilho; o preenchimento, a cor do estado pelo
-            // fillOf (o destaque é o accentFill), a 3:1 do trilho.
+            // stateFillOf (o destaque é o accentFill), a 3:1 do trilho.
             for (const name of ["accent", "danger", "success", "warning"]) {
-                const fill = name === "accent" ? d.accentFill : T.fillOf(x[name], x.surface, d.track);
+                const fill = T.stateFillOf(name, Object.assign({}, x, d));
                 const at = `${id} ${name}: ${fill} / ${d.track}`;
                 t.check(T.contrast(String(fill), String(d.track)) >= 3, `${at} ${T.contrast(String(fill), String(d.track)).toFixed(2)}`);
             }
@@ -255,6 +255,9 @@ function run(t) {
         t.eq(String(T.containerIcon(T.colors.danger)), String(T.iconOn(x.danger, T.container(T.colors.danger), true)), "o ícone do estado com o tema ativo");
         const level = T.levelColorsOf(x, x.track, T.colors.accentFill, true);
         t.eq([T.colors.mutedFill, T.colors.fillIcon, T.colors.mutedFillIcon].map(String), [level.mutedFill, level.fillIcon, level.mutedFillIcon].map(String), "as cores da barra");
+        t.eq(String(T.stateFill("accent")), String(T.colors.accentFill), "o destaque do cartão da bateria: o accentFill");
+        t.eq(String(T.stateFill("danger")), String(T.fillOf(x.danger, x.surface, x.track)), "o erro pelo fillOf");
+        t.eq(String(T.stateFill("nada")), String(T.colors.accentFill), "estado desconhecido: o destaque");
     });
 
     t.test("theme: sobrescrita pelo JSON", () => {
