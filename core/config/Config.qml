@@ -140,8 +140,11 @@ Singleton {
     // mudança espera writeDelay ms parada para ir ao disco; enquanto espera, o
     // reload do watcher fica suspenso (leria o arquivo velho e desfaria a
     // mudança; a gravação que vem sobrescreve o que mudou por fora), e o
-    // flush grava na hora (ao sair: o recarregamento do shell destrói a
-    // Config).
+    // flush grava na hora: no recarregamento do shell (que destrói a Config)
+    // e na saída pelo laço de eventos (aboutToQuit). Um SIGTERM (o supervisor
+    // no `lucerna-session shell restart` e no fim da sessão) só grava se o
+    // Quickshell sair pelo laço de eventos; senão, a mudança dos últimos
+    // 200 ms se perde.
     readonly property int writeDelay: 200
     readonly property bool writePending: writeTimer.running
 
@@ -165,6 +168,14 @@ Singleton {
     }
 
     Component.onDestruction: flush()
+
+    Connections {
+        target: Qt.application
+
+        function onAboutToQuit(): void {
+            root.flush();
+        }
+    }
 
     FileView {
         id: view
