@@ -97,7 +97,7 @@ Singleton {
     }
 
     function applyProfiles(data: var): void {
-        profilesAvailable = data.available === true;
+        profilesReported = data.available === true;
     }
 
     function applyStatus(data: var): void {
@@ -141,8 +141,18 @@ Singleton {
     // O power-profiles-daemon responde no D-Bus do sistema? Vem do power.profiles
     // do lucernad; sem o daemon, fica o último valor conhecido. O PowerProfiles
     // do Quickshell não diz se o serviço existe; sem ele, a central esconde os
-    // botões de perfil.
-    property bool profilesAvailable: false
+    // botões de perfil. `profilesReported` é o último valor do daemon (null
+    // antes do primeiro; os testes trocam).
+    property var profilesReported: null
+    readonly property bool profilesAvailable: profilesFrom(profilesReported, hasPerformance)
+
+    // Com o lucernad fora desde a partida não há último valor: vale o
+    // `hasPerformanceProfile` do Quickshell, que só fica verdadeiro com o
+    // power-profiles-daemon respondendo (sem o perfil de desempenho, os
+    // botões esperam o daemon).
+    function profilesFrom(reported: var, performance: bool): bool {
+        return reported === null ? performance : reported === true;
+    }
 
     function setProfile(value: int): void {
         if (value === profile)

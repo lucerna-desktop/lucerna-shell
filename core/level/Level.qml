@@ -5,7 +5,8 @@ import Quickshell
 
 // As contas da barra de porcentagem (core/widgets/LevelSlider), fora do
 // componente para os testes de unidade: a fração do valor, o passo (snap), o
-// valor sob o ponteiro, o passo do teclado e da roda e a largura da parte cheia.
+// valor sob o ponteiro, o passo do teclado e da roda, a largura da parte cheia
+// e o alvo do ícone.
 Singleton {
     // A fração de `value` entre from e to, de 0 a 1 (0 num intervalo vazio).
     function fraction(value: real, from: real, to: real): real {
@@ -46,5 +47,14 @@ Singleton {
     // zona morta perto do zero.
     function fillWidth(f: real, width: real, h: real): real {
         return h + Math.max(0, Math.min(1, f)) * Math.max(0, width - h);
+    }
+
+    // O x do alvo de clique do ícone (o que silencia), de largura
+    // max(side, h), numa barra de altura `h`: ele termina no fim do círculo
+    // do ícone (h) e o que passa do círculo sai à esquerda, para fora da
+    // barra; centrado no ícone, cobriria o começo dela, e um clique ali
+    // silenciaria em vez de levar o valor ao começo.
+    function iconTargetX(h: real, side: real): real {
+        return h - Math.max(side, h);
     }
 }

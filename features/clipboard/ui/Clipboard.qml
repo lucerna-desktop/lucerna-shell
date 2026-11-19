@@ -134,10 +134,8 @@ OverlayPanel {
             model: ClipboardState.items
             currentIndex: ClipboardState.selected
             onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
-            onAtYEndChanged: {
-                if (atYEnd)
-                    ClipboardState.more();
-            }
+            onAtYEndChanged: ClipboardState.reachedEnd(atYEnd)
+            onContentHeightChanged: ClipboardState.reachedEnd(atYEnd)
 
             delegate: ClipboardItem {
                 required property var modelData

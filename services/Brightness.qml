@@ -28,6 +28,9 @@ Singleton {
     // A última lista que chegou do daemon, sem os valores locais: volta a
     // valer quando o holdMs de um ajuste acaba.
     property var remote: []
+    // Quantas listas chegaram (tópico ou power.list): o reload descarta a
+    // resposta passada por uma publicação.
+    property int published: 0
     // A tela integrada sem erro, ou null.
     readonly property var panel: screens.find(s => s.kind === "backlight" && s.error === "") ?? null
     readonly property bool hasPanel: panel !== null
@@ -105,6 +108,7 @@ Singleton {
     // O array que vem do sinal do cliente é uma lista do QML (Array.isArray
     // dá falso): vira array de JS antes do map.
     function applyScreens(data: var): void {
+        published++;
         remote = (data.screens ? Array.from(data.screens) : []).map(s => toScreen(s));
         screens = merged(remote, screens, holds, Date.now());
     }
@@ -128,13 +132,17 @@ Singleton {
         }
     }
 
-    // Relê as telas pelo power.list, só com a conexão feita.
+    // Relê as telas pelo power.list, só com a conexão feita. Um power.screens
+    // que chega antes da resposta é mais novo que ela: a resposta não o
+    // desfaz.
     function reload(): void {
-        if (client.connected)
-            client.call("power.list", {}, response => {
-                if (response.result)
-                    root.applyScreens(response.result);
-            });
+        if (!client.connected)
+            return;
+        const since = published;
+        client.call("power.list", {}, response => {
+            if (response.result && root.published === since)
+                root.applyScreens(response.result);
+        });
     }
 
     // A conexão com o daemon mudou: ao cair, as telas somem; nos dois casos,

@@ -47,7 +47,7 @@ function run(t) {
     scenario("central: a entrada escolhe a página", () => {
         const B = t.Battery;
         const simulated0 = B.simulated;
-        const profiles0 = B.profilesAvailable;
+        const profiles0 = B.profilesReported;
         try {
             B.simulated = { percentage: 0.5, onBattery: true };
             P.openActions("energia");
@@ -61,36 +61,36 @@ function run(t) {
             P.openCentral("");
             t.eq(S.page, "battery", "o central sem entrada não troca a página");
             B.simulated = null;
-            B.profilesAvailable = false;
+            B.profilesReported = false;
             if (t.PowerState.devices.length === 0) {
                 P.openActions("energia");
                 t.eq([P.centralEntry, S.page], ["energia", ""], "sem bateria, perfil e dispositivos: o estado inicial");
             }
         } finally {
             B.simulated = simulated0;
-            B.profilesAvailable = profiles0;
+            B.profilesReported = profiles0;
         }
     });
 
     scenario("central: o recurso da página aberta some e ela volta ao estado inicial", () => {
         const B = t.Battery;
         const simulated0 = B.simulated;
-        const profiles0 = B.profilesAvailable;
+        const profiles0 = B.profilesReported;
         try {
             B.simulated = null;
-            B.profilesAvailable = true;
+            B.profilesReported = true;
             P.openActions("");
             S.setPage("battery");
             t.eq(S.page, "battery");
-            B.profilesAvailable = false;
+            B.profilesReported = false;
             if (t.PowerState.devices.length === 0)
                 t.eq(S.page, "", "sem bateria, perfil e dispositivos");
             S.setPage("output");
-            B.profilesAvailable = true;
+            B.profilesReported = true;
             t.eq(S.page, S.has.output ? "output" : "", "outro recurso mudou: a página só sai se o dela faltar");
         } finally {
             B.simulated = simulated0;
-            B.profilesAvailable = profiles0;
+            B.profilesReported = profiles0;
         }
     });
 
@@ -250,15 +250,15 @@ function run(t) {
 
     t.test("energia: o que aparece sem bateria, sem perfil e sem dispositivos", () => {
         const simulated0 = B.simulated;
-        const profiles0 = B.profilesAvailable;
+        const profiles0 = B.profilesReported;
         try {
             B.simulated = null;
-            B.profilesAvailable = false;
+            B.profilesReported = false;
             t.eq([E.hasBattery, E.profilesAvailable, E.devices.length, E.any], [false, false, 0, false], "desktop sem nada: o painel some");
-            B.profilesAvailable = true;
+            B.profilesReported = true;
             t.eq([E.hasBattery, E.any], [false, true], "só o perfil");
             t.eq(E.profileButtons.map(b => b.value), B.hasPerformance ? [0, 1, 2] : [0, 1], "desempenho só se o daemon tiver");
-            B.profilesAvailable = false;
+            B.profilesReported = false;
             B.simulated = { percentage: 0.78, onBattery: true };
             t.eq([E.hasBattery, E.any, E.batteryNote], [true, true, ""], "na bateria, sem o tempo (a simulada não tem)");
             B.simulated = { percentage: 0.5, onBattery: false };
@@ -267,7 +267,7 @@ function run(t) {
             t.eq(E.batteryNote, "Carregada");
         } finally {
             B.simulated = simulated0;
-            B.profilesAvailable = profiles0;
+            B.profilesReported = profiles0;
         }
     });
 
@@ -284,18 +284,18 @@ function run(t) {
 
     t.test("energia: o tile pela bateria simulada", () => {
         const simulated0 = B.simulated;
-        const profiles0 = B.profilesAvailable;
+        const profiles0 = B.profilesReported;
         try {
             B.simulated = { percentage: 0.78, onBattery: true };
             t.eq([E.title, E.status], ["Bateria", "78%"], "a simulada não tem o tempo");
             B.simulated = { percentage: 0.5, onBattery: false };
             t.eq(E.status, "50% · Carregando");
             B.simulated = null;
-            B.profilesAvailable = true;
+            B.profilesReported = true;
             t.eq([E.title, E.status], ["Energia", E.statusLine({ hasBattery: false, profilesAvailable: true, profile: B.profile, devices: E.devices.length })], "sem bateria, Energia com o perfil");
         } finally {
             B.simulated = simulated0;
-            B.profilesAvailable = profiles0;
+            B.profilesReported = profiles0;
         }
     });
 

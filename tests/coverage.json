@@ -9,7 +9,7 @@
         "services/AppsScale.qml": ["envFor", "sessionEnvText", "hyprLua", "splitLines", "flagsText", "iniValue", "gtkIniText", "xresourcesText", "gapsLua", "restoreLua", "parseRead", "planApply", "planRestore", "changes"],
         "services/Audio.qml": ["nodeName"],
         "services/AudioStreams.qml": ["describe"],
-        "services/Battery.qml": ["wantedTopics", "sync", "apply", "applyHistory", "applyProfiles", "applyStatus", "connectionChanged"],
+        "services/Battery.qml": ["wantedTopics", "sync", "apply", "applyHistory", "applyProfiles", "applyStatus", "connectionChanged", "profilesFrom"],
         "services/Bluetooth.qml": ["isBusy"],
         "services/Brightness.qml": ["wantedTopics", "sync", "toScreen", "merged", "apply", "applyScreens", "applyStatus", "connectionChanged", "withValue", "set", "setScreen", "focusedId", "change", "answered", "hold", "released", "reload", "withError", "warnOf"],
         "services/Capture.qml": ["geometryArg"],

@@ -9,7 +9,7 @@ function run(t) {
 
     // O estado de antes, restaurado e conferido no fim de cada caso (a suíte
     // roda no mesmo processo que as seguintes).
-    const fields = ["client", "historyActive", "history", "historyAt", "historyError", "profilesAvailable", "powerError"];
+    const fields = ["client", "historyActive", "history", "historyAt", "historyError", "profilesReported", "powerError"];
     const original = {};
     for (const f of fields)
         original[f] = B[f];
@@ -104,6 +104,18 @@ function run(t) {
         t.eq(B.hasPerformance, false, "o Turbo continua do Quickshell, não do daemon");
         send(c, "power.profiles", { available: false, performance: false });
         t.eq(B.profilesAvailable, false, "o daemon diz que não há");
+    });
+
+    t.test("bateria: sem o daemon desde a partida, os perfis pelo Quickshell", () => {
+        t.eq([B.profilesFrom(null, true), B.profilesFrom(null, false)], [true, false], "sem amostra, o Turbo do Quickshell diz que o serviço responde");
+        t.eq([B.profilesFrom(false, true), B.profilesFrom(true, false)], [false, true], "com amostra, vale o daemon");
+        const reported0 = B.profilesReported;
+        try {
+            B.profilesReported = null;
+            t.eq(B.profilesAvailable, B.hasPerformance, "a propriedade segue a regra");
+        } finally {
+            B.profilesReported = reported0;
+        }
     });
 
     withClient("bateria: queda não esconde os perfis", c => {

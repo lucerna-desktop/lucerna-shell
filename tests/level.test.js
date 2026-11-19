@@ -48,4 +48,12 @@ function run(t) {
         t.eq([L.fillWidth(-1, 200, 20), L.fillWidth(2, 200, 20)], [20, 200], "fração presa");
         t.eq(L.fillWidth(0.5, 10, 20), 20, "barra menor que a altura: só o círculo");
     });
+
+    t.test("level: o alvo do ícone não cobre o começo da barra", () => {
+        t.eq(L.iconTargetX(20, 32), -12, "os 32 px terminam no fim do círculo do ícone (h); o resto sai à esquerda");
+        t.eq(L.iconTargetX(23, 32) + 32, 23, "com a barra crescida, também no fim do círculo");
+        t.eq(L.iconTargetX(40, 32), 0, "barra mais alta que o mínimo: o próprio círculo");
+        // Com o ícone fora do caminho, um clique logo depois dele já leva a barra perto do começo.
+        t.check(L.valueAt(L.iconTargetX(20, 32) + 32 + 1, 200, 20, 0, 1, 0) < 0.07, "logo depois do alvo, perto do zero");
+    });
 }

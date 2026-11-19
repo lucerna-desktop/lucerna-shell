@@ -200,6 +200,63 @@ function run(t) {
         t.eq([B.screens[0].error, B.screens[0].value], ["", 0.3], "sucesso não muda nada");
     });
 
+    withClient("brilho: o power.list de antes de uma publicação não a desfaz", c => {
+        send(c, "power.screens", daemon([panel, lg]));
+        B.applyStatus({ available: false, error: "x" });
+        c.pending = {};
+        send(c, "power.status", { available: true, error: null });
+        const list = last(c, "power.list");
+        send(c, "power.screens", daemon([Object.assign({}, panel, { percent: 80 }), lg]));
+        c.receive(ok(list.id, daemon([panel])));
+        t.eq([B.screens.length, B.screens[0].value], [2, 0.8], "a publicação que chegou antes da resposta vale");
+        B.reload();
+        c.receive(ok(last(c, "power.list").id, daemon([panel])));
+        t.eq(B.screens.map(s => s.value), [0.5], "sem publicação no meio, vale a resposta");
+    });
+
+    // O slider da central: o resto de um arrasto fica na tela em que ele
+    // começou, mesmo que um 1003 a tire do foco. Na interface, o clique chega
+    // antes do `dragging` (o Qt emite o pressedChanged depois do pressed):
+    // o primeiro valor vem com dragging falso e o grab logo depois.
+    withClient("brilho: o arrasto que leva 1003 não passa à próxima tela", c => {
+        const K = t.ControlsState;
+        send(c, "power.screens", daemon([panel, lg]));
+        c.pending = {};
+        K.setBrightness(0.4, false);
+        K.grabBrightness();
+        const failing = last(c, "power.set");
+        t.eq(failing.params, { id: "backlight", percent: 40 });
+        c.receive(JSON.stringify({ jsonrpc: "2.0", id: failing.id, error: { code: 1003, message: noAccess } }));
+        t.eq(K.screenBrightness?.id, "ddc:HDMI-A-1", "a integrada sai do foco");
+        c.pending = {};
+        K.setBrightness(0.3, true);
+        t.eq(last(c, "power.set"), null, "o resto do arrasto não mexe no LG");
+        K.dropBrightness();
+        K.grabBrightness();
+        K.setBrightness(0.3, true);
+        t.eq(last(c, "power.set").params, { id: "ddc:HDMI-A-1", percent: 30 }, "um arrasto novo vai à tela em foco");
+        K.dropBrightness();
+        c.pending = {};
+        K.setBrightness(0.2, false);
+        t.eq(last(c, "power.set").params, { id: "ddc:HDMI-A-1", percent: 20 }, "teclado e roda: a tela em foco");
+    });
+
+    // O 1003 do clique pode chegar antes do grab (a resposta é assíncrona,
+    // mas o grab vem no mesmo evento): sem tela guardada, o arrasto não
+    // escolhe a próxima.
+    withClient("brilho: arrasto sem tela guardada não mexe em nada", c => {
+        const K = t.ControlsState;
+        send(c, "power.screens", daemon([panel, lg]));
+        c.pending = {};
+        K.setBrightness(0.4, false);
+        const failing = last(c, "power.set");
+        c.receive(JSON.stringify({ jsonrpc: "2.0", id: failing.id, error: { code: 1003, message: noAccess } }));
+        c.pending = {};
+        K.setBrightness(0.3, true);
+        t.eq(last(c, "power.set"), null, "o primeiro movimento não grava o LG como a tela do arrasto");
+        K.dropBrightness();
+    });
+
     withClient("brilho: a publicação dentro do hold vale quando ele acaba", c => {
         send(c, "power.screens", daemon([panel, lg]));
         B.setScreen("ddc:HDMI-A-1", 0.4);

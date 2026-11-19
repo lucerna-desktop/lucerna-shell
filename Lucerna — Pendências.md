@@ -144,16 +144,17 @@ Os módulos (os feitos e os que faltam: launcher, Hyprland, luz noturna, o `luce
 ## Sobras do módulo da área de transferência
 
 - [ ] Falta um teste da ordem do `Component.onCompleted` do `Clipboard` (configurar antes de assinar) com o cliente já conectado.
-- [ ] O `onAtYEndChanged` do painel não dispara de novo quando a página somada cabe inteira na tela (a lista não chega a rolar): o "mais" seguinte só vem pelas setas.
+- [x] O `onAtYEndChanged` do painel não dispara de novo quando a página somada cabe inteira na tela (a lista não chega a rolar): o "mais" seguinte só vem pelas setas. Resolvido na branch `fix/pequenos-bugs-ui`: a lista chama o `ClipboardState.reachedEnd(atYEnd)` também quando a altura do conteúdo muda, e a página somada que ainda cabe pede a seguinte.
 
 ## Sobras do módulo de energia e brilho
 
 Adiadas na revisão do shell (PR #50); as do `lucernad` (lucernad#14) estão nas Pendências de lá.
 
 - [ ] O slider recua quando o DDC leva mais de 1 s (o hold acaba antes da publicação final) e avança na publicação.
-- [ ] Corrida mínima no `reload` (`power.list`) quando o módulo volta enquanto chega um `power.screens`.
-- [ ] Com o lucernad fora desde a partida, os botões de perfil ficam escondidos (o `profilesAvailable` não tem último valor).
-- [ ] Um `1003` no meio do arrasto marca a tela com erro e o slider da central passa para a próxima tela.
+- [x] Corrida mínima no `reload` (`power.list`) quando o módulo volta enquanto chega um `power.screens`. Resolvido na branch `fix/pequenos-bugs-ui`: o `Brightness` conta as listas que chegam (`published`) e a resposta do `power.list` passada por um `power.screens` é descartada.
+- [x] Com o lucernad fora desde a partida, os botões de perfil ficam escondidos (o `profilesAvailable` não tem último valor). Resolvido na branch `fix/pequenos-bugs-ui`: sem amostra do daemon (`profilesReported` nulo), vale o `hasPerformanceProfile` do Quickshell, que só fica verdadeiro com o power-profiles-daemon respondendo; sem o perfil de desempenho, os botões ainda esperam o lucernad.
+- [x] Um `1003` no meio do arrasto marca a tela com erro e o slider da central passa para a próxima tela. Resolvido na branch `fix/pequenos-bugs-ui`: o `ControlsState` guarda a tela no começo do arrasto (`grabBrightness`, no `onDraggingChanged`, no mesmo evento do clique) e ignora o resto dele se ela sair do foco; o teclado, a roda e o clique que abre o arrasto seguem a tela em foco.
+- [ ] Com o lucernad fora desde a partida, numa máquina com o power-profiles-daemon mas sem o perfil de desempenho, os botões de perfil continuam escondidos até o lucernad responder (o `hasPerformanceProfile` do Quickshell é o único sinal de que o serviço existe). Saída possível: guardar o último `power.profiles` num arquivo de estado.
 - [ ] O `busctl` continua na imagem do container (vem do systemd do Arch base), embora o shell não o use mais.
 
 ## Sobras do módulo de rede externa
@@ -247,7 +248,7 @@ Da branch `feat/cores-barras` (ledger das Tarefas 1 a 3 e a conferência visual 
 **Desativado e foco**
 - [ ] **Desativado ainda por opacidade em outros controles:** o `Clickable` (0,4) e o `DetailsPanel` (0,45) derrubam o texto abaixo de 4,5:1 (pré-existente); os outros 22 usos do `dimmed` ainda põem opacidade 0,45 no controle (`SegmentedControl`/`Select` com texto); a seção "Horário" da Luz noturna fica a 0,55 e o `BindEditor` a 0,45. Levar todos à regra da barra: o controle mostra o próprio desativado, sem opacidade sobre o texto.
 - [ ] **O mudo da barra não recebe foco pelo Tab** e a barra não tem anel de foco visível.
-- [ ] **O alvo de clique do mudo (32 px) cobre os ~26 px iniciais da barra:** um clique ali silencia em vez de levar o valor ao começo. E o `iconTarget` não depende do `root.enabled`.
+- [x] **O alvo de clique do mudo (32 px) cobre os ~26 px iniciais da barra:** um clique ali silencia em vez de levar o valor ao começo. E o `iconTarget` não depende do `root.enabled`. Resolvido na branch `fix/pequenos-bugs-ui`: o alvo continua com 32 px, mas termina no fim do círculo do ícone e sobra para a esquerda, fora da barra (`Level.iconTargetX`); e só vale com a barra ativa.
 - [x] **A linha desativada nas Configurações quase não se distinguia da ativa** (conferência visual). Resolvido: título e descrição vão ao `ThemeManager.dimmedOn(textMuted, raised)`, o tom mais apagado que ainda fica a 4,5:1 do cartão.
 - [ ] **O `textMuted` do everforest (3,86:1) e do rose-pine-dawn (3,67:1) fica abaixo de 4,5:1 contra o `raised`** (pré-existente; o fundo real dos cartões é translúcido e costuma dar mais). Nesses dois, a linha desativada fica no próprio `textMuted`; acertar a paleta deles e um teste por tema do `dimColor` da linha desativada.
 
@@ -269,6 +270,7 @@ Da branch `feat/cores-barras` (ledger das Tarefas 1 a 3 e a conferência visual 
 - [ ] Os ícones sobre o contêiner ficam mais claros (escuros) ou mais escuros (claros) que o destaque, mas mantêm a cor.
 - [x] O contêiner no everforest saía um verde-oliva acinzentado. Resolvido: o tema define `accentContainer` `#445936` (texto a 4,56:1).
 - [ ] No matte-black o contêiner é cinza (o destaque do tema é cinza, `#d0d0d0`): coerente, mas sem cor.
+- [ ] O cadeado das redes protegidas na lista do Wi-Fi (`WifiPage.qml`, 16 px) é pintado em `textFaint` e tem pouco contraste sobre a linha acesa (`accentContainer`), a da rede conectada. (Visto no lote 5 do lucerna-icons.)
 
 ## Depois
 

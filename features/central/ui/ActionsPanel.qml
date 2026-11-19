@@ -137,6 +137,8 @@ CentralPanel {
 
             // A tela não apaga: o mínimo é 1%.
             LevelSlider {
+                id: brightness
+
                 width: parent.width
                 wheelEnabled: true
                 visible: ControlsState.hasBrightness
@@ -144,7 +146,15 @@ CentralPanel {
                 label: "Brilho"
                 from: 0.01
                 value: ControlsState.brightness
-                onMoved: v => ControlsState.setBrightness(v)
+                onMoved: v => ControlsState.setBrightness(v, brightness.dragging)
+                // O pressedChanged vem depois do clique (que já ajustou a
+                // tela em foco): a tela do arrasto é guardada aqui.
+                onDraggingChanged: {
+                    if (brightness.dragging)
+                        ControlsState.grabBrightness();
+                    else
+                        ControlsState.dropBrightness();
+                }
             }
         }
     }
