@@ -88,7 +88,7 @@ Singleton {
     }
 
     // O comando da gravação: o texto vai em pedaços de até 16384 caracteres
-    // (64 KiB em UTF-8, no pior caso), que o printf junta. Um argumento só vai
+    // (48 KiB em UTF-8, no pior caso: 3 bytes por caractere; um par de surrogates dá 4 bytes em 2), que o printf junta. Um argumento só vai
     // até 128 KiB (MAX_ARG_STRLEN): o settings.lua inteiro num argumento não
     // seria gravado a partir desse tamanho. Um pedaço não termina no meio de
     // um par de surrogates (um emoji num comentário ou num nome).
@@ -123,17 +123,17 @@ Singleton {
         }
     }
 
-    // O fim de uma gravação. Gravada, o reload pedido sai; falhou, o reload
-    // cai: o Hyprland leria o arquivo velho e desfaria o que o hyprctl eval
-    // já pôs (o próximo pedido de reload tenta gravar de novo). Outra mudança
-    // pode ter chegado durante a gravação.
+    // O fim de uma gravação. Outra mudança pode ter chegado durante ela: o
+    // texto novo é gravado, e o reload pedido espera essa gravação. Sem texto
+    // novo, gravada, o reload pedido sai; falhou, o reload cai: o Hyprland
+    // leria o arquivo velho e desfaria o que o hyprctl eval já pôs (o próximo
+    // pedido de reload tenta gravar de novo).
     function finished(ok: bool, text: string): void {
         if (ok) {
             written = text;
             failed = "";
         } else {
             failed = text;
-            reloadAsked = false;
             console.warn(`Lucerna: não consegui gravar ${path}; o Hyprland não recarrega com o arquivo velho`);
         }
         const next = compose(sections);
@@ -141,6 +141,8 @@ Singleton {
             writeDelay.restart();
         else if (ok)
             reloadIfAsked();
+        else
+            reloadAsked = false;
     }
 
     Timer {

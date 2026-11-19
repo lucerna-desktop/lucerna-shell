@@ -49,6 +49,10 @@ function run(t) {
             t.check(!H.reloadAsked, "nem quando a próxima tentativa acha o mesmo texto que falhou");
             H.finished(true, text);
             t.eq([H.written, H.failed], [text, ""], "gravado: o texto no disco");
+            H.sections = { input: "y" };
+            H.reloadAsked = true;
+            H.finished(false, text);
+            t.check(H.reloadAsked, "com outro texto para gravar, o reload pedido espera a próxima gravação");
         } finally {
             H.sections = saved.sections;
             H.written = saved.written;
