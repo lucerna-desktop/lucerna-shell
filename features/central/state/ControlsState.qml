@@ -24,14 +24,20 @@ Singleton {
     // próxima tela, que o usuário não escolheu.
     property string dragged: ""
 
-    // `dragging`: o valor vem do arrasto (o teclado e a roda vão sempre à
-    // tela em foco).
+    // `dragging`: o valor vem do arrasto, que só vale na tela guardada no
+    // começo dele (o teclado, a roda e o clique que abre o arrasto vão à tela
+    // em foco).
     function setBrightness(value: real, dragging: bool): void {
         const id = screenBrightness?.id ?? "";
-        if (dragging && dragged === "")
-            dragged = id;
         if (id !== "" && (!dragging || dragged === id))
             Brightness.setScreen(id, value);
+    }
+
+    // O arrasto começou: guarda a tela em foco agora, no mesmo evento do
+    // clique (antes de qualquer resposta do daemon), e não no primeiro
+    // movimento, quando um 1003 do clique já pode ter trocado o foco.
+    function grabBrightness(): void {
+        dragged = screenBrightness?.id ?? "";
     }
 
     // O arrasto acabou.
