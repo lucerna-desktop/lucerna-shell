@@ -137,13 +137,13 @@ Os módulos (os feitos e os que faltam: launcher, Hyprland, luz noturna, o `luce
 
 ## Sobras do módulo de espectro
 
-- [ ] Falta um teste do `spectrum.configure` com um player de verdade (os testes só cobrem `null`) e do `onPlayerChanged`.
-- [ ] O `Spectrum.available` não tem consumidor fora dos testes.
-- [ ] O `applyBands` não confere se as bandas são números.
+- [x] Falta um teste do `spectrum.configure` com um player de verdade (os testes só cobrem `null`) e do `onPlayerChanged`. Resolvido na branch `test/cobertura-clima-sobre`: o `player` deixou de ser readonly (o MPRIS não roda no CI); o teste põe nomes, confere o `spectrum.configure` de cada troca e volta ao binding do `Media.active`.
+- [x] O `Spectrum.available` não tem consumidor fora dos testes. Resolvido na branch `test/cobertura-clima-sobre`: saiu (o anel parado já diz o mesmo, pelo `values` vazio); o `moduleAvailable` fica, como o registro do `spectrum.status`.
+- [x] O `applyBands` não confere se as bandas são números. Resolvido na branch `test/cobertura-clima-sobre`: o quadro com uma faixa que não é número finito (texto, `NaN`, `null`) não vale.
 
 ## Sobras do módulo da área de transferência
 
-- [ ] Falta um teste da ordem do `Component.onCompleted` do `Clipboard` (configurar antes de assinar) com o cliente já conectado.
+- [x] Falta um teste da ordem do `Component.onCompleted` do `Clipboard` (configurar antes de assinar) com o cliente já conectado. Resolvido na branch `test/cobertura-clima-sobre`: a partida virou o `start()` (o `connectionChanged` usa o mesmo), e o teste a chama com um cliente já conectado: `clipboard.configure` e depois `lucerna.subscribe`.
 - [x] O `onAtYEndChanged` do painel não dispara de novo quando a página somada cabe inteira na tela (a lista não chega a rolar): o "mais" seguinte só vem pelas setas. Resolvido na branch `fix/pequenos-bugs-ui`: a lista chama o `ClipboardState.reachedEnd(atYEnd)` também quando a altura do conteúdo muda, e a página somada que ainda cabe pede a seguinte.
 
 ## Sobras do módulo de energia e brilho
@@ -161,9 +161,9 @@ Adiadas na revisão do shell (PR #50); as do `lucernad` (lucernad#14) estão nas
 
 Adiadas na revisão do shell (PR #52); as do `lucernad` (lucernad#17), inclusive o teste do Vagalume na máquina real, estão nas Pendências de lá.
 
-- [ ] O "Hoje" e a data do topo da aba Clima usam a data da máquina, e os dias vêm pela data da cidade: com a cidade em outro fuso, perto da meia-noite, os dois podem divergir.
+- [ ] O "Hoje" e a data do topo da aba Clima usam a data da máquina, e os dias vêm pela data da cidade: com a cidade em outro fuso, perto da meia-noite, os dois podem divergir. O lado do shell foi feito na branch `test/cobertura-clima-sobre`: o `Weather` lê um `utcOffset` (segundos) do `web.weather` e o `WeatherState.todayKey` sai da data da cidade (`todayFor`); sem o campo, a data da máquina, como antes. Falta o `lucernad` publicar o `utcOffset` no tópico (ele já o guarda no `Forecast`), item das Pendências de lá.
 - [ ] A barra de ações rápidas do Painel não tem navegação pelo teclado (o Tab do painel troca de aba); se fizer falta, as setas.
-- [ ] Sem teste do `openLink` (só `https://`) da página Créditos nem do `openSettings` da aba Clima.
+- [x] Sem teste do `openLink` (só `https://`) da página Créditos nem do `openSettings` da aba Clima. Resolvido na branch `test/cobertura-clima-sobre`: o filtro saiu para o `isWebLink`, testado com http, file, javascript e espaço na frente (o https não é aberto no teste, para não chamar um navegador); a engrenagem confere o tópico `dashboard` e o painel aberto.
 
 ## Sobras dos painéis da moldura
 
@@ -294,7 +294,7 @@ Da branch `feat/cores-barras` (ledger das Tarefas 1 a 3 e a conferência visual 
 - [ ] Notificações: histórico persistente (hoje só sobrevive ao reload) e modo avião (o shell não tem rfkill), ambos fora do escopo da central.
 - [ ] **Refazer todas as capturas do README com papéis de parede próprios** (pedido do usuário, 2026-11-06). As capturas em `docs/screenshots/` estão desatualizadas (a `hero.jpg` e outras ainda mostram a barra e o painel superior antigos) e usam os fundos gerados pelo shell. Trocar por papéis de parede próprios, escolhidos para a apresentação do produto, como o Caelestia faz no README dele; montar as cenas (terminais, música, painéis abertos) de novo com o visual atual, em todas as capturas (`hero`, `desktop`, painéis, central, temas, launcher, barra, configurações, efeitos). Usar papéis de parede com licença que permita redistribuição (ou próprios do projeto) e registrar a origem de cada um. Fazer depois das mudanças visuais em andamento (barra rebalanceada, cores dos blocos), para não refazer duas vezes. Em `feat/cores-barras`, as que mostravam as cores e as barras foram refeitas com o visual novo, ainda com os fundos gerados (hero, central, as três do painel superior, os dois temas, os três launchers e as cinco das Configurações; a de Monitores mostra só a saída `HEADLESS-T` do container). O `osd.png` está desatualizado desde antes desta branch (mostra o OSD horizontal antigo): refazer junto.
 - [ ] Lint: quando o CI deixar de testar o Qt 6.11, tirar o `unqualified` da linha de supressão da margem e do `QMLLINT_ALLOWED_COMMENT` em `ci/rules.py`.
-- [ ] Crédito ao Caelestia também na página Sobre das configurações (hoje só no README).
+- [x] Crédito ao Caelestia também na página Sobre das configurações (hoje só no README). Já feito antes, em `be19a42` (2026-10-26): os créditos ganharam a página Créditos, logo antes do Sobre, com o Caelestia na Inspiração, e a linha de créditos saiu do Sobre; conferido na branch `test/cobertura-clima-sobre`, sem repetir no Sobre.
 - [ ] Atalhos (base robusta, Tarefa 11): arrastar e redimensionar (`Super` + botão esquerdo/direito) só mostram a tecla na página de Atalhos; falta escolher o modificador (a captura é de teclas, e os botões esquerdo e direito ficam fora da captura do mouse).
 - [ ] Apps padrão (Tarefa 11): o `apps.conf` só é gravado quando a escolha muda na página de Atalhos; um `Config.defaultApps` mudado por fora (o `config.json` à mão, `dev/test.sh setc`) não chega ao `apps.conf` até a próxima escolha. De propósito, para não apagar um `apps.conf` escrito à mão na partida; rever se o `apps.conf` passar a ser só do shell.
 - [ ] Escala fracionária (base robusta, Tarefa 12): só as linhas de 1 px viraram `Pixel.hairline`; as bordas de 2 px (foco, seleção, notificação crítica) ficam em 2 lógicos (2,5 físicos em 1,25) e vão com o `ThemeManager.px()` da Tarefa 13. No pixel físico ficaram a forma (as vagas do shader), o painel superior, os centralizados (Configurações, área de transferência, energia, visão geral) e os três estilos do lançador; a central, o OSD e os popups (presos à direita, com larguras múltiplas de 4) e os cartões do seletor de temas (no carrossel) seguem em pixel lógico.
