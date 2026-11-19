@@ -23,11 +23,13 @@ Singleton {
         Quickshell.execDetached(["lucerna-session", "shell", "restart"]);
     }
 
-    // O terminal com o less no fim do registro.
+    // O terminal com o less no fim do registro (sem o less, o lucerna-session
+    // troca pelo $PAGER ou por um tail). Sem o crash.json, o sh acha o mais
+    // recente antes de abrir o terminal, para o less chegar como o comando.
     function openLog(): void {
         if (crashLog)
             Quickshell.execDetached(["lucerna-session", "open", "terminal", "less", "+G", crashLog]);
         else
-            Quickshell.execDetached(["lucerna-session", "open", "terminal", "sh", "-c", 'less +G "$(ls -t "$1"/qs-*.log | head -n 1)"', "sh", logDir]);
+            Quickshell.execDetached(["sh", "-c", 'exec lucerna-session open terminal less +G "$(ls -t "$1"/qs-*.log | head -n 1)"', "sh", logDir]);
     }
 }

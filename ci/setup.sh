@@ -30,7 +30,7 @@ if [ "$job" = smoke ]; then
         setcap -r "$sway_bin"
     fi
     # O lucernad na revisão de dev/lucernad.rev; /opt/lucernad fica em cache
-    # (actions/cache no GitHub, o volume lucerna-ci-lucernad no dev/ci.sh), e o
+    # (actions/cache no GitHub, o volume lucerna-ci-lucernad-<rev> no dev/ci.sh), e o
     # script não recompila a mesma revisão.
     bash "$here/../dev/lucernad.sh" "$(cat "$here/../dev/lucernad.rev")" /opt/lucernad
     ln -sf /opt/lucernad/bin/lucernad /usr/local/bin/lucernad

@@ -17,8 +17,18 @@ FROM archlinux:latest
 # libpipewire é do lucernad (o módulo de espectro). O ffmpeg e o Qt Multimedia
 # (com o driver VA-API da Intel) são dos wallpapers em vídeo. O python-gobject
 # é do logind falso (ci/logind-fake.py); o lua, dos testes da config Lua da
-# sessão (session/hypr/tests).
-RUN pacman -Syu --noconfirm --needed \
+# sessão (session/hypr/tests). O less é do "Ver o registro" (modo de segurança
+# e tela de emergência).
+# O locale pt_BR.UTF-8 (o LANG abaixo): a imagem base não extrai as definições
+# de locale fora do inglês (NoExtract do pacman.conf); liberadas a do pt_BR e a
+# do pt_PT (de onde o pt_BR copia partes), o glibc é reinstalado para trazê-las
+# e o locale-gen as compila. Sem isso, o Qt avisa "locale C".
+# O mpv toca no áudio nulo por padrão (/etc/mpv/mpv.conf): o container fala
+# com o PipeWire do host, e o som sairia nos alto-falantes. Para ouvir,
+# --ao=pipewire na linha de comando.
+RUN sed -i '/^NoExtract  = !usr\/share\/\*locales\/C /a NoExtract   = !usr/share/i18n/locales/pt_BR !usr/share/i18n/locales/pt_PT' \
+        /etc/pacman.conf \
+    && pacman -Syu --noconfirm --needed \
         hyprland quickshell \
         qt6-svg qt6-imageformats qt6-5compat \
         mesa vulkan-intel \
@@ -28,7 +38,12 @@ RUN pacman -Syu --noconfirm --needed \
         ttf-material-symbols-variable ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji \
         mpv mpv-mpris ffmpeg \
         python-gobject lua \
-        hicolor-icon-theme adwaita-icon-theme \
+        hicolor-icon-theme adwaita-icon-theme less \
+    && pacman -S --noconfirm glibc \
+    && sed -i 's/^#pt_BR.UTF-8 UTF-8/pt_BR.UTF-8 UTF-8/' /etc/locale.gen \
+    && locale-gen \
+    && locale -a | grep -qx pt_BR.utf8 \
+    && install -d /etc/mpv && printf 'ao=null\n' > /etc/mpv/mpv.conf \
     && pacman -Scc --noconfirm
 
 # A etiqueta diz de que revisão é o binário: o dev/run.sh e o dev/test.sh

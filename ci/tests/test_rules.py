@@ -194,6 +194,31 @@ class SegmentsTest(unittest.TestCase):
         segs = rules.py_segments('x = "texto"  # nota\n')
         self.assertEqual([s for _, s in segs], ['"texto"', "# nota"])
 
+    def test_lua_comentarios_e_strings(self):
+        text = (
+            'local a = "texto" -- nota\n'
+            "local b = 'um \\' dois' .. x--[[ longo\nnao ]] .. [==[ cru\n]] ]==]\n"
+            "--[[\nbloco\n]] y = 1 -- fim\n"
+        )
+        segs = rules.lua_segments(text)
+        self.assertIn((1, "texto"), segs)
+        self.assertIn((1, " nota"), segs)
+        self.assertIn((2, "um \\' dois"), segs)
+        self.assertIn((2, " longo"), segs)
+        self.assertIn((3, "nao "), segs)
+        self.assertIn((3, " cru"), segs)
+        self.assertIn((4, "]] "), segs)
+        self.assertIn((6, "bloco"), segs)
+        self.assertIn((7, " fim"), segs)
+        self.assertFalse(any("local" in s or "y = 1" in s for _, s in segs), "o código fica de fora")
+
+    def test_lua_string_com_quebra_escapada_conta_a_linha(self):
+        # Uma string com "\" e quebra de linha continua na linha seguinte: a
+        # contagem não pode atrasar dali em diante.
+        segs = rules.lua_segments('local s = "a\\\nb" -- c\n-- d\n')
+        self.assertIn((2, " c"), segs)
+        self.assertIn((3, " d"), segs)
+
     def test_md_pula_codigo_e_links(self):
         text = "Texto `nao` e [link](nao/so.md)\n````\n```\nnao\n```\n````\nfim https://x.so/ja\n"
         segs = rules.md_segments(text)
@@ -273,6 +298,7 @@ class AccentsTest(RepoCase):
                 "dev/b.sh": "# configuracao do ambiente\n",
                 "c.py": "# funcao\n",
                 "d.md": "Voce ja viu?\n",
+                "session/hypr/e.lua": 'hl.notify("sessao") -- padrao\nlocal nao = 1\n',
             }
         )
         found = {(p, n, m.split('"')[1]) for p, n, m in rules.check_accents(root)}
@@ -285,6 +311,8 @@ class AccentsTest(RepoCase):
                 ("c.py", 1, "funcao"),
                 ("d.md", 1, "Voce"),
                 ("d.md", 1, "ja"),
+                ("session/hypr/e.lua", 1, "sessao"),
+                ("session/hypr/e.lua", 1, "padrao"),
             },
         )
 

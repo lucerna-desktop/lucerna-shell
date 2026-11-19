@@ -63,10 +63,13 @@ dev/ci.sh unit         # só um
 dev/ci.sh shell lint   # um bash no container de um check, com o repositório em /src
 ```
 
-A saída de cada check fica em `ci-out/<check>/`: os logs, o `summary.md`, o
+Os contêineres levam o nome do worktree (`lucerna-ci-<check>-<pasta>-<hash>`):
+dois worktrees podem rodar o `dev/ci.sh` ao mesmo tempo sem um derrubar o
+outro. A saída de cada check fica em `ci-out/<check>/`: os logs, o `summary.md`, o
 `qmllint.txt` do `lint`, o relatório de cobertura e as capturas da fumaça.
 A fumaça compila o `lucernad` na revisão de `dev/lucernad.rev` (o volume
-`lucerna-ci-lucernad` guarda o binário); para trocar de revisão, mude esse arquivo.
+`lucerna-ci-lucernad-<revisão>`, um por revisão, guarda o binário); para trocar
+de revisão, mude esse arquivo.
 A fumaça sobe um PipeWire próprio (com um sink nulo, sem os dispositivos de
 áudio) e um mpv tocando ruído nele, para conferir o espectro; nada sai nos
 alto-falantes.

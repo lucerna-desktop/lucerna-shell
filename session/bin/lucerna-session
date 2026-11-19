@@ -21,7 +21,8 @@
 #                                   abre o app do apps.conf ou o primeiro
 #                                   instalado da lista
 #   lucerna-session open terminal COMANDO...
-#                                   o terminal rodando o comando
+#                                   o terminal rodando o comando (um less
+#                                   que falta vira o $PAGER ou um tail)
 #   lucerna-session detect-apps     os apps instalados de cada tipo, em JSON
 #   lucerna-session logout          sai do Hyprland (fim da sessão)
 #   lucerna-session emergency [--mode crashed|power]
@@ -250,13 +251,38 @@ run_in() {
     esac
 }
 
+# without_less COMANDO...: o comando no array `cmd`; um `less` que não está
+# instalado (o "Ver o registro" do modo de segurança e da emergência pede
+# `less +G ARQUIVO`) vira o $PAGER, se estiver instalado e não for o less, ou
+# um `tail -n +1 -f` (o arquivo todo, seguindo o fim). As opções do less (+G,
+# -R...) ficam de fora; os arquivos passam.
+without_less() {
+    local arg
+    local -a files=() pager=()
+    cmd=("$@")
+    [ "${1:-}" = less ] && ! have less || return 0
+    shift
+    for arg in "$@"; do
+        case "$arg" in -* | +*) ;; *) files+=("$arg") ;; esac
+    done
+    read -ra pager <<< "${PAGER:-}"
+    if [ "${#pager[@]}" -gt 0 ] && [ "${pager[0]##*/}" != less ] && have "${pager[0]}"; then
+        cmd=("${pager[@]}" "${files[@]}")
+    else
+        cmd=(tail -n +1 -f -- "${files[@]}")
+    fi
+    log "sem o less: ${cmd[*]}"
+}
+
 cmd_open() {
     local kind=${1:-} value app label
-    local -a apps=() argv=() run_args=()
+    local -a apps=() argv=() run_args=() cmd=()
     apps_of "$kind" || usage
     shift
     # Um comando só no terminal.
     [ $# -eq 0 ] || [ "$kind" = terminal ] || usage
+    without_less "$@"
+    set -- "${cmd[@]}"
     value=$(configured_app "$kind")
     if [ -n "$value" ]; then
         # Palavras separadas por espaço, sem eval: "kitty -1" vira kitty e -1.

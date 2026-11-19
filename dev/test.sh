@@ -47,12 +47,19 @@
 # aquamarine) para o primeiro monitor de escala 1 (devicePixelRatio) em que caiba o tamanho, tira
 # a maximização e a borda e a centraliza nesse tamanho; sem monitor assim, ela
 # fica onde está. Em escala fracionária a imagem sai borrada. Fora do KDE, não faz nada.
-# LUCERNA_TEST_SIZE=LARGURAxALTURA: o tamanho da janela (padrão 1920x1080).
+# LUCERNA_TEST_SIZE=LARGURAxALTURA: o tamanho da janela (padrão 1920x1080);
+# o headless off volta a WAYLAND-1 nele.
+# Áudio: o container fala com o PipeWire do host (o pipewire-0 montado), e o que
+# tocar sai nos alto-falantes. O mpv da imagem toca no áudio nulo por padrão
+# (ao=null no /etc/mpv/mpv.conf), o que basta para a aba Mídia (o MPRIS não
+# precisa de som); outro player, sempre com a saída nula (`mpv --ao=null`, ou um
+# sink nulo próprio, como o da fumaça em ci/audio/). Para ouvir de propósito:
+# `mpv --ao=pipewire`.
 # headless on: cria a saída headless HEADLESS-T (1920x1080@60, posição 0x0, escala 1)
 # e desliga a WAYLAND-1: painéis, tela de bloqueio, foco e capturas passam a ser
 # nela. Serve quando a sessão do host está bloqueada ou a janela de teste escondida
 # (o Hyprland aninhado não desenha e o `shot` trava); a headless desenha sempre.
-# headless off: religa a WAYLAND-1 e remove a HEADLESS-T. Se a WAYLAND-1 não voltar,
+# headless off: religa a WAYLAND-1 (no LUCERNA_TEST_SIZE) e remove a HEADLESS-T. Se a WAYLAND-1 não voltar,
 # o `dev/test.sh up` de novo é a saída. O `shot` e os benches usam a saída ativa.
 # O lucernad sobe com o Hyprland (dev/hyprland-test.lua). Para ver o shell sem ele:
 # `dev/test.sh run 'pkill -x lucernad'`; para voltar (sempre pelo `run`, que põe
@@ -61,6 +68,7 @@
 # o perfil de energia e o GameMode do modo jogo também são os falsos dela, em
 # /tmp/lucerna-power/power-profiles e /tmp/lucerna-power/gamemode):
 # `dev/test.sh run 'bash ~/.config/quickshell/lucerna/ci/power-root.sh /tmp/lucerna-power && setsid -f env LUCERNAD_POWER_ROOT=/tmp/lucerna-power LUCERNA_IDLE_TIMEOUT_MS=86400000 lucernad serve'`
+# --- (o help para aqui; as dicas e o roteiro abaixo ficam só no script)
 #
 # Teclas com modificador pelo wtype: o Hyprland aninhado resolve os binds pelo
 # keycode do keymap real, e o wtype numera as teclas do keymap dele na ordem em
@@ -193,6 +201,11 @@ ex() {
         '"$1"
 }
 
+# Para os qs da config lucerna pelo próprio qs (`qs kill -c lucerna`, um por
+# vez, até 5), não por um pkill: a tela de emergência (qs -p) e outros qs do
+# container ficam de pé.
+kill_shell='for _ in 1 2 3 4 5; do qs kill -c lucerna > /dev/null 2>&1 || break; done; sleep 0.5'
+
 # Sobe o shell pelo supervisor da sessão: `lucerna-session shell restart`
 # quando o `shell status` diz supervised; sem supervisor vivo, `shell start`
 # sobe um. Com o barramento do host montado (LUCERNA_TEST_HOST_BUS=1 no up),
@@ -203,11 +216,11 @@ start_shell() {
     # shellcheck disable=SC2016 # expande dentro do container, não aqui
     ex 'if [ -S "$XDG_RUNTIME_DIR/host-bus" ]; then
             lucerna-session shell stop
-            pkill -x qs; sleep 0.5
+            '"$kill_shell"'
             export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/host-bus"
             LUCERNA_SUPERVISED=1 setsid -f qs -c lucerna > /dev/null 2>&1 < /dev/null
         elif [ "$(lucerna-session shell status)" = unsupervised ]; then
-            pkill -x qs; sleep 0.5
+            '"$kill_shell"'
             lucerna-session shell start
         else
             lucerna-session shell restart
@@ -264,12 +277,20 @@ shot() {
     # A saída ativa: a headless, se estiver ligada, senão a WAYLAND-1.
     mon=$(ex 'hyprctl monitors | grep -o "^Monitor \(HEADLESS-T\|WAYLAND-1\) " | head -n1 | cut -d" " -f2')
     [ -n "$mon" ] \
-        || fail "a saída WAYLAND-1 sumiu (Hyprland no FALLBACK, depois de um reload ou da janela fechada): rode dev/test.sh up"
+        || fail "nenhuma saída de teste ativa (nem a HEADLESS-T nem a WAYLAND-1; o Hyprland no FALLBACK, depois de um reload, da janela fechada ou de um headless off que não religou a WAYLAND-1): rode dev/test.sh up"
     mkdir -p "$out"
     ex "timeout 10 grim -o $mon /tmp/lucerna-shot.png" \
         || fail "a captura travou: a janela de teste está escondida ou minimizada? Traga-a para a frente (não precisa de foco) e tente de novo."
     docker cp -q "$name:/tmp/lucerna-shot.png" "$out/$1.png"
     echo "$out/$1.png"
+}
+
+# test_size: o LUCERNA_TEST_SIZE (padrão 1920x1080) em `w` e `h`; falha com um
+# tamanho que não é LARGURAxALTURA.
+test_size() {
+    local size=${LUCERNA_TEST_SIZE:-1920x1080}
+    [[ $size =~ ^([0-9]+)x([0-9]+)$ ]] || return 1
+    w=${BASH_REMATCH[1]} h=${BASH_REMATCH[2]}
 }
 
 # Posiciona a janela do container (resourceClass aquamarine) no KDE do host,
@@ -278,10 +299,9 @@ shot() {
 # até a saída do Hyprland aninhado ter o tamanho pedido.
 place_window() {
     [ "${LUCERNA_TEST_KWIN:-1}" = 0 ] && return 0
-    local size=${LUCERNA_TEST_SIZE:-1920x1080} qd w h script id
+    local qd w h script id
     qd=$(command -v qdbus6 || command -v qdbus) || return 0
-    [[ $size =~ ^([0-9]+)x([0-9]+)$ ]] || { echo "aviso: LUCERNA_TEST_SIZE inválido ($size), esperava LARGURAxALTURA" >&2; return 0; }
-    w=${BASH_REMATCH[1]} h=${BASH_REMATCH[2]}
+    test_size || { echo "aviso: LUCERNA_TEST_SIZE inválido ($LUCERNA_TEST_SIZE), esperava LARGURAxALTURA" >&2; return 0; }
     "$qd" org.kde.KWin /KWin org.kde.KWin.supportInformation &> /dev/null || return 0
     script=$(mktemp --suffix=.js)
     cat > "$script" << JS
@@ -438,7 +458,8 @@ case "${1:-}" in
                     sleep 2; hyprctl monitors | grep "^Monitor"'
                 ;;
             off)
-                ex 'hyprctl eval "hl.monitor({ output = \"WAYLAND-1\", mode = \"1920x1080@60\", position = \"0x0\", scale = 1, disabled = false })" > /dev/null
+                test_size || fail "LUCERNA_TEST_SIZE inválido ($LUCERNA_TEST_SIZE), esperava LARGURAxALTURA"
+                ex 'hyprctl eval "hl.monitor({ output = \"WAYLAND-1\", mode = \"'"${w}x${h}"'@60\", position = \"0x0\", scale = 1, disabled = false })" > /dev/null
                     sleep 2
                     hyprctl output remove HEADLESS-T > /dev/null 2>&1 || true
                     sleep 1; hyprctl monitors | grep "^Monitor"'
@@ -460,9 +481,10 @@ case "${1:-}" in
             *) fail "uso: dev/test.sh logind suspend|lock|unlock|lid on|lid off|hibernate yes|hibernate na|status" ;;
         esac
         # O suspend responde só no fim do ciclo (até 5 s de prazo mais 1 s de sono).
-        # O status sai como o JSON puro, sem a tupla do gdbus.
+        # O status sai como o JSON puro, sem a tupla do gdbus; os outros não
+        # devolvem nada (sem o "()" do gdbus).
         ex "gdbus call --address $logind_bus --dest org.freedesktop.login1 --object-path /org/lucerna/Test --method org.lucerna.Test.$method" \
-            | sed -E "s/^\('(.*)',\)$/\1/"
+            | sed -E "/^\(\)$/d; s/^\('(.*)',\)$/\1/"
         ;;
     run)
         running
@@ -470,7 +492,10 @@ case "${1:-}" in
         ex "$2"
         ;;
     *)
-        sed -n '2,52p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+        # O comentário do topo até o marcador "# ---" (as dicas do wtype e o
+        # roteiro ficam no script).
+        awk 'NR > 1 && (!/^#/ || /^# ---/) { exit } NR > 1' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+        echo "(as dicas do wtype, dos binds e o roteiro de referência: no topo de dev/test.sh)"
         exit 2
         ;;
 esac
