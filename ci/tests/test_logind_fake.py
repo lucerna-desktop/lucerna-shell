@@ -24,6 +24,15 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "ci" / "logind-fake.sh"
 
 
+def running(pid):
+    """O processo existe e não é zumbi."""
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return stat[stat.rindex(")") + 2] != "Z"
+
+
 class LogindFakeTest(unittest.TestCase):
     def setUp(self):
         self.dir = Path(tempfile.mkdtemp(prefix="lucerna-logind-"))
@@ -104,11 +113,13 @@ class LogindFakeTest(unittest.TestCase):
         self.script("stop")
         self.assertIsNone(other.poll(), "o stop matou um processo que não era do falso")
         self.assertFalse((self.dir / "lucerna-fake-system").exists())
-        # Os dois do falso morrem (o kill é assíncrono: espera até 5 s).
+        # Os dois do falso morrem (o kill é assíncrono: espera até 5 s). Um
+        # zumbi conta como morto: no contêiner do CI, o PID 1 pode demorar a
+        # recolher os órfãos.
         end = time.monotonic() + 5
-        while any(Path(f"/proc/{pid}").exists() for pid in fake) and time.monotonic() < end:
+        while any(running(pid) for pid in fake) and time.monotonic() < end:
             time.sleep(0.05)
-        alive = [pid for pid in fake if Path(f"/proc/{pid}").exists()]
+        alive = [pid for pid in fake if running(pid)]
         self.assertEqual(alive, [], "o stop deixou processos do falso de pé")
 
 
