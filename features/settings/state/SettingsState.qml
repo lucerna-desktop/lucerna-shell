@@ -77,9 +77,14 @@ Singleton {
         }
     ]
 
+    // Só https sai para o navegador (nada de file:, http: nem javascript:).
+    function isWebLink(url: string): bool {
+        return url.startsWith("https://");
+    }
+
     // Abre o link no navegador; só https.
     function openLink(url: string): void {
-        if (url.startsWith("https://"))
+        if (isWebLink(url))
             Qt.openUrlExternally(url);
     }
 

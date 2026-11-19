@@ -172,6 +172,21 @@ function run(t) {
         t.eq(S.available, false);
     });
 
+    t.test("clima: a engrenagem abre as configurações no Painel superior", () => {
+        const P = t.Panels;
+        const opened0 = P.opened;
+        const topic0 = C.settingsTopic;
+        try {
+            C.settingsTopic = "about";
+            S.openSettings();
+            t.eq([C.settingsTopic, P.opened], ["dashboard", ["settings"]]);
+        } finally {
+            P.close();
+            P.opened = opened0;
+            C.settingsTopic = topic0;
+        }
+    });
+
     t.test("clima: estado original restaurado", () => {
         t.check(restored());
     });

@@ -1,5 +1,6 @@
-// Testes dos créditos nas Configurações: o tópico antes do Sobre e as três
-// seções (inspiração, dados e base), todas com link https.
+// Testes dos créditos nas Configurações: o tópico antes do Sobre, as três
+// seções (inspiração, dados e base), todas com link https, e o filtro do
+// openLink (só https sai para o navegador).
 function run(t) {
     const S = t.SettingsState;
 
@@ -21,5 +22,12 @@ function run(t) {
         for (const item of items)
             t.check(item.url.startsWith("https://"), item.url);
         t.check(items.find(i => i.name === "Open-Meteo").detail.includes("CC BY 4.0"));
+        t.check(items.every(i => S.isWebLink(i.url)), "o openLink abre todos os créditos");
+    });
+
+    t.test("créditos: o openLink só abre https", () => {
+        t.eq(["https://quickshell.org/", "http://quickshell.org/", "file:///etc/passwd", "javascript:alert(1)", " https://x.org", "HTTPS://x.org", ""].map(u => S.isWebLink(u)), [true, false, false, false, false, false, false]);
+        // Fora de https não chama o navegador (o de https abriria um de verdade).
+        S.openLink("file:///etc/passwd");
     });
 }
