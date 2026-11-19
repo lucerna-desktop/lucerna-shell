@@ -29,6 +29,7 @@ import qs.features.central.ui
 import qs.features.clipboard.state
 import qs.features.dashboard.state
 import qs.features.displays.state
+import qs.features.energy.state
 import qs.features.idle.state
 import qs.features.input.state
 import qs.features.notifications.state
@@ -319,6 +320,7 @@ ShellRoot {
             get Session() { return Session; },
             get Logind() { return Logind; },
             get DisplaysState() { return DisplaysState; },
+            get EnergyState() { return EnergyState; },
             get LucernaSession() { return LucernaSession; },
             get Spectrum() { return Spectrum; },
             get SystemStats() { return SystemStats; },

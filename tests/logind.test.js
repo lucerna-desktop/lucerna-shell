@@ -100,6 +100,40 @@ function run(t) {
         L.canHibernate = before.can;
     });
 
+    t.test("logind: o Hibernar escolhido sem hibernação disponível suspende", () => {
+        const E = t.EnergyState;
+        const S = t.SettingsState;
+        const C = t.Config;
+        const before = { can: L.canHibernate, action: C.batteryCriticalAction };
+        // O que o logind falso responde ao CanHibernate (SetCanHibernate).
+        const answer = reply => { L.canHibernate = L.canHibernateFrom(L.parseCanReply(`('${reply}',)\n`)); };
+        C.batteryCriticalAction = "hibernate";
+        answer("na");
+        t.eq(E.criticalAction, "suspend", "na (sem swap): suspende");
+        t.check(S.hibernateFallback, "a linha de Energia avisa");
+        t.eq(C.batteryCriticalAction, "hibernate", "a escolha gravada fica");
+        answer("no");
+        t.eq(E.criticalAction, "suspend", "no: suspende");
+        answer("yes");
+        t.eq(E.criticalAction, "hibernate", "com o swap de volta, hiberna");
+        t.check(!S.hibernateFallback, "e o aviso some");
+        answer("challenge");
+        t.eq(E.criticalAction, "hibernate", "challenge (o polkit pede a senha): hiberna");
+        L.canHibernate = L.canHibernateFrom(L.parseCanReply(""));
+        t.eq(E.criticalAction, "hibernate", "sem resposta: como antes");
+        L.canHibernate = false;
+        for (const action of ["none", "suspend", "poweroff"]) {
+            C.batteryCriticalAction = action;
+            t.eq(E.criticalAction, action, `${action}: não muda`);
+            t.check(!S.hibernateFallback, `${action}: sem aviso`);
+        }
+        t.eq(E.criticalActionFor("hibernate", false), "suspend", "a função pura");
+        L.readCanHibernate();
+        t.check(!L.canHibernate, "desligado, o readCanHibernate não pergunta nada");
+        C.batteryCriticalAction = before.action;
+        L.canHibernate = before.can;
+    });
+
     t.test("logind: a espera da volta (monitor, inibidor e GetSession)", () => {
         t.eq(L.backoff(1000, 0), { wait: 1000, next: 2000 }, "a primeira");
         t.eq(L.backoff(8000, 200), { wait: 8000, next: 16000 }, "uma queda logo depois dobra");

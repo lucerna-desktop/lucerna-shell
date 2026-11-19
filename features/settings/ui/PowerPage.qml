@@ -97,7 +97,7 @@ Column {
             wide: true
             icon: Icons.power
             title: "Ação"
-            description: "Antes, um aviso dá 60 segundos: conectar o carregador cancela"
+            description: SettingsState.hibernateFallback ? "Sem hibernação disponível, o shell suspende. Antes, um aviso dá 60 segundos" : "Antes, um aviso dá 60 segundos: conectar o carregador cancela"
 
             SegmentedControl {
                 width: parent.width
