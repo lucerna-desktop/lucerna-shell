@@ -23,7 +23,7 @@ Singleton {
     readonly property string mod: Quickshell.env("LUCERNA_DEV") === "1" ? "ALT" : "SUPER"
 
     readonly property var defaults: [
-        { id: "launcher", keys: [{ mods: mod, trigger: mod === "SUPER" ? "SUPER_L" : "ALT_L", release: true }, { mods: mod, trigger: "space" }], outside: [{ mods: mod, trigger: "space" }] },
+        { id: "launcher", keys: [{ mods: mod, trigger: aloneKey(mod), release: true }, { mods: mod, trigger: "space" }], outside: [{ mods: mod, trigger: "space" }] },
         { id: "dashboard", keys: [{ mods: mod, trigger: "d" }] },
         { id: "settings", keys: [{ mods: mod, trigger: "comma" }], outside: [{ mods: mod, trigger: "s" }] },
         { id: "actions", keys: [{ mods: mod, trigger: "a" }] },
@@ -57,6 +57,12 @@ Singleton {
         { id: "drag", keys: [{ mods: mod, trigger: "mouse:272" }], outside: [] },
         { id: "resize", keys: [{ mods: mod, trigger: "mouse:273" }], outside: [] }
     ])
+
+    // A tecla do Mod sozinho (o lançador ao soltar): SUPER_L, ou ALT_L no
+    // desenvolvimento.
+    function aloneKey(mod: string): string {
+        return mod === "SUPER" ? "SUPER_L" : "ALT_L";
+    }
 
     // Uma entrada por área de trabalho (1 a 9) e uma por seta.
     function numbered(prefix: string, mods: string): var {

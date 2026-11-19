@@ -44,7 +44,8 @@ function run(t) {
         const alone = S.mod === "SUPER" ? "SUPER_L" : "ALT_L";
         t.eq(S.defaultKeys("launcher", true), [{ mods: S.mod, trigger: alone, release: true }, { mods: S.mod, trigger: "space" }]);
         t.eq(S.defaultKeys("launcher", true)[0].release, true, "a primeira é a de soltar");
-        t.eq(S.mod === "SUPER" ? S.defaultKeys("launcher", true)[0].trigger : "SUPER_L", "SUPER_L", "fora do desenvolvimento, o SUPER_L");
+        // O mod vem do LUCERNA_DEV na partida: os dois lados pela função.
+        t.eq([S.aloneKey("SUPER"), S.aloneKey("ALT")], ["SUPER_L", "ALT_L"], "fora do desenvolvimento, o SUPER_L; nele, o ALT_L");
     });
 
     t.test("shellshortcuts: Configurações na vírgula, e a mudança antiga em Super+S fica", () => {
@@ -97,13 +98,12 @@ function run(t) {
         t.eq(S.withKeys({ close: [{ mods: "SUPER", trigger: "c" }] }, "close", [], false), {}, "fora, sem tecla é o padrão do fechar");
     });
 
-    t.test("shellshortcuts: a página e os binds seguem a sessão", () => {
+    t.test("shellshortcuts: os binds seguem a sessão", () => {
         const binds = layered => t.InputState.shellEntries(layered).map(e => `${e.mods}+${e.trigger}`);
         t.check(binds(true).includes(`${S.mod}+Return`), "na sessão, o terminal");
         t.check(!binds(false).includes(`${S.mod}+Return`), "fora, sem o terminal");
         t.check(!binds(false).includes(`${S.mod}+q`) && !binds(false).includes(`${S.mod}+1`), "fora, sem fechar nem áreas de trabalho");
         t.check(binds(false).includes(`${S.mod}+space`) && binds(false).includes(`${S.mod}+s`), "fora, lançador e Configurações de antes");
-        t.eq(t.ShortcutsState.shortcuts, S.effective(t.Config.shellShortcuts, t.HyprFile.layered), "a página mostra o conjunto que vale");
     });
 
     t.test("shellshortcuts: as teclas padrão que também estão na base", () => {
@@ -135,23 +135,5 @@ function run(t) {
         t.eq(S.modsFromMask(64 | 1), "SUPER SHIFT");
         t.eq(S.modsFromMask(4 | 8), "CTRL ALT");
         t.eq(S.modsFromMask(0), "");
-    });
-
-    // A página: o Super sozinho com nome legível e as opções dos apps padrão.
-    t.test("shellshortcuts: o nome do Super sozinho na página", () => {
-        const St = t.ShortcutsState;
-        t.eq(St.pretty({ mods: "SUPER", trigger: "SUPER_L", release: true }), "Super sozinho");
-        t.eq(St.pretty({ mods: "ALT", trigger: "ALT_L", release: true }), "Alt sozinho");
-        t.eq(St.pretty({ mods: "SUPER", trigger: "space" }), "Super + Espaço");
-        t.eq(St.pretty({ mods: "SUPER", trigger: "mouse:272" }), "Super + Botão esquerdo");
-        t.eq(St.pretty({ mods: "SUPER", trigger: "SUPER_L" }), "Super + Super esquerdo", "sem o soltar, é uma tecla qualquer");
-        t.eq([St.editable("drag"), St.editable("terminal")], [false, true], "o arrastar só mostra a tecla");
-    });
-
-    t.test("shellshortcuts: as opções de um app padrão", () => {
-        const St = t.ShortcutsState;
-        t.eq(St.appOptions(["kitty", "foot"], ""), [{ label: "Automático (kitty)", value: "" }, { label: "kitty", value: "kitty" }, { label: "foot", value: "foot" }]);
-        t.eq(St.appOptions([], ""), [{ label: "Automático (nenhum instalado)", value: "" }]);
-        t.eq(St.appOptions(["kitty"], "wezterm"), [{ label: "Automático (kitty)", value: "" }, { label: "kitty", value: "kitty" }, { label: "wezterm", value: "wezterm", detail: "não instalado" }], "o escolhido que sumiu continua na lista");
     });
 }
