@@ -229,7 +229,7 @@ Da revisão final da branch `feat/base-robusta` (triagem do ledger de minors das
 - [ ] Monitores: seções semeadas de um Lua antigo nunca saem (regras ausentes são inofensivas); texto do `settings.lua` por argv (128 KiB); recarga depois de gravação que falhou; só as funções puras têm teste; arquivo gravado fora da sessão Lucerna (inofensivo, decidir e registrar); chave `original` misturada em `claims`; regras automáticas se acumulam; hl.on devolvendo nil; o formato do `description` no reload.
 
 **Atalhos e apps**
-- [ ] `writeApps` descarta a escrita com a anterior rodando (enfileirar como o `HyprFile`); `Wants` comparado como lista ordenada; drag/resize mapeado em tecla ganharia `mouse = true`; teste do `SUPER_L` sem efeito no modo dev; testes do `ShortcutsState` no arquivo errado; `pretty()` com casos mortos.
+- [ ] Drag/resize mapeado em tecla ganharia `mouse = true`. (O `writeApps` que descartava a escrita com a anterior rodando, o `Wants` comparado como lista ordenada, o teste do `SUPER_L` sem efeito no modo dev, os testes do `ShortcutsState` no arquivo errado e o `pretty()` com casos mortos: resolvidos na branch `chore/cores-atalhos-limpeza`; o `LucernaSession.appsQueued` guarda a escolha mais nova até a gravação em curso sair, o `Wants` é comparado sem ordem, o `ShellShortcuts.aloneKey` é testado com os dois Mods, os casos foram para o `tests/shortcutsstate.test.js` e o `pretty()` reconhece só o `SUPER_L`/`ALT_L` do lançador.)
 
 **Escala**
 - [ ] `ThemeManager.scale` sem limite (precisa de edição à mão; o modo de segurança recupera); `setShellScale` sem teste; `blurMax` não escala; as outras páginas das Configurações não foram conferidas em 1,25; a lista lateral das Configurações em 1,25 ainda passa do fim visível (Tarefas 1 e 15).
@@ -250,17 +250,17 @@ Da branch `feat/cores-barras` (ledger das Tarefas 1 a 3 e a conferência visual 
 - [ ] **O mudo da barra não recebe foco pelo Tab** e a barra não tem anel de foco visível.
 - [x] **O alvo de clique do mudo (32 px) cobre os ~26 px iniciais da barra:** um clique ali silencia em vez de levar o valor ao começo. E o `iconTarget` não depende do `root.enabled`. Resolvido na branch `fix/pequenos-bugs-ui`: o alvo continua com 32 px, mas termina no fim do círculo do ícone e sobra para a esquerda, fora da barra (`Level.iconTargetX`); e só vale com a barra ativa.
 - [x] **A linha desativada nas Configurações quase não se distinguia da ativa** (conferência visual). Resolvido: título e descrição vão ao `ThemeManager.dimmedOn(textMuted, raised)`, o tom mais apagado que ainda fica a 4,5:1 do cartão.
-- [ ] **O `textMuted` do everforest (3,86:1) e do rose-pine-dawn (3,67:1) fica abaixo de 4,5:1 contra o `raised`** (pré-existente; o fundo real dos cartões é translúcido e costuma dar mais). Nesses dois, a linha desativada fica no próprio `textMuted`; acertar a paleta deles e um teste por tema do `dimColor` da linha desativada.
+- [ ] **O `textMuted` do everforest (3,86:1) e do rose-pine-dawn (3,67:1) fica abaixo de 4,5:1 contra o `raised`** (pré-existente; o fundo real dos cartões é translúcido e costuma dar mais). Nesses dois, a linha desativada fica no próprio `textMuted`; acertar a paleta deles. (O teste por tema do `dimColor` da linha desativada: feito na branch `chore/cores-atalhos-limpeza`, "theme: a linha desativada em cada tema", que também confere que só esses dois ficam abaixo.)
 
 **Cores**
-- [ ] **O `container()`/`onContainer()` partem do `base`/`text` animados** durante a troca de tema: as cores de estado passam por tons intermediários por um instante (só visual).
-- [ ] **A tabela de cores dos temas está copiada no `tests/theme.test.js`** e pode desatualizar; trocar por um teste que compare com o `T.data.colors` de cada JSON.
+- [ ] **O `container()`/`onContainer()` partem do `base`/`text` animados** durante a troca de tema: as cores de estado passam por tons intermediários por um instante (só visual). Fica: a correção muda as cores da transição (a cor recebida também é a animada), e a branch `chore/cores-atalhos-limpeza` não podia mudar cor visível.
+- [x] **A tabela de cores dos temas está copiada no `tests/theme.test.js`** e pode desatualizar; trocar por um teste que compare com o `T.data.colors` de cada JSON. Resolvido na branch `chore/cores-atalhos-limpeza`: o teste lê cada `themes/<id>.json` por um `FileView` com `blockLoading` (trocar o `Config.theme` não serve: o arquivo ativo só recarrega depois do evento, e o `T.data` ficava no mocha).
 - [ ] **Folga de contraste pequena** (4,50 a 4,6) no texto sobre o contêiner: consequência da escolha de "o máximo de cor que ainda passa".
 - [ ] **Medidores ainda no accent puro:** `features/osd/ui/Osd.qml:97` (o OSD, com o mudo em `textFaint`), `core/widgets/CircularGauge.qml:11` e `features/settings/ui/WallpaperPage.qml:112`. Passar ao `accentFill` e à linguagem da barra única (trilho, preenchimento a 3:1, cinza do mudo).
-- [ ] **O `iconOn` e o `fillOf` repetem o laço rumo ao extremo** (o `towardContrast` já junta parte; terminar a unificação).
-- [ ] **O `band` da `BatteryPage`** repete as comparações do estado (a escolha da cor está no componente e o teste a refaz).
-- [ ] **O teste do hover usa `mix`** em vez da composição alfa (equivalente para cores opacas).
-- [ ] **O comentário do `Tile.qml` (linhas 45–46)** diz "3:1 do contêiner", mas o teste garante o ícone contra o círculo.
+- [x] **O `iconOn` e o `fillOf` repetem o laço rumo ao extremo** (o `towardContrast` já junta parte; terminar a unificação). Resolvido na branch `chore/cores-atalhos-limpeza`: o preto e o branco viram `ThemeManager.black`/`white`, e o lado de fuga do `fillOf` e do `nearestOn` vem do `extremes(bg)` (no empate exato, que nenhuma cor de 8 bits dá, o preto).
+- [x] **O `band` da `BatteryPage`** repete as comparações do estado (a escolha da cor está no componente e o teste a refaz). Resolvido na branch `chore/cores-atalhos-limpeza`: `ThemeManager.stateFillOf`/`stateFill`, usados pelo cartão e pelo teste.
+- [x] **O teste do hover usa `mix`** em vez da composição alfa (equivalente para cores opacas). Resolvido na branch `chore/cores-atalhos-limpeza`: o véu e o círculo do Tile pelo `Qt.tint` com o `alpha`.
+- [x] **O comentário do `Tile.qml` (linhas 45–46)** diz "3:1 do contêiner", mas o teste garante o ícone contra o círculo. Já resolvido no commit `a24ac61` (o comentário fala do círculo); conferido na branch `chore/cores-atalhos-limpeza`.
 
 **Para o usuário decidir nas capturas** (conferência visual da Tarefa 4; detalhes no relatório da tarefa)
 - [ ] O ícone de 14 px dentro da barra de 20 px: legível, mas pequeno.

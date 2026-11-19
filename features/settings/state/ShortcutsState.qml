@@ -45,16 +45,18 @@ Singleton {
     }
 
     // Uma tecla legível: "Super + Espaço", "Super sozinho" (o modificador ao
-    // soltar), "Super + Botão esquerdo".
+    // soltar), "Super + Botão esquerdo". Só a tecla padrão do lançador tem o
+    // soltar (ShellShortcuts.aloneKey: SUPER_L ou ALT_L); a captura recusa um
+    // modificador sozinho. O normalizeMods só devolve os quatro do modNames.
     function pretty(k: var): string {
         const mods = ShellShortcuts.normalizeMods(k.mods);
-        const alone = /^(SUPER|ALT|CTRL|SHIFT)_[LR]$/i.exec(String(k.trigger));
+        const alone = /^(SUPER|ALT)_L$/.exec(String(k.trigger));
         if (k.release && alone)
-            return `${InputActions.modNames[alone[1].toUpperCase()]} sozinho`;
+            return `${InputActions.modNames[alone[1]]} sozinho`;
         const button = /^mouse:(\d+)$/.exec(String(k.trigger));
         if (button) {
             const name = ({ 272: "Botão esquerdo", 273: "Botão direito" })[button[1]] ?? InputActions.buttonLabel(Number(button[1]));
-            return (mods ? mods.split(" ") : []).map(m => InputActions.modNames[m] ?? m).concat([name]).join(" + ");
+            return (mods ? mods.split(" ") : []).map(m => InputActions.modNames[m]).concat([name]).join(" + ");
         }
         return InputActions.prettyCombo(mods, k.trigger);
     }

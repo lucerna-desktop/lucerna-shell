@@ -68,14 +68,12 @@ Column {
 
     // O desenho da bateria, preenchido pela carga: o corpo é o trilho, e a
     // parte cheia, a cor do estado (destaque, aviso, erro ou, carregando,
-    // verde) ajustada a 3:1 do trilho pelo fillOf (o destaque é o accentFill).
+    // verde) a 3:1 do trilho pelo ThemeManager.stateFill.
     Item {
         id: card
 
-        readonly property color hue: PowerState.cardBand === "success" ? ThemeManager.colors.success : PowerState.cardBand === "danger" ? ThemeManager.colors.danger : PowerState.cardBand === "warning" ? ThemeManager.colors.warning : ThemeManager.colors.accent
-        readonly property bool band: PowerState.cardBand === "success" || PowerState.cardBand === "danger" || PowerState.cardBand === "warning"
         readonly property color empty: ThemeManager.colors.track
-        readonly property color fill: band ? ThemeManager.fillOf(hue, ThemeManager.colors.surface, empty) : ThemeManager.colors.accentFill
+        readonly property color fill: ThemeManager.stateFill(PowerState.cardBand)
         // A carga mostrada anima até a nova.
         property real shown: PowerState.percentage
 

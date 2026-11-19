@@ -52,4 +52,33 @@ function run(t) {
         t.eq(L.appsConf({}), "# Gerado pelo Lucerna (Configurações → Atalhos). Vazio = automático.\n", "tudo automático");
         t.eq(L.appsConf({ terminal: "foot\nbrowser=x" }), "# Gerado pelo Lucerna (Configurações → Atalhos). Vazio = automático.\nterminal=foot browser=x\n", "uma quebra de linha não vira outra chave");
     });
+
+    // Uma escolha feita com a gravação anterior ainda rodando espera a vez
+    // (como no HyprFile), em vez de se perder. A pasta vai para o /tmp e vai
+    // na fila junto com o texto: o teste não grava no ~/.config. No fim, a
+    // fila fica vazia.
+    t.test("lucernasession: o apps.conf com uma gravação em curso espera a vez", () => {
+        const dir0 = L.appsDir;
+        try {
+            L.appsDir = "/tmp/lucerna-test-apps";
+            L.writeApps({ terminal: "foot" });
+            t.eq([L.appsQueued, L.appsWriting], ["", true], "a primeira grava na hora");
+            L.writeApps({ terminal: "kitty" });
+            L.writeApps({ terminal: "alacritty" });
+            t.eq(L.appsQueued, L.appsConf({ terminal: "alacritty" }), "a seguinte espera; só a mais nova");
+            L.appsDir = dir0;
+            t.eq(L.appsQueuedDir, "/tmp/lucerna-test-apps", "a pasta do pedido, não a de agora");
+            // O fim da gravação (ou um sh que nem iniciou: só o running muda)
+            // solta a marca e grava a da fila; o segundo sinal não repete.
+            L.appsWriterStopped();
+            t.eq([L.appsQueued, L.appsWriting], ["", true], "a da fila começa");
+            L.appsWriterStopped();
+            t.eq(L.appsWriting, false, "o segundo sinal só solta a marca");
+            L.appsWriterStopped();
+            t.eq([L.appsQueued, L.appsWriting], ["", false], "sem gravação, nada a fazer");
+        } finally {
+            L.appsQueued = "";
+            L.appsDir = dir0;
+        }
+    });
 }

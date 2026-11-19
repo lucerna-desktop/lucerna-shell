@@ -79,6 +79,7 @@ import "performance.test.js" as PerformanceTest
 import "searchengines.test.js" as SearchEnginesTest
 import "session.test.js" as SessionTest
 import "shellshortcuts.test.js" as ShellShortcutsTest
+import "shortcutsstate.test.js" as ShortcutsStateTest
 import "spectrum.test.js" as SpectrumTest
 import "sun.test.js" as SunTest
 import "systemstats.test.js" as SystemStatsTest
@@ -110,6 +111,7 @@ ShellRoot {
         ["carousel", CarouselTest],
         ["blobshapes", BlobShapesTest],
         ["shellshortcuts", ShellShortcutsTest],
+        ["shortcutsstate", ShortcutsStateTest],
         ["inputactions", InputActionsTest],
         ["nightschedule", NightScheduleTest],
         ["theme", ThemeTest],

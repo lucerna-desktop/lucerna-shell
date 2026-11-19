@@ -33,7 +33,8 @@ class UnitsTest(unittest.TestCase):
         unit = read(SESSION / "systemd" / "lucerna-session.target")
         self.assertEqual(unit["Unit"]["Description"], "Lucerna: a sessão gráfica")
         self.assertEqual(unit["Unit"]["BindsTo"], "graphical-session.target")
-        self.assertEqual(unit["Unit"]["Wants"].split(), ["graphical-session-pre.target", "lucerna-shell.service"])
+        # A ordem do Wants não importa ao systemd.
+        self.assertCountEqual(unit["Unit"]["Wants"].split(), ["graphical-session-pre.target", "lucerna-shell.service"])
         self.assertEqual(unit["Unit"]["After"], "graphical-session-pre.target")
 
     def test_desktop_entry_runs_lucerna_session(self):

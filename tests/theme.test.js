@@ -69,22 +69,22 @@ function run(t) {
         t.near(T.contrast("#df8e1d", "#4c4f69"), 3.05, 0.01, "aviso do latte com o texto escuro");
     });
 
-    // As cores que importam aqui, copiadas dos 12 themes/*.json (o runner não
-    // lê arquivos). Se um tema mudar de cor, atualizar a linha dele.
-    const themes = {
-        "catppuccin-latte": { dark: false, accent: "#1e66f5", base: "#eff1f5", surface: "#e6e9ef", raised: "#dce0e8", text: "#4c4f69", textFaint: "#8c8fa1", danger: "#d20f39", success: "#40a02b", warning: "#df8e1d", track: "#ccd0da" },
-        "catppuccin-mocha": { dark: true, accent: "#89b4fa", base: "#1e1e2e", surface: "#313244", raised: "#45475a", text: "#cdd6f4", textFaint: "#7f849c", danger: "#f38ba8", success: "#a6e3a1", warning: "#f9e2af", track: "#45475a" },
-        "decay-green": { dark: true, accent: "#78dba9", base: "#0c1210", surface: "#131b18", raised: "#1a2521", text: "#c6dccf", textFaint: "#5c7a69", danger: "#e05f65", success: "#78dba9", warning: "#f1cf8a", track: "#22322b" },
-        "dracula": { dark: true, accent: "#bd93f9", base: "#282a36", surface: "#343746", raised: "#44475a", text: "#f8f8f2", textFaint: "#6272a4", danger: "#ff5555", success: "#50fa7b", warning: "#f1fa8c", track: "#44475a" },
-        "everforest": { dark: true, accent: "#a7c080", accentContainer: "#445936", base: "#2d353b", surface: "#343f44", raised: "#3d484d", text: "#d3c6aa", textFaint: "#7a8478", danger: "#e67e80", success: "#83c092", warning: "#dbbc7f", track: "#475258" },
-        "gruvbox-dark": { dark: true, accent: "#fe8019", base: "#282828", surface: "#3c3836", raised: "#504945", text: "#ebdbb2", textFaint: "#928374", danger: "#fb4934", success: "#b8bb26", warning: "#fabd2f", track: "#504945" },
-        "kanagawa": { dark: true, accent: "#7e9cd8", base: "#1f1f28", surface: "#2a2a37", raised: "#363646", text: "#dcd7ba", textFaint: "#727169", danger: "#e46876", success: "#98bb6c", warning: "#e6c384", track: "#363646" },
-        "matte-black": { dark: true, accent: "#d0d0d0", base: "#0f0f0f", surface: "#1a1a1a", raised: "#242424", text: "#e6e6e6", textFaint: "#6e6e6e", danger: "#cf6a6a", success: "#9db38e", warning: "#d6b56d", track: "#2e2e2e" },
-        "nord": { dark: true, accent: "#88c0d0", base: "#2e3440", surface: "#3b4252", raised: "#434c5e", text: "#eceff4", textFaint: "#7b88a1", danger: "#bf616a", success: "#a3be8c", warning: "#ebcb8b", track: "#4c566a" },
-        "rose-pine-dawn": { dark: false, accent: "#907aa9", base: "#faf4ed", surface: "#fffaf3", raised: "#f2e9e1", text: "#575279", textFaint: "#9893a5", danger: "#b4637a", success: "#286983", warning: "#ea9d34", track: "#dfdad9" },
-        "rose-pine": { dark: true, accent: "#c4a7e7", base: "#191724", surface: "#1f1d2e", raised: "#26233a", text: "#e0def4", textFaint: "#6e6a86", danger: "#eb6f92", success: "#9ccfd8", warning: "#f6c177", track: "#403d52" },
-        "tokyo-night": { dark: true, accent: "#7aa2f7", base: "#1a1b26", surface: "#24283b", raised: "#2f3549", text: "#c0caf5", textFaint: "#565f89", danger: "#f7768e", success: "#9ece6a", warning: "#e0af68", track: "#3b4261" }
-    };
+    // As cores de cada tema, lidas do próprio themes/<id>.json ({ dark, ...as
+    // cores do JSON }) por um FileView que carrega na hora (blockLoading) e
+    // passadas pelo T.parse, como o tema ativo. Trocar o Config.theme não
+    // serve: o arquivo do tema ativo só recarrega depois do evento. Tema novo
+    // em themes/: entra na lista.
+    const ids = ["catppuccin-latte", "catppuccin-mocha", "decay-green", "dracula", "everforest", "gruvbox-dark", "kanagawa", "matte-black", "nord", "rose-pine-dawn", "rose-pine", "tokyo-night"];
+    const themes = {};
+    for (const id of ids) {
+        const file = Qt.createQmlObject(`import Quickshell.Io; FileView { blockLoading: true; printErrors: false; path: ${JSON.stringify(`${T.directory}/${id}.json`)} }`, t.object());
+        const d = T.parse(file.text());
+        file.destroy();
+        // Fora de um caso: o que falha quebra a suíte inteira.
+        if (!Object.keys(d.colors ?? {}).length)
+            throw new Error(`o JSON do tema ${id} não carregou`);
+        themes[id] = Object.assign({ dark: d.dark ?? true }, d.colors);
+    }
 
     t.test("theme: mistura de duas cores", () => {
         const a = Qt.rgba(1, 0, 0, 1);
@@ -127,8 +127,9 @@ function run(t) {
             const d = T.derivedColors({ dark: x.dark, colors: x });
             const where = `${id}: ${d.accentIcon} / ${d.accentContainer}`;
             t.check(T.contrast(String(d.accentIcon), String(d.accentContainer)) >= 3, `${where}: ícone ${T.contrast(String(d.accentIcon), String(d.accentContainer)).toFixed(2)}`);
-            // O ícone do Tile ligado, no círculo (o base a 10% sobre o contêiner).
-            const circle = T.mix(d.accentContainer, x.base, 0.1);
+            // O ícone do Tile ligado, no círculo (o base a 10% sobre o
+            // contêiner, composto como a tela desenha).
+            const circle = Qt.tint(d.accentContainer, T.alpha(x.base, 0.1));
             t.check(T.contrast(String(d.accentIcon), String(circle)) >= 3, `${where}: ícone no círculo do Tile ${T.contrast(String(d.accentIcon), String(circle)).toFixed(2)}`);
             for (const name of ["accent", "danger", "success", "warning"]) {
                 const c = T.containerOf(x[name], x.base, x.text, x.dark);
@@ -137,9 +138,10 @@ function run(t) {
                 const at = `${id} ${name}`;
                 t.check(T.contrast(String(icon), String(c)) >= 3, `${at}: ícone ${icon} ${T.contrast(String(icon), String(c)).toFixed(2)}`);
                 // O véu do Clickable ativo é o base a 8% (hover), 12%
-                // (pressão) e 16% (onda): o texto continua a 4,5:1.
+                // (pressão) e 16% (onda), composto por cima do contêiner pela
+                // opacidade: o texto continua a 4,5:1.
                 for (const veil of [0.08, 0.12, 0.16]) {
-                    const lit = T.mix(c, x.base, veil);
+                    const lit = Qt.tint(c, T.alpha(x.base, veil));
                     t.check(T.contrast(String(on), String(lit)) >= 4.5, `${at}: texto com o véu ${veil} ${T.contrast(String(on), String(lit)).toFixed(2)}`);
                 }
                 t.check(T.contrast(String(on), String(c)) >= 4.5, `${at}: texto no contêiner`);
@@ -151,9 +153,9 @@ function run(t) {
         for (const [id, x] of Object.entries(themes)) {
             const d = T.derivedColors({ dark: x.dark, colors: x });
             // O cartão é o trilho; o preenchimento, a cor do estado pelo
-            // fillOf (o destaque é o accentFill), a 3:1 do trilho.
+            // stateFillOf (o destaque é o accentFill), a 3:1 do trilho.
             for (const name of ["accent", "danger", "success", "warning"]) {
-                const fill = name === "accent" ? d.accentFill : T.fillOf(x[name], x.surface, d.track);
+                const fill = T.stateFillOf(name, Object.assign({}, x, d));
                 const at = `${id} ${name}: ${fill} / ${d.track}`;
                 t.check(T.contrast(String(fill), String(d.track)) >= 3, `${at} ${T.contrast(String(fill), String(d.track)).toFixed(2)}`);
             }
@@ -243,6 +245,33 @@ function run(t) {
         t.eq(String(T.dimmedOn("#777777", "#808080")), String(Qt.color("#777777")), "sem folga: o próprio fg");
     });
 
+    // O título e a descrição da linha desativada das Configurações (o
+    // dimColor do SettingRow): o textMuted apagado rumo ao raised, ainda a
+    // 4,5:1 dele. No everforest e no rose-pine-dawn o próprio textMuted já
+    // fica abaixo disso (pendência da paleta deles): a linha fica nele.
+    t.test("theme: a linha desativada em cada tema", () => {
+        const short = [];
+        const dimmer = [];
+        for (const [id, x] of Object.entries(themes)) {
+            const dim = T.dimmedOn(x.textMuted, x.raised);
+            const muted = T.contrast(x.textMuted, x.raised);
+            if (muted < 4.5) {
+                short.push(id);
+                t.eq(String(dim), String(Qt.color(x.textMuted)), `${id}: sem folga, o próprio textMuted`);
+                continue;
+            }
+            const c = T.contrast(String(dim), x.raised);
+            t.check(c >= 4.5, `${id}: ${dim} a ${c.toFixed(2)}:1 do raised`);
+            // Sem folga para um passo de 5% (o latte e o rose-pine), o
+            // próprio textMuted.
+            t.check(c <= muted, `${id}: nunca mais forte que o textMuted (${c.toFixed(2)} <= ${muted.toFixed(2)})`);
+            if (c < muted)
+                dimmer.push(id);
+        }
+        t.check(dimmer.includes("catppuccin-mocha"), `com folga, apaga de verdade: ${dimmer}`);
+        t.eq(short, ["everforest", "rose-pine-dawn"], "os temas com o textMuted abaixo de 4,5:1");
+    });
+
     t.test("theme: tokens do contêiner do tema padrão", () => {
         const x = themes["catppuccin-mocha"];
         const c = T.containerOf(x.accent, x.base, x.text, true);
@@ -255,6 +284,9 @@ function run(t) {
         t.eq(String(T.containerIcon(T.colors.danger)), String(T.iconOn(x.danger, T.container(T.colors.danger), true)), "o ícone do estado com o tema ativo");
         const level = T.levelColorsOf(x, x.track, T.colors.accentFill, true);
         t.eq([T.colors.mutedFill, T.colors.fillIcon, T.colors.mutedFillIcon].map(String), [level.mutedFill, level.fillIcon, level.mutedFillIcon].map(String), "as cores da barra");
+        t.eq(String(T.stateFill("accent")), String(T.colors.accentFill), "o destaque do cartão da bateria: o accentFill");
+        t.eq(String(T.stateFill("danger")), String(T.fillOf(x.danger, x.surface, x.track)), "o erro pelo fillOf");
+        t.eq(String(T.stateFill("nada")), String(T.colors.accentFill), "estado desconhecido: o destaque");
     });
 
     t.test("theme: sobrescrita pelo JSON", () => {
