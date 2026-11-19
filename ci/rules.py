@@ -416,7 +416,10 @@ def lua_segments(text):
             j = i + 1
             while j < n and text[j] != c and text[j] != "\n":
                 j += 2 if text[j] == "\\" else 1
-            out.append((line, text[i + 1 : j]))
+            chunk = text[i + 1 : j]
+            # Uma quebra escapada ("\" no fim da linha) continua a string.
+            out += split_chunk(line, chunk)
+            line += chunk.count("\n")
             # Sem fechar até a quebra de linha: o "\n" fica para o laço contar.
             i = j if j < n and text[j] == "\n" else j + 1
             continue

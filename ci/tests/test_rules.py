@@ -212,6 +212,13 @@ class SegmentsTest(unittest.TestCase):
         self.assertIn((7, " fim"), segs)
         self.assertFalse(any("local" in s or "y = 1" in s for _, s in segs), "o código fica de fora")
 
+    def test_lua_string_com_quebra_escapada_conta_a_linha(self):
+        # Uma string com "\" e quebra de linha continua na linha seguinte: a
+        # contagem não pode atrasar dali em diante.
+        segs = rules.lua_segments('local s = "a\\\nb" -- c\n-- d\n')
+        self.assertIn((2, " c"), segs)
+        self.assertIn((3, " d"), segs)
+
     def test_md_pula_codigo_e_links(self):
         text = "Texto `nao` e [link](nao/so.md)\n````\n```\nnao\n```\n````\nfim https://x.so/ja\n"
         segs = rules.md_segments(text)
