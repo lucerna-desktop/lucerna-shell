@@ -52,7 +52,9 @@
 # (ci/logind-fake.sh, num barramento privado na pasta temporária da fumaça;
 # LUCERNA_LOGIND_BUS só no ambiente do shell, nunca o barramento do sistema).
 # O shell precisa segurar o inibidor delay (10 s) e ter perguntado o
-# CanHibernate (a opção de hibernar some sem swap); o org.lucerna.Test.Suspend
+# CanHibernate (a opção de hibernar some sem swap), e com o "Hibernar" escolhido
+# o `ipc call energy criticalAction` precisa trazer "suspend" (o falso responde
+# "na": sem hibernação, o shell suspende); o org.lucerna.Test.Suspend
 # precisa terminar com o inibidor solto antes do prazo (lastSleep.timedOut
 # false), o LockedHint ligado na hora de dormir e o `session isLocked` em true
 # (com a captura); ao acordar, o inibidor de novo (10 s); o UnlockSession
@@ -985,6 +987,12 @@ for _ in $(seq 25); do
 done
 row "logind" "o CanHibernate perguntado na partida" "${asked:-(sem resposta)}"
 [ "$asked" = true ] || fail "logind: o shell não perguntou o CanHibernate ao logind falso (veja shell.log e logind-fake.log)"
+# O falso responde "na" ao CanHibernate desde a partida (sem SetCanHibernate).
+set_config '{"batteryCriticalAction": "hibernate"}'
+action=$(ipc energy criticalAction) || fail "ipc call energy criticalAction falhou: $(why $?)"
+row "logind" "o Hibernar sem hibernação disponível suspende" "${action:-(nada)}"
+[ "$action" = suspend ] || fail "logind: com o Hibernar escolhido e o CanHibernate \"na\", a ação do nível crítico devia ser \"suspend\" (veio \"$action\")"
+set_config '{"batteryCriticalAction": "none"}'
 logind_call Suspend > /dev/null || fail "o org.lucerna.Test.Suspend do logind falso falhou: $(why $?)"
 sleep_state=$(logind_status '[s["lastSleep"]["timedOut"], s["lastSleep"]["lockedHintAtSleep"], s["lastSleep"]["releasedMs"]]') || true
 row "logind" "Suspend: timedOut false, LockedHint ao dormir" "${sleep_state:-(sem resposta)}"

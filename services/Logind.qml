@@ -178,7 +178,14 @@ Singleton {
         // A tampa pode estar fechada desde antes (o shell reiniciado com ela
         // fechada) ou ter mudado enquanto o monitor estava fora.
         lid.running = true;
-        canHibernateCall.running = true;
+        readCanHibernate();
+    }
+
+    // Pergunta o CanHibernate de novo (na partida, a cada volta do monitor e
+    // antes da ação no nível crítico).
+    function readCanHibernate(): void {
+        if (enabled && toolChecked)
+            canHibernateCall.running = true;
     }
 
     function handle(event: var): void {
@@ -262,7 +269,8 @@ Singleton {
     }
 
     // O CanHibernate do Manager: sem swap (ou sem suporte), a opção de
-    // hibernar some. Lido na partida e a cada volta do monitor.
+    // hibernar some (e o Hibernar já escolhido suspende). Lido pelo
+    // readCanHibernate.
     Process {
         id: canHibernateCall
 

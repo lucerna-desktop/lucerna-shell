@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import qs.core.config
 import qs.core.theme
 import qs.services
@@ -27,6 +28,17 @@ Singleton {
     property int criticalCountdown: 0
 
     readonly property var actionNames: ({ suspend: "suspender", hibernate: "hibernar", poweroff: "desligar" })
+    // A ação que roda de fato: a escolhida, ou "suspend" no lugar do
+    // "hibernate" quando o logind diz que não dá (sem swap).
+    readonly property string criticalAction: criticalActionFor(Config.batteryCriticalAction, Logind.canHibernate)
+
+    // O Hibernar escolhido sem hibernação disponível (CanHibernate "no" ou
+    // "na") suspende: o systemctl hibernate falharia e a bateria acabaria
+    // sem ação. A escolha gravada fica; com o swap de volta, hiberna. Sem
+    // resposta do logind, o canHibernate fica true: como antes.
+    function criticalActionFor(action: string, canHibernate: bool): string {
+        return action === "hibernate" && !canHibernate ? "suspend" : action;
+    }
 
     function notify(title: string, body: string, urgency: string): void {
         Quickshell.execDetached(["notify-send", "-a", "Energia", "-u", urgency, "-i", "battery", title, body]);
@@ -55,8 +67,12 @@ Singleton {
         if (percent <= Config.batteryCriticalLevel && !criticalWarned) {
             criticalWarned = true;
             lowWarned = true;
-            const action = Config.batteryCriticalAction;
+            const action = criticalAction;
             if (action !== "none") {
+                // O swap pode ter vindo depois da partida: o CanHibernate
+                // lido de novo antes do prazo.
+                if (Config.batteryCriticalAction === "hibernate")
+                    Logind.readCanHibernate();
                 criticalCountdown = criticalGrace;
                 countdown.start();
                 notify(`Bateria crítica: ${percent}%`, `O computador vai ${actionNames[action]} em ${criticalGrace} s. Conecte o carregador para cancelar.`, "critical");
@@ -75,7 +91,7 @@ Singleton {
     }
 
     function runCriticalAction(): void {
-        const action = Config.batteryCriticalAction;
+        const action = criticalAction;
         if (action === "suspend")
             Session.suspend();
         else if (action === "hibernate")
@@ -117,5 +133,15 @@ Singleton {
         target: ThemeManager
         property: "lightMode"
         value: Config.batteryLightMode && root.available && root.onBattery
+    }
+
+    IpcHandler {
+        target: "energy"
+
+        // A ação que roda no nível crítico (a escolhida, ou "suspend" no
+        // lugar do "hibernate" sem hibernação disponível).
+        function criticalAction(): string {
+            return root.criticalAction;
+        }
     }
 }

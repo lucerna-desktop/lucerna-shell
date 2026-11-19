@@ -378,6 +378,10 @@ Singleton {
         { label: "Desligar", value: "poweroff" }
     ]
 
+    // O Hibernar escolhido sem hibernação disponível: o shell suspende no
+    // lugar (EnergyState.criticalActionFor), e a linha de Energia diz.
+    readonly property bool hibernateFallback: Config.batteryCriticalAction === "hibernate" && !Logind.canHibernate
+
     function setBatteryShowPercent(on: bool): void {
         Config.batteryShowPercent = on;
     }
