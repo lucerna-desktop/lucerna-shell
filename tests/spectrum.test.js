@@ -44,6 +44,16 @@ function run(t) {
             t.eq([S.values.length, S.values[0]], [S.bars, 0.5], "quadro de outro tamanho não vale");
             S.apply("spectrum.bands", { bands: "x" });
             t.eq(S.values.length, S.bars, "sem array não vale");
+            const bad = frame(S.bars, 0.7);
+            bad.bands[3] = "0.7";
+            S.apply("spectrum.bands", bad);
+            t.eq(S.values[0], 0.5, "faixa que não é número não vale");
+            bad.bands[3] = NaN;
+            S.apply("spectrum.bands", bad);
+            t.eq(S.values[0], 0.5, "NaN não vale");
+            bad.bands[3] = null;
+            S.apply("spectrum.bands", bad);
+            t.eq(S.values[0], 0.5, "null não vale");
             S.active = false;
             t.eq(S.values, [], "desligado, zera");
             S.apply("spectrum.bands", frame(S.bars, 0.5));
@@ -72,7 +82,6 @@ function run(t) {
         t.eq(S.moduleAvailable, false);
         S.applyStatus({ available: true, capturing: false, player: null, error: null });
         t.eq(S.moduleAvailable, true);
-        t.eq(S.available, false, "sem daemon no teste, indisponível");
         S.moduleAvailable = original.moduleAvailable;
     });
 
@@ -110,6 +119,31 @@ function run(t) {
             const again = last();
             t.eq([again.method, again.params], ["spectrum.configure", { player: S.playerParam(S.player) }]);
         } finally {
+            c.connected = saved.connected;
+            c.pending = saved.pending;
+            c.nextId = saved.nextId;
+        }
+    });
+
+    t.test("spectrum: trocar de player manda o nome dele", () => {
+        const c = S.client;
+        const saved = { pending: c.pending, nextId: c.nextId, connected: c.connected };
+        const last = () => {
+            const ids = Object.keys(c.pending).map(Number);
+            return c.pending[ids[ids.length - 1]];
+        };
+        try {
+            c.connected = true;
+            c.pending = {};
+            S.player = "org.mpris.MediaPlayer2.spotify";
+            t.eq([last().method, last().params], ["spectrum.configure", { player: "org.mpris.MediaPlayer2.spotify" }], "o onPlayerChanged configura com o player");
+            S.player = "org.mpris.MediaPlayer2.mpv";
+            t.eq(last().params, { player: "org.mpris.MediaPlayer2.mpv" });
+            c.pending = {};
+            S.player = "";
+            t.eq([last().method, last().params], ["spectrum.configure", { player: null }], "sem player, null");
+        } finally {
+            S.player = Qt.binding(() => t.Media.active?.dbusName ?? "");
             c.connected = saved.connected;
             c.pending = saved.pending;
             c.nextId = saved.nextId;

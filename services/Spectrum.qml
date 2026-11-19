@@ -16,12 +16,12 @@ Singleton {
     // O spectrum.status do daemon: o módulo pode estar indisponível com o
     // daemon de pé (sem PipeWire, um erro interno).
     property bool moduleAvailable: false
-    readonly property bool available: client.connected && moduleAvailable
     readonly property int bars: 40
     // [0..1] por barra; vazio parado ou sem quadro.
     property var values: []
-    // O nome D-Bus do player exibido; vazio sem player.
-    readonly property string player: Media.active?.dbusName ?? ""
+    // O nome D-Bus do player exibido; vazio sem player. Não é readonly: os
+    // testes põem um nome (o MPRIS não roda no CI) e voltam com o Qt.binding.
+    property string player: Media.active?.dbusName ?? ""
 
     // As faixas juntadas de duas em duas, pelo maior de cada par (a média
     // achataria o soco de uma faixa só): a metade das faixas, para quem
@@ -75,11 +75,12 @@ Singleton {
         }
     }
 
-    // Um quadro só vale pedindo e com as 40 faixas. O array que vem do sinal
-    // do cliente é uma lista do QML (Array.isArray dá falso): vira array de JS.
+    // Um quadro só vale pedindo e com as 40 faixas, todas números. O array que
+    // vem do sinal do cliente é uma lista do QML (Array.isArray dá falso):
+    // vira array de JS.
     function applyBands(data: var): void {
         const bands = data.bands ? Array.from(data.bands) : [];
-        if (active && bands.length === bars)
+        if (active && bands.length === bars && bands.every(v => typeof v === "number" && isFinite(v)))
             values = bands;
     }
 
