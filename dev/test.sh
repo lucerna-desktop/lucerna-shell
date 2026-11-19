@@ -68,6 +68,7 @@
 # o perfil de energia e o GameMode do modo jogo também são os falsos dela, em
 # /tmp/lucerna-power/power-profiles e /tmp/lucerna-power/gamemode):
 # `dev/test.sh run 'bash ~/.config/quickshell/lucerna/ci/power-root.sh /tmp/lucerna-power && setsid -f env LUCERNAD_POWER_ROOT=/tmp/lucerna-power LUCERNA_IDLE_TIMEOUT_MS=86400000 lucernad serve'`
+# --- (o help para aqui; as dicas e o roteiro abaixo ficam só no script)
 #
 # Teclas com modificador pelo wtype: o Hyprland aninhado resolve os binds pelo
 # keycode do keymap real, e o wtype numera as teclas do keymap dele na ordem em
@@ -491,8 +492,10 @@ case "${1:-}" in
         ex "$2"
         ;;
     *)
-        # O comentário do topo inteiro (até a primeira linha sem #).
-        awk 'NR > 1 && !/^#/ { exit } NR > 1' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+        # O comentário do topo até o marcador "# ---" (as dicas do wtype e o
+        # roteiro ficam no script).
+        awk 'NR > 1 && (!/^#/ || /^# ---/) { exit } NR > 1' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+        echo "(as dicas do wtype, dos binds e o roteiro de referência: no topo de dev/test.sh)"
         exit 2
         ;;
 esac
