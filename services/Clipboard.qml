@@ -218,8 +218,7 @@ Singleton {
             paging = false;
             buffer = [];
         }
-        configure();
-        sync();
+        start();
     }
 
     // Os métodos, sem esperar resposta (o histórico novo chega pelo tópico).
@@ -312,10 +311,14 @@ Singleton {
         }
     }
 
-    Component.onCompleted: {
+    // A partida e cada conexão: o configure vai antes da assinatura, para o
+    // daemon ter o configure antes do assinante.
+    function start(): void {
         configure();
         sync();
     }
+
+    Component.onCompleted: start()
 
     // Cola na janela em foco: Ctrl+V, ou Ctrl+Shift+V num terminal. Com um
     // atraso, para o painel fechar e o foco voltar para a janela.

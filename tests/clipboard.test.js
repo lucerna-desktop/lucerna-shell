@@ -123,6 +123,28 @@ function run(t) {
         t.check(configure.id < Math.min(...history), `o configure (${configure.id}) antes do subscribe (${history})`);
     }, false);
 
+    withClient("clipboard: na partida com o cliente já conectado, configura antes de assinar", idle => {
+        // O Component.onCompleted chama o start(). O watching muda num cliente
+        // sem conexão (nada sai); o conectado entra depois, sem o sinal de
+        // conexão, como no serviço criado depois do hello.
+        C.watching = true;
+        const c = t.lucernaClient();
+        try {
+            c.opened();
+            c.receive(ok(ids(c)[0], hello(["clipboard.history", "clipboard.status"])));
+            t.check(c.connected, "o hello conectou");
+            t.eq(methods(c), [], "nada pendente antes da partida");
+            C.client = c;
+            C.start();
+            t.eq(methods(c), ["clipboard.configure", "lucerna.subscribe"]);
+            t.eq(c.pending[ids(c)[0]].params, C.configureParams(C.limit, C.persist, C.display));
+            t.eq(Array.from(c.pending[ids(c)[1]].params.topics), ["clipboard.status", "clipboard.history"]);
+        } finally {
+            C.client = idle;
+            c.destroy();
+        }
+    }, false);
+
     withClient("clipboard: as configurações mandam o configure de novo", c => {
         c.pending = {};
         C.limit = 25;
