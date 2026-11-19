@@ -153,11 +153,12 @@ Singleton {
 
     // A pasta do apps.conf (os testes a trocam por uma do /tmp).
     property string appsDir: `${Quickshell.env("XDG_CONFIG_HOME") || `${Quickshell.env("HOME")}/.config`}/lucerna`
-    // O texto que espera a gravação em curso terminar (só o mais novo), como
-    // no HyprFile: sem a fila, a escolha feita no meio se perdia. A marca
-    // própria vale desde o pedido: o `running` do Process só vira verdadeiro
-    // depois do evento.
+    // O texto que espera a gravação em curso terminar (só o mais novo), com a
+    // pasta do momento do pedido, como no HyprFile: sem a fila, a escolha
+    // feita no meio se perdia. A marca própria vale desde o pedido: o
+    // `running` do Process só vira verdadeiro depois do evento.
     property string appsQueued: ""
+    property string appsQueuedDir: ""
     property bool appsWriting: false
 
     // Grava o apps.conf (nunca no modo de segurança).
@@ -165,6 +166,7 @@ Singleton {
         if (Config.safeMode)
             return;
         appsQueued = appsConf(chosen);
+        appsQueuedDir = appsDir;
         if (!appsWriting)
             flushApps();
     }
@@ -173,10 +175,20 @@ Singleton {
     function flushApps(): void {
         if (!appsQueued)
             return;
-        appsWriter.command = ["sh", "-c", 'mkdir -p "$1" && printf "%s" "$2" > "$1/apps.conf.tmp" && mv -f "$1/apps.conf.tmp" "$1/apps.conf"', "sh", appsDir, appsQueued];
+        appsWriter.command = ["sh", "-c", 'mkdir -p "$1" && printf "%s" "$2" > "$1/apps.conf.tmp" && mv -f "$1/apps.conf.tmp" "$1/apps.conf"', "sh", appsQueuedDir, appsQueued];
         appsQueued = "";
         appsWriting = true;
         appsWriter.running = true;
+    }
+
+    // A gravação terminou, ou nem começou (um `sh` que não inicia muda o
+    // `running` sem o `exited`): solta a marca e grava o que esperava. A
+    // guarda evita repetir quando os dois sinais chegam.
+    function appsWriterStopped(): void {
+        if (!appsWriting)
+            return;
+        appsWriting = false;
+        flushApps();
     }
 
     Process {
@@ -195,8 +207,11 @@ Singleton {
             if (code !== 0)
                 console.warn(`Lucerna: não consegui gravar o apps.conf (código ${code})`);
             // Outra escolha pode ter chegado durante a gravação.
-            root.appsWriting = false;
-            root.flushApps();
+            root.appsWriterStopped();
+        }
+        onRunningChanged: {
+            if (!running)
+                root.appsWriterStopped();
         }
     }
 
