@@ -75,21 +75,72 @@ Singleton {
         return out;
     }
 
+    // O que a gravação faz com o texto composto: "write" (grava), "wait"
+    // (outra gravação em curso: tenta depois), "done" (já está no disco: só o
+    // reload pedido) ou "failed" (é o texto que acabou de falhar: não tenta
+    // de novo sozinho, até uma seção mudar ou um reload ser pedido).
+    function writeStep(text: string, onDisk: string, failedText: string, busy: bool): string {
+        if (text === onDisk)
+            return "done";
+        if (text === failedText)
+            return "failed";
+        return busy ? "wait" : "write";
+    }
+
+    // O comando da gravação: o texto vai em pedaços de até 16384 caracteres
+    // (64 KiB em UTF-8, no pior caso), que o printf junta. Um argumento só vai
+    // até 128 KiB (MAX_ARG_STRLEN): o settings.lua inteiro num argumento não
+    // seria gravado a partir desse tamanho. Um pedaço não termina no meio de
+    // um par de surrogates (um emoji num comentário ou num nome).
+    function writeCommand(file: string, text: string): var {
+        const parts = [];
+        for (let i = 0; i < text.length;) {
+            let end = Math.min(text.length, i + 16384);
+            const last = text.charCodeAt(end - 1);
+            if (end < text.length && last >= 0xD800 && last <= 0xDBFF)
+                end--;
+            parts.push(text.slice(i, end));
+            i = end;
+        }
+        return ["sh", "-c", 'f=$1; shift; mkdir -p "$(dirname "$f")" && printf "%s" "$@" > "$f.tmp" && mv -f "$f.tmp" "$f"', "sh", file].concat(parts.length ? parts : [""]);
+    }
+
     function write(): void {
         if (!writable)
             return;
         const text = compose(sections);
-        if (text === written || text === failed) {
+        const step = writeStep(text, written, failed, writer.running);
+        if (step === "done") {
             reloadIfAsked();
-            return;
-        }
-        if (writer.running) {
+        } else if (step === "failed") {
+            reloadAsked = false;
+        } else if (step === "wait") {
             writeDelay.restart();
-            return;
+        } else {
+            writer.text = text;
+            writer.command = writeCommand(path, text);
+            writer.running = true;
         }
-        writer.text = text;
-        writer.command = ["sh", "-c", 'mkdir -p "$(dirname "$1")" && printf "%s" "$2" > "$1.tmp" && mv -f "$1.tmp" "$1"', "sh", path, text];
-        writer.running = true;
+    }
+
+    // O fim de uma gravação. Gravada, o reload pedido sai; falhou, o reload
+    // cai: o Hyprland leria o arquivo velho e desfaria o que o hyprctl eval
+    // já pôs (o próximo pedido de reload tenta gravar de novo). Outra mudança
+    // pode ter chegado durante a gravação.
+    function finished(ok: bool, text: string): void {
+        if (ok) {
+            written = text;
+            failed = "";
+        } else {
+            failed = text;
+            reloadAsked = false;
+            console.warn(`Lucerna: não consegui gravar ${path}; o Hyprland não recarrega com o arquivo velho`);
+        }
+        const next = compose(sections);
+        if (next !== written && next !== failed)
+            writeDelay.restart();
+        else if (ok)
+            reloadIfAsked();
     }
 
     Timer {
@@ -104,21 +155,7 @@ Singleton {
 
         property string text: ""
 
-        onExited: code => {
-            if (code === 0) {
-                root.written = writer.text;
-                root.failed = "";
-            } else {
-                root.failed = writer.text;
-                console.warn(`Lucerna: não consegui gravar ${root.path} (código ${code})`);
-            }
-            // Outra mudança pode ter chegado durante a gravação.
-            const text = root.compose(root.sections);
-            if (text !== root.written && text !== root.failed)
-                writeDelay.restart();
-            else
-                root.reloadIfAsked();
-        }
+        onExited: code => root.finished(code === 0, writer.text)
     }
 
     FileView {
@@ -141,6 +178,8 @@ Singleton {
             Quickshell.execDetached(["hyprctl", "reload"]);
             return;
         }
+        // Uma gravação que falhou é tentada de novo antes do reload.
+        failed = "";
         reloadAsked = true;
         reloadDelay.restart();
     }
