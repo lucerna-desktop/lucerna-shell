@@ -101,7 +101,7 @@ Singleton {
     // A data (AAAA-MM-DD) do instante `ms` num fuso `offset` (segundos a
     // partir do UTC); sem fuso, a da máquina.
     function todayFor(ms: real, offset: var): string {
-        if (typeof offset !== "number")
+        if (!Number.isFinite(offset))
             return dateKey(new Date(ms));
         const d = new Date(ms + offset * 1000);
         const pad = n => String(n).padStart(2, "0");

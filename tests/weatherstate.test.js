@@ -93,6 +93,7 @@ function run(t) {
         t.eq(S.todayFor(ms, 3600), "2026-10-25", "a cidade a leste já virou o dia");
         t.eq(S.todayFor(ms, -14400), "2026-10-24", "a cidade a oeste ainda não");
         t.eq(S.todayFor(ms, null), "2026-10-24", "sem o fuso, a data da máquina");
+        t.eq([S.todayFor(ms, NaN), S.todayFor(ms, Infinity)], ["2026-10-24", "2026-10-24"], "fuso não finito, a data da máquina");
         t.eq(S.todayFor(Date.UTC(2026, 11, 31, 23, 30), 3600), "2027-01-01", "a virada do ano");
     });
 
