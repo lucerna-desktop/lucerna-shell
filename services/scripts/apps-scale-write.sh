@@ -10,7 +10,8 @@
 # (uma queda ou o disco cheio no meio não deixa o arquivo da pessoa pela
 # metade). Um link simbólico (dotfiles com stow) é gravado no lugar, para o
 # link continuar apontando para o arquivo dela. Com um original, o temporário
-# nasce só para o dono (umask 077, depois de apagar um que tenha sobrado) e
+# nasce só para o dono (umask 077, depois de apagar um que tenha sobrado, e
+# com o noclobber: um link plantado entre o rm e a criação não é seguido) e
 # ganha as permissões dele antes do mv: nunca fica um instante aberto aos
 # outros. Um arquivo novo segue o umask da sessão.
 # Sai com 1 se algum arquivo não foi gravado (os outros seguem).
@@ -31,7 +32,7 @@ while [ $# -ge 3 ]; do
             st=1
         elif [ -L "$1" ]; then
             printf '%s' "$3" > "$1" || st=1
-        elif rm -f -- "$1.lucerna-tmp" && (if [ -e "$1" ]; then umask 077; fi; printf '%s' "$3" > "$1.lucerna-tmp"); then
+        elif rm -f -- "$1.lucerna-tmp" && (set -C; if [ -e "$1" ]; then umask 077; fi; printf '%s' "$3" > "$1.lucerna-tmp"); then
             [ -e "$1" ] && chmod --reference="$1" "$1.lucerna-tmp" 2> /dev/null
             mv -f -- "$1.lucerna-tmp" "$1" || { rm -f -- "$1.lucerna-tmp"; st=1; }
         else
