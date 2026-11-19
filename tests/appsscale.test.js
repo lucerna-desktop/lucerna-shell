@@ -80,6 +80,9 @@ function run(t) {
         for (const part of ["lucerna_scale_mode = nil", 'hl.env("XCURSOR_SIZE", "32")', 'hl.env("QT_SCALE_FACTOR", "1")', 'hl.env("GDK_SCALE", "1")', 'hl.env("GDK_DPI_SCALE", "1")', 'hl.env("HYPRCURSOR_SIZE", "24")', "gaps_in = 4", "gaps_out = { top = 5, right = 10, bottom = 5, left = 10 }"])
             t.check(lua.includes(part), `${part} em ${lua}`);
         t.check(A.restoreLua(null).includes("gaps_in = 4") && A.restoreLua(null).includes("gaps_out = 10"), "sem cópia, a base");
+        const empty = A.restoreLua({ env: { QT_SCALE_FACTOR: "", GDK_SCALE: null } });
+        t.check(empty.includes('hl.env("QT_SCALE_FACTOR", "")'), `um original vazio volta vazio, não o neutro: ${empty}`);
+        t.check(empty.includes('hl.env("GDK_SCALE", "1")'), "o que não havia continua indo com o neutro");
         t.eq(A.gapsLua("7"), "7");
         t.eq(A.gapsLua("x"), "", "o que não é número não vai");
     });
