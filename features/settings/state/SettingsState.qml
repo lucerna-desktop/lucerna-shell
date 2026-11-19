@@ -118,7 +118,8 @@ Singleton {
     }
 
     // O tamanho do shell: a escala interna (ThemeManager.scale), sem mexer na
-    // escala do monitor.
+    // escala do monitor. O valor vai à Config já dentro do limite do tema
+    // (ThemeManager.clampScale).
     readonly property var shellScaleOptions: [
         { label: "100%", value: 1 },
         { label: "110%", value: 1.1 },
@@ -128,7 +129,7 @@ Singleton {
     readonly property real shellScale: Config.shellScale
 
     function setShellScale(value: real): void {
-        Config.shellScale = value;
+        Config.shellScale = ThemeManager.clampScale(value);
     }
 
     readonly property bool outlines: ThemeManager.outlines

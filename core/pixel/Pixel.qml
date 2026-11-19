@@ -10,16 +10,25 @@ import Quickshell
 // O `dpr` de cada janela é o `Window.window.devicePixelRatio` (a escala
 // fracionária que o compositor manda, 1,25); o `Screen.devicePixelRatio` e o
 // da ShellScreen dão a escala inteira da saída (2 em 1,25) e não servem.
-// Janela ainda sem tela: dpr 1.
+// Janela ainda sem tela: dpr 1. Um dpr zero, negativo ou que não é número
+// (uma tela que ainda não mandou a escala) também vale 1 (valid), senão a
+// divisão daria NaN ou infinito e a medida sumiria.
 Singleton {
+    // O dpr que dá para usar: positivo e finito, senão 1.
+    function valid(dpr: real): real {
+        return Number.isFinite(dpr) && dpr > 0 ? dpr : 1;
+    }
+
     // `v` lógico no pixel físico mais próximo, de volta em lógico.
     function snap(v: real, dpr: real): real {
-        return Math.round(v * dpr) / dpr;
+        const d = valid(dpr);
+        return Math.round(v * d) / d;
     }
 
     // A espessura lógica de uma linha fina: a escala arredondada em pixels
     // físicos, nunca menos de 1 (1 px físico em 1 e 1,25; 2 em 1,5 e em 2).
     function hairline(dpr: real): real {
-        return Math.max(1, Math.round(dpr)) / dpr;
+        const d = valid(dpr);
+        return Math.max(1, Math.round(d)) / d;
     }
 }
