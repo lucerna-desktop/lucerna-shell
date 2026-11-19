@@ -130,7 +130,7 @@ local function scale_monitor(m)
     if lucerna_scale_mode ~= "apps" then
         s = scale.scale_for(m.width, m.height, m.physical_width, m.physical_height)
     end
-    claims.original({ output = m.name, mode = "highrr", position = "auto", scale = s })
+    claims_mod.auto(claims, { output = m.name, mode = "highrr", position = "auto", scale = s })
 end
 
 local function scale_all()

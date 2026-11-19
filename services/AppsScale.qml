@@ -188,13 +188,14 @@ Singleton {
     }
 
     // O Lua da volta, mandado na hora (o arquivo perde a seção "scale"): o
-    // ambiente de antes (o que não havia vai com o valor neutro: o hl.env não
-    // desfaz uma variável, e vazio não é neutro) e os espaços de antes. Bordas e arredondamento voltam pelo
+    // ambiente de antes (o que não havia, null, vai com o valor neutro: o
+    // hl.env não desfaz uma variável, e vazio não é neutro; um original vazio
+    // volta vazio) e os espaços de antes. Bordas e arredondamento voltam pelo
     // tema (ThemeSwitcherState, com o fator 1).
     function restoreLua(backup: var): string {
         const lines = ["lucerna_scale_mode = nil"];
         for (const name of envNames)
-            lines.push(`hl.env("${name}", ${JSON.stringify(String(backup?.env?.[name] || neutralEnv[name]))})`);
+            lines.push(`hl.env("${name}", ${JSON.stringify(String(backup?.env?.[name] ?? neutralEnv[name]))})`);
         const gapsIn = gapsLua(backup?.gaps?.in ?? "") || "4";
         const gapsOut = gapsLua(backup?.gaps?.out ?? "") || "10";
         lines.push(`hl.config({ general = { gaps_in = ${gapsIn}, gaps_out = ${gapsOut} } })`);
@@ -440,40 +441,11 @@ printf '\\036@gaps_out\\037'; hyprctl getoption general:gaps_out -j 2> /dev/null
         writer.backup = job.op === "apply" ? plan.backup : backup;
         // As cópias .lucerna-bak: só na primeira aplicação (sem o
         // scale-backup.json), dos arquivos que existem: o estado de antes do
-        // modo. Uma cópia que já existe nunca é sobrescrita (com o JSON
-        // perdido no meio do modo, a cópia nova seria a versão do modo).
-        // Só os da pessoa (o que o modo gerou não tem cópia).
-        // Cada arquivo é gravado inteiro num .lucerna-tmp ao lado e trocado
-        // pelo mv (uma queda ou o disco cheio no meio não deixa o arquivo da
-        // pessoa pela metade). Um link simbólico (dotfiles com stow) é gravado
-        // no lugar, para o link continuar apontando para o arquivo dela.
+        // modo. Só os da pessoa (o que o modo gerou não tem cópia). A gravação
+        // (pelo .lucerna-tmp e o mv, e o link simbólico no lugar) está no
+        // services/scripts/apps-scale-write.sh.
         const copies = job.op === "apply" && plan.fresh ? files.filter(n => plan.backup.files[n]).join("\n") : "";
-        writer.command = ["sh", "-c", `cd "$1" || exit 1; mode=$2; copies=$3; shift 3
-if [ "$mode" = fresh ]; then
-    printf '%s\\n' "$copies" | while IFS= read -r n; do
-        [ -n "$n" ] && [ -f "$n" ] && [ ! -e "$n.lucerna-bak" ] || continue
-        cp -pL -- "$n" "$n.lucerna-bak" || exit 1
-    done || exit 1
-fi
-st=0
-while [ $# -ge 3 ]; do
-    case $2 in
-        w) if ! mkdir -p "$(dirname "$1")"; then
-            st=1
-        elif [ -L "$1" ]; then
-            printf '%s' "$3" > "$1" || st=1
-        elif printf '%s' "$3" > "$1.lucerna-tmp"; then
-            [ -e "$1" ] && chmod --reference="$1" "$1.lucerna-tmp" 2> /dev/null
-            mv -f -- "$1.lucerna-tmp" "$1" || { rm -f -- "$1.lucerna-tmp"; st=1; }
-        else
-            rm -f -- "$1.lucerna-tmp"
-            st=1
-        fi ;;
-        rm) rm -f -- "$1" || st=1 ;;
-    esac
-    shift 3
-done
-exit $st`, "sh", configHome, job.op === "restore" ? "restore" : plan.fresh ? "fresh" : "apply", copies].concat(args);
+        writer.command = [Quickshell.shellPath("services/scripts/apps-scale-write.sh"), configHome, job.op === "restore" ? "restore" : plan.fresh ? "fresh" : "apply", copies].concat(args);
         writer.running = true;
     }
 

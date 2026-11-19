@@ -48,6 +48,22 @@ function run(t) {
         t.eq(T.scale, 1, "restaurado");
     });
 
+    t.test("theme: o tamanho do shell pelas Configurações", () => {
+        const S = t.SettingsState;
+        try {
+            t.check(S.shellScaleOptions.every(o => T.clampScale(o.value) === o.value), "as opções da página ficam dentro do limite");
+            S.setShellScale(1.25);
+            t.eq([C.shellScale, S.shellScale, T.scale, T.px(34)], [1.25, 1.25, 1.25, 43], "grava na Config e escala as medidas");
+            S.setShellScale(0);
+            t.eq(C.shellScale, 0.5, "um valor fora do limite não chega ao config.json");
+            S.setShellScale(NaN);
+            t.eq(C.shellScale, 1, "nem um que não é número");
+        } finally {
+            C.shellScale = 1;
+        }
+        t.eq(T.scale, 1, "restaurado");
+    });
+
     t.test("theme: o eixo de peso da fonte variável", () => {
         t.eq([T.fontAxes(Font.Normal), T.fontAxes(Font.DemiBold), T.fontAxes(300)], [{ wght: 400 }, { wght: 600 }, { wght: 300 }]);
     });

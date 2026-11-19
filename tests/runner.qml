@@ -92,6 +92,7 @@ import "weather.test.js" as WeatherTest
 import "weatherstate.test.js" as WeatherStateTest
 import "wifistate.test.js" as WifiStateTest
 import "credits.test.js" as CreditsTest
+import "config.test.js" as ConfigTest
 import "displaysstate.test.js" as DisplaysStateTest
 
 ShellRoot {
@@ -152,6 +153,7 @@ ShellRoot {
         ["weatherstate", WeatherStateTest],
         ["wifistate", WifiStateTest],
         ["credits", CreditsTest],
+        ["config", ConfigTest],
         ["web", WebTest],
         ["gamemode", GameModeTest],
         ["gamemodestate", GameModeStateTest],

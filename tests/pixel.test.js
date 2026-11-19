@@ -14,4 +14,11 @@ function run(t) {
         t.near(P.hairline(1.5), 2 / 1.5, 1e-9, "em 1,5, 2 px físicos (o arredondado)");
         t.eq(P.hairline(2), 1, "2 px físicos em 2");
     });
+
+    t.test("pixel: dpr zero, negativo ou que não é número vale 1", () => {
+        for (const dpr of [0, -1.25, NaN, Infinity]) {
+            t.eq(P.snap(10.4, dpr), 10, `snap com dpr ${dpr}`);
+            t.eq(P.hairline(dpr), 1, `hairline com dpr ${dpr}`);
+        }
+    });
 }

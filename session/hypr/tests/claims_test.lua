@@ -102,4 +102,36 @@ case("claims: instalar de novo não empilha envoltórios", function()
     assert(claims_mod.claimed(claims, dp), "o envoltório novo anota")
 end)
 
+case("claims: uma saída chamada original não se mistura com o original", function()
+    local hl = fake_hl()
+    local first = hl.monitor
+    local claims = claims_mod.install(hl)
+    local odd = { name = "original", description = "" }
+    assert(not claims_mod.claimed(claims, odd), "sem regra, o monitor chamado original não é reivindicado")
+    hl.monitor({ output = "original", scale = 2 })
+    assert(claims_mod.claimed(claims, odd), "a regra pelo nome reivindica o monitor chamado original")
+    assert(claims.original == first, "a regra não troca o original da base")
+    claims.original({ output = "DP-2" })
+    assert(#hl.calls == 2, "o original continua chamável")
+end)
+
+case("claims: a regra automática não se acumula", function()
+    local hl = fake_hl()
+    local claims = claims_mod.install(hl)
+    local spec = { output = "eDP-1", mode = "highrr", position = "auto", scale = 1.25 }
+    assert(claims_mod.auto(claims, spec), "a primeira vai ao Hyprland")
+    assert(not claims_mod.auto(claims, { output = "eDP-1", mode = "highrr", position = "auto", scale = 1.25 }),
+        "a mesma regra de novo (outro monitor.added, o config.reloaded) não vai")
+    assert(#hl.calls == 1, "uma regra só no Hyprland")
+    assert(claims_mod.auto(claims, { output = "eDP-1", mode = "highrr", position = "auto", scale = 1 }),
+        "a escala mudou (o modo pelos apps): vai")
+    assert(claims_mod.auto(claims, { output = "DP-2", mode = "highrr", position = "auto", scale = 1 }),
+        "outro monitor tem a regra dele")
+    assert(#hl.calls == 3, "três regras diferentes")
+    assert(hl.calls[1] == spec, "o original recebe a spec")
+    assert(not claims_mod.claimed(claims, edp), "a regra automática não reivindica")
+    local again = claims_mod.install(hl)
+    assert(claims_mod.auto(again, spec), "um carregamento novo (o reload) começa do zero")
+end)
+
 print(string.format("SUITE claims casos=%d", cases))
