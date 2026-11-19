@@ -24,6 +24,9 @@ Singleton {
     // "HH:MM" do dia de hoje na cidade; "" sem dado.
     property string sunrise: ""
     property string sunset: ""
+    // O fuso da cidade, em segundos a partir do UTC (o utcOffset do tópico);
+    // null sem ele: quem mostra cai na data da máquina.
+    property var utcOffset: null
     property var updatedAt: null
     // "none", "loading", "ready" ou "error" ("" sem nada recebido).
     property string state: ""
@@ -90,6 +93,7 @@ Singleton {
         daily = Array.from(data.daily ?? []).map(d => toDay(d));
         sunrise = clock(data.sunrise);
         sunset = clock(data.sunset);
+        utcOffset = typeof data.utcOffset === "number" ? data.utcOffset : null;
         updatedAt = typeof data.updatedAt === "number" ? new Date(data.updatedAt * 1000) : null;
         state = String(data.state ?? "");
         error = data.error ? String(data.error) : "";
@@ -101,6 +105,7 @@ Singleton {
         daily = [];
         sunrise = "";
         sunset = "";
+        utcOffset = null;
         updatedAt = null;
         state = "";
         error = "";

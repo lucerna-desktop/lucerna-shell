@@ -15,7 +15,7 @@ function run(t) {
         webOnline: B.moduleOnline,
         webRefresh: B.refreshMinutes,
         offline: C.offline,
-        todayKey: S.todayKey,
+        now: S.now,
         weather: JSON.stringify([W.current, W.daily, W.sunrise, W.sunset, W.updatedAt, W.state, W.error, W.location])
     };
 
@@ -29,13 +29,13 @@ function run(t) {
         B.error = original.webError;
         B.moduleOnline = original.webOnline;
         B.refreshMinutes = original.webRefresh;
-        S.todayKey = original.todayKey;
+        S.now = original.now;
         W.client = original.client;
         B.client = original.webClient;
     }
 
     function restored() {
-        return W.client === original.client && B.client === original.webClient && B.error === original.webError && B.moduleOnline === original.webOnline && B.refreshMinutes === original.webRefresh && C.offline === original.offline && S.todayKey === original.todayKey && snapshot() === original.weather;
+        return W.client === original.client && B.client === original.webClient && B.error === original.webError && B.moduleOnline === original.webOnline && B.refreshMinutes === original.webRefresh && C.offline === original.offline && S.now === original.now && snapshot() === original.weather;
     }
 
     function ok(id, result) {
@@ -85,8 +85,35 @@ function run(t) {
         t.eq(S.dayLabel("2026-10-23", "2026-10-24"), "Sex", "a previsão de ontem nunca vira Hoje");
     });
 
+    t.test("clima: hoje pela data da cidade, com o fuso dela", () => {
+        // 25/10 às 02:30 UTC: 24/10 às 23:30 aqui (o ci/unit.sh fixa
+        // America/Sao_Paulo) e já 25/10 numa cidade em UTC+1.
+        const ms = Date.UTC(2026, 9, 25, 2, 30);
+        t.eq(S.dateKey(new Date(ms)), "2026-10-24", "a data da máquina");
+        t.eq(S.todayFor(ms, 3600), "2026-10-25", "a cidade a leste já virou o dia");
+        t.eq(S.todayFor(ms, -14400), "2026-10-24", "a cidade a oeste ainda não");
+        t.eq(S.todayFor(ms, null), "2026-10-24", "sem o fuso, a data da máquina");
+        t.eq([S.todayFor(ms, NaN), S.todayFor(ms, Infinity)], ["2026-10-24", "2026-10-24"], "fuso não finito, a data da máquina");
+        t.eq(S.todayFor(Date.UTC(2026, 11, 31, 23, 30), 3600), "2027-01-01", "a virada do ano");
+    });
+
+    withClient("clima: o Hoje e o topo seguem a cidade", c => {
+        S.now = Date.UTC(2026, 9, 25, 2, 30);
+        const sample = t.weatherSample();
+        sample.daily = sample.daily.slice(1);
+        c.received("web.weather", json(Object.assign(sample, { utcOffset: 3600 })));
+        t.eq(S.todayKey, "2026-10-25");
+        t.eq([S.days[0].label, S.days[0].date], ["Hoje", "25 out"]);
+        t.eq(S.today, "Domingo, 25 de outubro");
+        c.received("web.weather", json(Object.assign(t.weatherSample(), { utcOffset: -14400 })));
+        t.eq(S.todayKey, "2026-10-24", "a cidade a oeste ainda está no dia 24");
+        t.eq(S.today, "Sábado, 24 de outubro");
+        W.clear();
+        t.eq(S.todayKey, "2026-10-24", "sem previsão, a data da máquina");
+    });
+
     withClient("clima: os cards", c => {
-        S.todayKey = "2026-10-24";
+        S.now = new Date(2026, 9, 24, 12, 0).getTime();
         c.received("web.weather", json(t.weatherSample()));
         t.eq(S.days.length, 7);
         t.eq([S.days[0].label, S.days[0].date, S.days[0].range], ["Hoje", "24 out", "22° / 33°"]);
@@ -144,6 +171,21 @@ function run(t) {
         c.lost();
         t.eq(S.notice, "Indisponível: sem conexão com o lucernad.");
         t.eq(S.available, false);
+    });
+
+    t.test("clima: a engrenagem abre as configurações no Painel superior", () => {
+        const P = t.Panels;
+        const opened0 = P.opened;
+        const topic0 = C.settingsTopic;
+        try {
+            C.settingsTopic = "about";
+            S.openSettings();
+            t.eq([C.settingsTopic, P.opened], ["dashboard", ["settings"]]);
+        } finally {
+            P.close();
+            P.opened = opened0;
+            C.settingsTopic = topic0;
+        }
     });
 
     t.test("clima: estado original restaurado", () => {

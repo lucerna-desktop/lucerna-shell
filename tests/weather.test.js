@@ -8,7 +8,7 @@ function run(t) {
     const B = t.Web;
     const C = t.Config;
 
-    const fields = ["active", "current", "daily", "sunrise", "sunset", "updatedAt", "state", "error", "location", "results", "searching", "searchError", "lastQuery", "searchSeq"];
+    const fields = ["active", "current", "daily", "sunrise", "sunset", "utcOffset", "updatedAt", "state", "error", "location", "results", "searching", "searchError", "lastQuery", "searchSeq"];
     const original = {
         client: W.client,
         webClient: B.client,
@@ -122,6 +122,18 @@ function run(t) {
         t.eq(W.updatedAt.getTime(), 1792847400000);
         t.eq([W.state, W.error, W.loading], ["ready", "", false]);
         t.eq([W.location.name, W.location.latitude, W.location.longitude], ["Cacaulândia, Rondônia, BR", -10.3375, -62.8986]);
+        t.eq(W.utcOffset, null, "sem o fuso da cidade no tópico, null");
+    });
+
+    withClient("weather: o fuso da cidade", c => {
+        c.received("web.weather", json(Object.assign(t.weatherSample(), { utcOffset: -14400 })));
+        t.eq(W.utcOffset, -14400);
+        c.received("web.weather", json(Object.assign(t.weatherSample(), { utcOffset: "x" })));
+        t.eq(W.utcOffset, null, "fora de número, null");
+        c.received("web.weather", json(Object.assign(t.weatherSample(), { utcOffset: 0 })));
+        t.eq(W.utcOffset, 0, "o zero vale (UTC)");
+        W.clear();
+        t.eq(W.utcOffset, null);
     });
 
     withClient("weather: sem cidade, carregando e erro com dados", c => {
