@@ -12,6 +12,8 @@ import qs.services
 // tela (a cidade, a data de hoje, os cards, os sete dias e o aviso do rodapé).
 // As datas AAAA-MM-DD viram datas locais pelo localDate; os dias se chamam
 // pela data, nunca pela posição: a previsão de ontem guardada não vira "Hoje".
+// Hoje é a data da cidade (os dias vêm na data dela), pelo fuso que o tópico
+// traz; sem ele, a da máquina.
 Singleton {
     id: root
 
@@ -22,11 +24,11 @@ Singleton {
     readonly property bool hasLocation: Config.weatherLocation !== null
     readonly property string city: String(Config.weatherLocation?.name ?? "").split(",")[0].trim()
 
-    // A data local de hoje (AAAA-MM-DD); o relógio a mantém certa depois da
-    // meia-noite. Não é readonly: os testes a põem à mão.
-    property string todayKey: dateKey(new Date())
-    // Agora, em ms, a cada minuto: refaz o updatedNote (a previsão envelhece).
+    // Agora, em ms, a cada minuto: refaz o todayKey depois da meia-noite e o
+    // updatedNote (a previsão envelhece). Não é readonly: os testes o põem à mão.
     property real now: Date.now()
+    // A data de hoje na cidade (AAAA-MM-DD).
+    readonly property string todayKey: todayFor(now, Weather.utcOffset)
 
     readonly property string today: Format.capitalize(localDate(todayKey).toLocaleDateString(locale, "dddd, d 'de' MMMM"))
     readonly property string sunrise: Weather.sunrise || "--:--"
@@ -96,6 +98,16 @@ Singleton {
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
     }
 
+    // A data (AAAA-MM-DD) do instante `ms` num fuso `offset` (segundos a
+    // partir do UTC); sem fuso, a da máquina.
+    function todayFor(ms: real, offset: var): string {
+        if (typeof offset !== "number")
+            return dateKey(new Date(ms));
+        const d = new Date(ms + offset * 1000);
+        const pad = n => String(n).padStart(2, "0");
+        return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+    }
+
     // "AAAA-MM-DD" → a meia-noite local desse dia. Nunca new Date("AAAA-MM-DD"):
     // é meia-noite UTC, que a oeste de Greenwich cai no dia anterior.
     function localDate(date: string): var {
@@ -139,9 +151,6 @@ Singleton {
         interval: 60000
         running: true
         repeat: true
-        onTriggered: {
-            root.todayKey = root.dateKey(new Date());
-            root.now = Date.now();
-        }
+        onTriggered: root.now = Date.now()
     }
 }
